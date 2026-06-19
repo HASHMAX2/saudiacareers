@@ -1,0 +1,153 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 Int                  @id @default(autoincrement())
+  name               String
+  email              String               @unique
+  mobile             String?
+  passwordHash       String
+  role               Role                 @default(CANDIDATE)
+  emailVerified      Boolean              @default(false)
+  mustChangePassword Boolean              @default(false)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  profile            CandidateProfile?
+  applications       Application[]
+  jobs               Job[]
+  refreshTokens      RefreshToken[]
+  passwordResets     PasswordResetToken[]
+
+  @@index([role])
+  @@index([createdAt])
+}
+
+enum Role {
+  CANDIDATE
+  ADMIN
+}
+
+model CandidateProfile {
+  id               Int       @id @default(autoincrement())
+  userId           Int       @unique
+  user             User      @relation(fields: [userId], references: [id])
+  location         String?
+  designation      String?
+  experience       String?
+  skills           String?
+  education        String?
+  summary          String?
+  resumePath       String?
+  resumeFilename   String?
+  resumeUploadedAt DateTime?
+  profilePhotoPath String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([location])
+  @@index([experience])
+}
+
+model Job {
+  id                  Int           @id @default(autoincrement())
+  title               String
+  companyName         String
+  location            String
+  industry            String
+  employmentType      String
+  experienceRequired  String
+  salaryRange         String?
+  description         String
+  requiredSkills      String
+  hrEmail             String
+  applicationDeadline DateTime?
+  status              JobStatus     @default(ACTIVE)
+  isDeleted           Boolean       @default(false)
+  createdBy           Int
+  creator             User          @relation(fields: [createdBy], references: [id])
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  applications        Application[]
+
+  @@index([status, isDeleted])
+  @@index([location])
+  @@index([industry])
+  @@index([employmentType])
+  @@index([experienceRequired])
+  @@index([applicationDeadline])
+  @@index([createdAt])
+}
+
+enum JobStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Application {
+  id            Int               @id @default(autoincrement())
+  userId        Int
+  user          User              @relation(fields: [userId], references: [id])
+  jobId         Int
+  job           Job               @relation(fields: [jobId], references: [id])
+  status        ApplicationStatus @default(APPLIED)
+  hrEmailStatus EmailStatus       @default(PENDING)
+  hrEmailError  String?
+  hrEmailSentAt DateTime?
+  appliedAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@unique([userId, jobId])
+  @@index([status])
+  @@index([hrEmailStatus])
+  @@index([appliedAt])
+  @@index([jobId])
+  @@index([userId])
+}
+
+enum ApplicationStatus {
+  APPLIED
+  UNDER_REVIEW
+  SELECTED
+  REJECTED
+}
+
+enum EmailStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+model RefreshToken {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id])
+  tokenHash String
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([revokedAt])
+}
+
+model PasswordResetToken {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id])
+  tokenHash String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([usedAt])
+}
+
