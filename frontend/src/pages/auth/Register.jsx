@@ -6,7 +6,7 @@ import { Alert } from "../../components/common/Alert.jsx";
 import { Button } from "../../components/common/Button.jsx";
 import { Input } from "../../components/common/Input.jsx";
 import { useAuthStore } from "../../store/authStore.js";
-import { isSaudiMobile, isStrongPassword } from "../../utils/validators.js";
+import { isValidMobile, isStrongPassword } from "../../utils/validators.js";
 
 function validateForm(form) {
   const errors = {};
@@ -22,8 +22,8 @@ function validateForm(form) {
   if (!email) errors.email = "Email address is required.";
   else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = "Enter a valid email address.";
 
-  if (!mobile || mobile === "+966") errors.mobile = "Saudi mobile number is required.";
-  else if (!isSaudiMobile(mobile)) errors.mobile = "Enter a Saudi mobile number in the format +966XXXXXXXXX.";
+  if (!mobile || mobile === "+") errors.mobile = "Mobile number is required.";
+  else if (!isValidMobile(mobile)) errors.mobile = "Include your country code starting with + — for example, +966512345678 for Saudi or +91XXXXXXXXXX for India.";
 
   if (!password) errors.password = "Password is required.";
   else if (!isStrongPassword(password)) errors.password = "Password must be at least 8 characters with one uppercase letter and one number.";
@@ -32,7 +32,7 @@ function validateForm(form) {
 }
 
 export function Register() {
-  const [form, setForm] = useState({ name: "", email: "", mobile: "+966", password: "" });
+  const [form, setForm] = useState({ name: "", email: "", mobile: "+", password: "" });
   const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -75,7 +75,10 @@ export function Register() {
       <form className="space-y-4" onSubmit={submit}>
         <Input autoComplete="name" id="name" label="Full name" placeholder="Your full name" value={form.name} onChange={update("name")} required error={fieldErrors.name} />
         <Input autoComplete="email" id="email" label="Email address" placeholder="you@example.com" type="email" value={form.email} onChange={update("email")} required error={fieldErrors.email} />
-        <Input autoComplete="tel" id="mobile" label="Saudi mobile" value={form.mobile} onChange={update("mobile")} required error={fieldErrors.mobile} />
+        <div>
+          <Input autoComplete="tel" id="mobile" label="Mobile" placeholder="+966512345678" value={form.mobile} onChange={update("mobile")} required error={fieldErrors.mobile} />
+          <p className="mt-1.5 text-xs text-slate-500">Include your country code, e.g. +966 for Saudi Arabia.</p>
+        </div>
         <div>
           <Input autoComplete="new-password" id="password" label="Password" placeholder="At least 8 characters" type="password" value={form.password} onChange={update("password")} required error={fieldErrors.password} />
           <p className="mt-1.5 text-xs text-slate-500">Use at least 8 characters with one uppercase letter and one number.</p>

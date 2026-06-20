@@ -8,7 +8,10 @@ const password = z
 
 const saudiMobile = z
   .string()
-  .regex(/^\+966\d{9}$/, "Mobile must use the format +966XXXXXXXXX");
+  //.regex(/^\+966\d{9}$/, "Mobile must use the format +966XXXXXXXXX");
+  .regex(/^\+\d{7,15}$/, "Include your country code starting with + —  for example, +966512345678 for Saudi or +91XXXXXXXXXX for India")
+   
+  
 
 const bodyOnly = (body) =>
   z.object({
