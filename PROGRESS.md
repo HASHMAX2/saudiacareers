@@ -1,12 +1,12 @@
 # SaudiaCareers Project Progress
 
-Last updated: June 20, 2026
+Last updated: June 20, 2026 (evening)
 
 Future sessions must read both `AGENTS.md` and this file before coding.
 
 ## Current Checkpoint
 
-The repository-side MVP, responsive frontend redesign, frontend form validation overhaul, job API field-stripping fix, international mobile validation, and profile upload UX fixes are all implemented. Static validation, production builds, dependency audit, and seven backend validation tests pass.
+The repository-side MVP, responsive frontend redesign, frontend form validation overhaul, job API field-stripping fix, international mobile validation, profile upload UX fixes, and Axios 401 interceptor bug fix are all implemented. Static validation, production builds, dependency audit, and seven backend validation tests pass.
 
 Local PostgreSQL is running in Docker. The frontend (`http://localhost:5173`) and backend (`http://localhost:5000`) development servers are running. Supabase and Resend still require valid external credentials and configuration — photo and resume uploads will show a visible error message until Supabase is configured.
 
@@ -141,6 +141,13 @@ Current automated test count: 7 passing tests covering auth, profile, and job va
 - Resume and photo delete buttons also have `try/catch` with visible error alerts.
 - Download button has `try/catch` to surface signed-URL errors.
 - `type="button"` added to all non-submit buttons inside the form to prevent accidental form submission.
+
+### Axios 401 interceptor bug fix
+
+- `frontend/src/api/client.js`: added a `hasSession` guard (`!!useAuthStore.getState().accessToken`) to the response interceptor.
+- Previously, any 401 response — including a failed login attempt — triggered `refreshSession()`. Since no refresh cookie exists for a non-authenticated user, the refresh call failed with "Refresh token is required" and that error reached the UI instead of the original "Invalid email or password".
+- The guard short-circuits the interceptor when there is no access token in Zustand memory. Authenticated users whose token expires mid-session still get the silent refresh-and-retry path because Zustand holds the old token until it is explicitly cleared.
+- The existing `isRefreshRequest` guard is kept to prevent a loop when the refresh endpoint itself returns a 401.
 
 ### Backend server cold-start fix
 

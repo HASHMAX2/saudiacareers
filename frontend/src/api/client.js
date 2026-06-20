@@ -41,8 +41,9 @@ api.interceptors.response.use(
     const originalRequest = error.config;
     const isUnauthorized = error.response?.status === 401;
     const isRefreshRequest = originalRequest?.url === "/auth/refresh-token";
+    const hasSession = !!useAuthStore.getState().accessToken;
 
-    if (!isUnauthorized || originalRequest?._retry || isRefreshRequest) {
+    if (!isUnauthorized || !hasSession || originalRequest?._retry || isRefreshRequest) {
       return Promise.reject(error);
     }
 
