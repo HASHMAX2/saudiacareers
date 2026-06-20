@@ -1,14 +1,16 @@
 # SaudiaCareers Project Progress
 
-Last updated: June 19, 2026
+Last updated: June 20, 2026
 
 Future sessions must read both `AGENTS.md` and this file before coding.
 
 ## Current Checkpoint
 
-The repository-side MVP and responsive frontend redesign are implemented. Static validation, production builds, dependency audit, and seven backend validation tests pass.
+The repository-side MVP, responsive frontend redesign, frontend form validation overhaul, and job API field-stripping fix are implemented. Static validation, production builds, dependency audit, and seven backend validation tests pass.
 
-Local PostgreSQL is running in Docker and the initial migration and seed have been applied successfully. The frontend and backend development servers are currently stopped. Supabase and Resend still require valid external credentials and configuration.
+Local PostgreSQL is running in Docker. The frontend (`http://localhost:5173`) and backend (`http://localhost:5000`) development servers are running. Supabase and Resend still require valid external credentials and configuration.
+
+Branch `edit-job` contains all work since the initial commit and is pushed to origin.
 
 ## Completed
 
@@ -122,6 +124,23 @@ npm run prisma:validate --workspace backend
 ```
 
 Current automated test count: 7 passing tests covering auth, profile, and job validation.
+
+### Backend server cold-start fix
+
+- `server.js` now calls `await prisma.$connect()` before `app.listen()`, ensuring the Prisma connection pool is fully ready before the server accepts any requests. Previously the first request after a restart would fail with a "Network Error" because the pool was not yet established.
+
+### Job API field stripping
+
+- `frontend/src/api/admin.js` — added `pickJobFields()` that whitelists the 12 fields the backend `jobBody` schema accepts (`title`, `companyName`, `location`, `industry`, `employmentType`, `experienceRequired`, `salaryRange`, `description`, `requiredSkills`, `hrEmail`, `applicationDeadline`, `status`). Both `createJob` and `updateJob` pass through it, preventing extra database fields (`id`, `isDeleted`, `createdBy`, `createdAt`, `updatedAt`) from being sent in the request body.
+
+### Frontend form validation
+
+- `Input` component now renders a red `*` automatically when `required` prop is passed.
+- `Register`: inline field errors matching backend `registerSchema` (name min 2/max 100, email format, mobile `/^\+966\d{9}$/`, password min 8 + uppercase + number).
+- `ResetPassword`: inline password strength error before calling the API.
+- `ChangePassword` (admin page): inline errors for both fields, "must be different" check mirroring the backend refine, and error display if the API call fails.
+- `Profile > PasswordForm`: required marks, inline strength/differ validation, error and success states.
+- `JobForm`: full `validateJob` function matching `jobBody` Zod schema (all required fields, description min 20, hrEmail format, max lengths), inline errors under each field including the description textarea.
 
 ### Responsive UI/UX redesign
 
@@ -334,3 +353,7 @@ npm run prisma:studio --workspace backend
 7. Commit the repository.
 8. Deploy Render and Vercel.
 9. Configure DNS and complete the production checklist in `AGENTS.md`.
+
+## TODO
+
+- (completed) Fix frontend form validation — see Completed section.

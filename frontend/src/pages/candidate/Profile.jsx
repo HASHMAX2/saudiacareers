@@ -6,25 +6,78 @@ import { Alert } from "../../components/common/Alert.jsx";
 import { Button } from "../../components/common/Button.jsx";
 import { Input } from "../../components/common/Input.jsx";
 import { Spinner } from "../../components/common/Spinner.jsx";
+import { LOCATIONS } from "../../utils/constants.js";
+import { isSaudiMobile, isStrongPassword } from "../../utils/validators.js";
 
 const selectClass = "form-control";
 const sectionClass = "rounded-2xl border border-slate-200 p-5 sm:p-6";
+const requiredFields = ["name", "mobile", "location", "designation", "experience", "skills", "education"];
+
+function validateProfile(profile) {
+  const errors = {};
+
+  for (const field of requiredFields) {
+    if (!profile[field]?.trim()) errors[field] = "This field is required.";
+  }
+
+  const name = profile.name?.trim() ?? "";
+  const mobile = profile.mobile?.trim() ?? "";
+  const location = profile.location ?? "";
+
+  if (name && name.length < 2) errors.name = "Full name must be at least 2 characters.";
+  if (name.length > 100) errors.name = "Full name must be 100 characters or fewer.";
+  if (mobile && !isSaudiMobile(mobile)) errors.mobile = "Enter a Saudi mobile number in the format +966XXXXXXXXX.";
+  if (location && !LOCATIONS.includes(location)) errors.location = "Select a valid location.";
+  if ((profile.designation?.trim().length ?? 0) > 150) errors.designation = "Designation must be 150 characters or fewer.";
+  if (profile.experience?.trim() && !/^\d+$/.test(profile.experience.trim())) {
+    errors.experience = "Total experience must be a whole number.";
+  }
+  if ((profile.skills?.trim().length ?? 0) > 1000) errors.skills = "Skills must be 1000 characters or fewer.";
+  if ((profile.education?.trim().length ?? 0) > 500) errors.education = "Education must be 500 characters or fewer.";
+  if ((profile.summary?.trim().length ?? 0) > 2000) errors.summary = "Summary must be 2000 characters or fewer.";
+
+  return errors;
+}
 
 export function Profile() {
   const [profile, setProfile] = useState(null);
   const [message, setMessage] = useState("");
+  const [formError, setFormError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const load = useCallback(() => profileApi.get().then(({ data }) => setProfile(data.data)), []);
   useEffect(() => { load(); }, [load]);
   if (!profile) return <div className="grid min-h-64 place-items-center"><Spinner label="Loading profile" /></div>;
 
-  const update = (key) => (event) => setProfile({ ...profile, [key]: event.target.value });
+  const update = (key) => (event) => {
+    setProfile({ ...profile, [key]: event.target.value });
+    setFieldErrors((current) => ({ ...current, [key]: undefined }));
+    setFormError("");
+    setMessage("");
+  };
+  const updateNumeric = (key) => (event) => {
+    const value = event.target.value.replace(/\D/g, "");
+    setProfile({ ...profile, [key]: value });
+    setFieldErrors((current) => ({ ...current, [key]: undefined }));
+    setFormError("");
+    setMessage("");
+  };
   async function save(event) {
     event.preventDefault();
+    const errors = validateProfile(profile);
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setFormError("Please fill all required fields with valid values.");
+      return;
+    }
+
     setSaving(true);
+    setFieldErrors({});
+    setFormError("");
+    setMessage("");
     try {
       const keys = ["name", "mobile", "location", "designation", "experience", "skills", "education", "summary"];
-      const payload = Object.fromEntries(keys.map((key) => [key, profile[key] ?? ""]));
+      const payload = Object.fromEntries(keys.map((key) => [key, profile[key]?.trim() ?? ""]));
       const { data } = await profileApi.update(payload);
       setProfile(data.data);
       setMessage("Profile saved successfully.");
@@ -52,6 +105,7 @@ export function Profile() {
       </div>
       <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-brand-600 transition-all" style={{ width: `${profile.profileCompletion}%` }} /></div>
       {message && <div className="mt-5"><Alert tone="success">{message}</Alert></div>}
+      {formError && <div className="mt-5"><Alert>{formError}</Alert></div>}
 
       <div className="mt-7 space-y-6">
         <section className={sectionClass}>
@@ -69,20 +123,52 @@ export function Profile() {
           <section className={sectionClass}>
             <SectionTitle icon={UserRound} title="Personal information" text="Your contact details are used for your applications." />
             <div className="mt-5 grid gap-4 md:grid-cols-2">
-              <Input id="name" label="Full name" value={profile.name ?? ""} onChange={update("name")} />
+              <Input id="name" label="Full name" required error={fieldErrors.name} value={profile.name ?? ""} onChange={update("name")} />
               <Input id="email" label="Email address" value={profile.email ?? ""} readOnly />
-              <Input id="mobile" label="Saudi mobile" value={profile.mobile ?? ""} onChange={update("mobile")} />
-              <label><span className="mb-1.5 block text-sm font-semibold text-slate-700">Location</span><select className={selectClass} value={profile.location ?? ""} onChange={update("location")}><option value="">Select location</option><option>Riyadh</option><option>Jeddah</option><option>Dammam</option><option>Other</option></select></label>
+              <Input id="mobile" label="Saudi mobile" required error={fieldErrors.mobile} value={profile.mobile ?? ""} onChange={update("mobile")} />
+              <label>
+                <span className="mb-1.5 block text-sm font-semibold text-slate-700">
+                  Location <span className="text-red-500" aria-hidden="true">*</span>
+                </span>
+                <select
+                  aria-invalid={Boolean(fieldErrors.location)}
+                  className={`${selectClass} ${fieldErrors.location ? "border-red-400 focus:border-red-500 focus:ring-red-100" : ""}`}
+                  value={profile.location ?? ""}
+                  onChange={update("location")}
+                >
+                  <option value="" disabled>Select location</option>
+                  {LOCATIONS.map((location) => <option key={location} value={location}>{location}</option>)}
+                </select>
+                {fieldErrors.location ? <span className="mt-1.5 block text-sm text-red-600">{fieldErrors.location}</span> : null}
+              </label>
             </div>
           </section>
           <section className={sectionClass}>
             <SectionTitle icon={BriefcaseBusiness} title="Professional information" text="Help employers understand your experience and capabilities." />
             <div className="mt-5 grid gap-4 md:grid-cols-2">
-              <Input id="designation" label="Current designation" value={profile.designation ?? ""} onChange={update("designation")} />
-              <Input id="experience" label="Total experience" value={profile.experience ?? ""} onChange={update("experience")} />
-              <Input id="skills" label="Skills (comma separated)" value={profile.skills ?? ""} onChange={update("skills")} />
-              <Input id="education" label="Education" value={profile.education ?? ""} onChange={update("education")} />
-              <label className="md:col-span-2"><span className="mb-1.5 block text-sm font-semibold text-slate-700">Professional summary</span><textarea className="form-control min-h-32 resize-y" value={profile.summary ?? ""} onChange={update("summary")} /></label>
+              <Input id="designation" label="Current designation" required error={fieldErrors.designation} value={profile.designation ?? ""} onChange={update("designation")} />
+              <Input
+                id="experience"
+                label="Total experience (years)"
+                required
+                error={fieldErrors.experience}
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={profile.experience ?? ""}
+                onChange={updateNumeric("experience")}
+              />
+              <Input id="skills" label="Skills (comma separated)" required error={fieldErrors.skills} value={profile.skills ?? ""} onChange={update("skills")} />
+              <Input id="education" label="Education" required error={fieldErrors.education} value={profile.education ?? ""} onChange={update("education")} />
+              <label className="md:col-span-2">
+                <span className="mb-1.5 block text-sm font-semibold text-slate-700">Professional summary</span>
+                <textarea
+                  aria-invalid={Boolean(fieldErrors.summary)}
+                  className={`form-control min-h-32 resize-y ${fieldErrors.summary ? "border-red-400 focus:border-red-500 focus:ring-red-100" : ""}`}
+                  value={profile.summary ?? ""}
+                  onChange={update("summary")}
+                />
+                {fieldErrors.summary ? <span className="mt-1.5 block text-sm text-red-600">{fieldErrors.summary}</span> : null}
+              </label>
             </div>
             <Button className="mt-5 w-full sm:w-auto" disabled={saving} type="submit">{saving ? "Saving..." : "Save profile"}</Button>
           </section>
@@ -107,13 +193,75 @@ function SectionTitle({ icon: Icon, title, text }) {
 
 function PasswordForm() {
   const [form, setForm] = useState({ currentPassword: "", newPassword: "" });
+  const [fieldErrors, setFieldErrors] = useState({});
   const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const update = (key) => (event) => {
+    setForm((prev) => ({ ...prev, [key]: event.target.value }));
+    setFieldErrors((prev) => ({ ...prev, [key]: undefined }));
+    setError("");
+    setMessage("");
+  };
+
+  async function submit(event) {
+    event.preventDefault();
+    const errors = {};
+    if (!form.currentPassword) errors.currentPassword = "Current password is required.";
+    if (!form.newPassword) {
+      errors.newPassword = "New password is required.";
+    } else if (!isStrongPassword(form.newPassword)) {
+      errors.newPassword = "Password must be at least 8 characters with one uppercase letter and one number.";
+    } else if (form.currentPassword && form.currentPassword === form.newPassword) {
+      errors.newPassword = "New password must be different from your current password.";
+    }
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+    setFieldErrors({});
+    setError("");
+    setMessage("");
+    setSaving(true);
+    try {
+      await authApi.changePassword(form);
+      setMessage("Password changed successfully.");
+      setForm({ currentPassword: "", newPassword: "" });
+    } catch (requestError) {
+      setError(requestError.response?.data?.message ?? "Password change failed.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
-    <form className={sectionClass} onSubmit={async (event) => { event.preventDefault(); await authApi.changePassword(form); setMessage("Password changed."); setForm({ currentPassword: "", newPassword: "" }); }}>
+    <form className={sectionClass} onSubmit={submit}>
       <SectionTitle icon={LockKeyhole} title="Change password" text="Use a strong password that is different from your current password." />
-      <div className="mt-5 grid gap-4 md:grid-cols-2"><Input id="currentPassword" label="Current password" type="password" value={form.currentPassword} onChange={(event) => setForm({ ...form, currentPassword: event.target.value })} /><Input id="newPassword" label="New password" type="password" value={form.newPassword} onChange={(event) => setForm({ ...form, newPassword: event.target.value })} /></div>
+      <div className="mt-5 grid gap-4 md:grid-cols-2">
+        <Input
+          id="currentPassword"
+          label="Current password"
+          type="password"
+          required
+          value={form.currentPassword}
+          error={fieldErrors.currentPassword}
+          onChange={update("currentPassword")}
+        />
+        <Input
+          id="newPassword"
+          label="New password"
+          type="password"
+          required
+          value={form.newPassword}
+          error={fieldErrors.newPassword}
+          onChange={update("newPassword")}
+        />
+      </div>
+      <p className="mt-1.5 text-xs text-slate-500">At least 8 characters with one uppercase letter and one number.</p>
+      {error && <div className="mt-4"><Alert>{error}</Alert></div>}
       {message && <div className="mt-4"><Alert tone="success">{message}</Alert></div>}
-      <Button className="mt-5 w-full sm:w-auto" type="submit">Change password</Button>
+      <Button className="mt-5 w-full sm:w-auto" disabled={saving} type="submit">{saving ? "Saving..." : "Change password"}</Button>
     </form>
   );
 }

@@ -31,5 +31,5 @@ export function ManageJobs() {
 }
 
 function Actions({ job, load }) {
-  return <div className="flex flex-wrap justify-end gap-2"><Link to={`/admin/jobs/${job.id}/edit`}><Button variant="secondary">Edit</Button></Link><Button variant="secondary" onClick={async () => { await adminApi.updateJobStatus(job.id, job.status === "ACTIVE" ? "INACTIVE" : "ACTIVE"); load(); }}>{job.status === "ACTIVE" ? "Deactivate" : "Activate"}</Button><Button variant="danger" onClick={async () => { if (window.confirm("Soft-delete this job?")) { await adminApi.deleteJob(job.id); load(); } }}>Delete</Button></div>;
+  return <div className="flex flex-wrap justify-end gap-2"><Link to={`/admin/jobs/${job.id}/edit`}><Button variant="secondary">Edit</Button></Link><Button variant="secondary" onClick={async () => { await adminApi.updateJobStatus(job.id, job.status === "ACTIVE" ? "INACTIVE" : "ACTIVE"); load(); }}>{job.status === "ACTIVE" ? "Deactivate" : "Activate"}</Button><Button variant="danger" onClick={async () => { if (window.confirm("Delete this job?")) { await adminApi.deleteJob(job.id); load(); } }}>Delete</Button></div>;
 }
