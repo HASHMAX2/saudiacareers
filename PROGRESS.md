@@ -6,11 +6,11 @@ Future sessions must read both `AGENTS.md` and this file before coding.
 
 ## Current Checkpoint
 
-The repository-side MVP, responsive frontend redesign, frontend form validation overhaul, and job API field-stripping fix are implemented. Static validation, production builds, dependency audit, and seven backend validation tests pass.
+The repository-side MVP, responsive frontend redesign, frontend form validation overhaul, job API field-stripping fix, international mobile validation, and profile upload UX fixes are all implemented. Static validation, production builds, dependency audit, and seven backend validation tests pass.
 
-Local PostgreSQL is running in Docker. The frontend (`http://localhost:5173`) and backend (`http://localhost:5000`) development servers are running. Supabase and Resend still require valid external credentials and configuration.
+Local PostgreSQL is running in Docker. The frontend (`http://localhost:5173`) and backend (`http://localhost:5000`) development servers are running. Supabase and Resend still require valid external credentials and configuration — photo and resume uploads will show a visible error message until Supabase is configured.
 
-Branch `edit-job` contains all work since the initial commit and is pushed to origin.
+Branch `edit-job` is pushed to origin with 2 commits ahead of `main`.
 
 ## Completed
 
@@ -124,6 +124,23 @@ npm run prisma:validate --workspace backend
 ```
 
 Current automated test count: 7 passing tests covering auth, profile, and job validation.
+
+### International mobile validation
+
+- `authSchemas.js` and `profileSchemas.js`: mobile regex widened from Saudi-only `/^\+966\d{9}$/` to E.164 `/^\+\d{7,15}$/`, accepting any country code.
+- `frontend/src/utils/validators.js`: `isSaudiMobile` renamed to `isValidMobile` with the matching regex.
+- `Register.jsx`: import updated, empty-check fixed (`"+"` instead of `"+966"`), error message and hint text updated, default input value changed to `"+"`.
+- `Profile.jsx`: import, label ("Mobile number"), and error message all updated to match.
+
+### Profile upload UX fixes
+
+- Photo and resume upload handlers now wrapped in `try/catch` — backend errors (e.g. Supabase not configured) are shown as a visible red alert instead of silently disappearing.
+- Both upload buttons display a disabled "Uploading…" state during the request.
+- File input value is reset after each attempt so the same file can be re-selected.
+- Resume `<section>` moved inside the profile `<form>`, before the Save Profile button. The Save button is now a standalone row at the bottom of the form.
+- Resume and photo delete buttons also have `try/catch` with visible error alerts.
+- Download button has `try/catch` to surface signed-URL errors.
+- `type="button"` added to all non-submit buttons inside the form to prevent accidental form submission.
 
 ### Backend server cold-start fix
 
