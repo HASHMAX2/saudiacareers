@@ -1,3 +1,4 @@
+import { Sparkles } from "lucide-react";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
@@ -5,8 +6,14 @@ import { authApi } from "../../api/auth.js";
 import { useAuthStore } from "../../store/authStore.js";
 import { Button } from "../common/Button.jsx";
 
-const navClass = ({ isActive }) =>
-  `btn-ghost text-sm ${isActive ? "font-semibold" : "font-medium"}`;
+const navLinkClass = ({ isActive }) =>
+  `text-[15px] font-medium transition-colors px-5 py-2 rounded-full border ${
+    isActive ? "border-current" : "border-transparent hover:bg-black/5"
+  }`;
+
+const navLinkStyle = ({ isActive }) => ({
+  color: isActive ? "var(--accent)" : "var(--text-primary)",
+});
 
 export function Navbar() {
   const user = useAuthStore((state) => state.user);
@@ -25,43 +32,61 @@ export function Navbar() {
   }
 
   return (
-    <header className="glass-nav sticky top-0 z-40">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-6 px-4 sm:px-6 lg:px-8">
+    <header
+      className="sticky top-0 z-40 flex items-center"
+      style={{ background: "var(--bg-base)", borderBottom: "1px solid var(--border-default)", height: "80px" }}
+    >
+      <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-6 px-4 sm:px-6 lg:px-8">
         <Link
-          className="flex items-center gap-2.5"
+          className="flex items-center gap-2.5 shrink-0"
           onClick={() => setIsOpen(false)}
           to="/"
         >
-          <span className="grid h-8 w-8 place-items-center rounded-full text-xs font-bold text-white shadow-sm" style={{ background: "var(--accent)" }}>
+          <span
+            className="grid h-10 w-10 place-items-center rounded-full text-sm font-bold text-white shrink-0"
+            style={{ background: "#141414" }}
+          >
             S
           </span>
-          <span className="text-base font-bold tracking-tight" style={{ color: "var(--text-primary)", fontFamily: "'Cabinet Grotesk', sans-serif" }}>
-            SaudiaCareers<span className="font-mono text-xs font-normal ml-0.5" style={{ color: "var(--text-tertiary)" }}>/careers</span>
+          <span className="text-[20px] font-bold" style={{ color: "var(--text-primary)" }}>
+            SaudiaCareers
+            <span className="text-[14px] font-normal ml-1" style={{ color: "var(--text-tertiary)" }}>
+              / careers
+            </span>
           </span>
         </Link>
+
         <button
           aria-expanded={isOpen}
           aria-label="Toggle navigation"
           className="rounded-full p-2 md:hidden"
           style={{ color: "var(--text-primary)" }}
-          onClick={() => setIsOpen((value) => !value)}
+          onClick={() => setIsOpen((v) => !v)}
           type="button"
         >
           {isOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
+
         <nav
           className={`${
             isOpen ? "flex" : "hidden"
-          } absolute inset-x-4 top-[4.25rem] flex-col gap-1 rounded-2xl bg-white p-3 shadow-xl md:static md:flex md:flex-row md:items-center md:gap-1 md:bg-transparent md:p-0 md:shadow-none`}
+          } absolute inset-x-4 top-[5.25rem] flex-col gap-1 rounded-2xl bg-white p-3 shadow-xl md:static md:flex md:flex-row md:items-center md:gap-10 md:bg-transparent md:p-0 md:shadow-none`}
           style={{ border: isOpen ? "1px solid var(--border-default)" : "none" }}
         >
-          <NavLink className={navClass} onClick={() => setIsOpen(false)} to="/jobs">
-            Jobs
+          <NavLink
+            className={navLinkClass}
+            style={navLinkStyle}
+            onClick={() => setIsOpen(false)}
+            to="/jobs"
+          >
+            Browse
           </NavLink>
+
           {user ? (
             <>
               <NavLink
-                className={navClass}
+                className={navLinkClass}
+                style={navLinkStyle}
                 onClick={() => setIsOpen(false)}
                 to={user.role === "ADMIN" ? "/admin/dashboard" : "/dashboard"}
               >
@@ -73,16 +98,23 @@ export function Navbar() {
             </>
           ) : (
             <>
-              <NavLink className={navClass} onClick={() => setIsOpen(false)} to="/login">
+              <Link
+                className="text-[15px] font-medium transition-colors hover:opacity-70 px-2"
+                style={{ color: "var(--text-primary)" }}
+                onClick={() => setIsOpen(false)}
+                to="/login"
+              >
                 Sign in
-              </NavLink>
-              <NavLink
-                className="btn-primary text-center w-full md:w-auto"
+              </Link>
+              <Link
+                className="btn-primary w-full md:w-auto justify-center"
+                style={{ paddingLeft: "20px", paddingRight: "20px", minHeight: "40px" }}
                 onClick={() => setIsOpen(false)}
                 to="/register"
               >
+                <Sparkles size={13} />
                 Join free
-              </NavLink>
+              </Link>
             </>
           )}
         </nav>
