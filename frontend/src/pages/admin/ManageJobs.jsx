@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 import { BriefcaseBusiness, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 import { adminApi } from "../../api/admin.js";
@@ -86,13 +87,39 @@ export function ManageJobs() {
 }
 
 function Actions({ job, load }) {
+  const [deleting, setDeleting] = useState(false);
+  const [toggling, setToggling] = useState(false);
+
+  async function handleToggle() {
+    setToggling(true);
+    try {
+      await adminApi.updateJobStatus(job.id, job.status === "ACTIVE" ? "INACTIVE" : "ACTIVE");
+      load();
+    } finally {
+      setToggling(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!window.confirm("Delete this job? This cannot be undone.")) return;
+    setDeleting(true);
+    try {
+      await adminApi.deleteJob(job.id);
+      load();
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   return (
     <div className="flex flex-wrap justify-end gap-2">
       <Link to={`/admin/jobs/${job.id}/edit`}><Button variant="secondary">Edit</Button></Link>
-      <Button variant="secondary" onClick={async () => { await adminApi.updateJobStatus(job.id, job.status === "ACTIVE" ? "INACTIVE" : "ACTIVE"); load(); }}>
-        {job.status === "ACTIVE" ? "Deactivate" : "Activate"}
+      <Button variant="secondary" disabled={toggling || deleting} onClick={handleToggle}>
+        {toggling ? <><Loader2 size={14} className="animate-spin" />{job.status === "ACTIVE" ? "Deactivating…" : "Activating…"}</> : (job.status === "ACTIVE" ? "Deactivate" : "Activate")}
       </Button>
-      <Button variant="danger" onClick={async () => { if (window.confirm("Delete this job?")) { await adminApi.deleteJob(job.id); load(); } }}>Delete</Button>
+      <Button variant="danger" disabled={deleting || toggling} onClick={handleDelete}>
+        {deleting ? <><Loader2 size={14} className="animate-spin" />Deleting…</> : "Delete"}
+      </Button>
     </div>
   );
 }

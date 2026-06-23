@@ -45,7 +45,9 @@ export function Profile() {
   const [fieldErrors, setFieldErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoDeleting, setPhotoDeleting] = useState(false);
   const [resumeUploading, setResumeUploading] = useState(false);
+  const [resumeDeleting, setResumeDeleting] = useState(false);
 
   const load = useCallback(() => profileApi.get().then(({ data }) => setProfile(data.data)), []);
   useEffect(() => { load(); }, [load]);
@@ -167,8 +169,17 @@ export function Profile() {
                 <input className="sr-only" accept="image/jpeg,image/png,image/webp" disabled={photoUploading} onChange={uploadPhoto} type="file" />
               </label>
               {profile.profilePhotoPath && (
-                <Button variant="secondary" onClick={async () => { try { await profileApi.deletePhoto(); await load(); setMessage("Photo removed."); } catch (e) { setFormError(e.response?.data?.message ?? "Failed to remove photo."); } }}>
-                  <Trash2 size={15} />Remove
+                <Button
+                  variant="secondary"
+                  disabled={photoDeleting || photoUploading}
+                  onClick={async () => {
+                    setPhotoDeleting(true);
+                    try { await profileApi.deletePhoto(); await load(); setMessage("Photo removed."); }
+                    catch (e) { setFormError(e.response?.data?.message ?? "Failed to remove photo."); }
+                    finally { setPhotoDeleting(false); }
+                  }}
+                >
+                  <Trash2 size={15} />{photoDeleting ? "Removing…" : "Remove"}
                 </Button>
               )}
             </div>
@@ -242,7 +253,19 @@ export function Profile() {
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <Button type="button" variant="secondary" onClick={download}><Download size={15} />Download</Button>
-                      <Button type="button" variant="danger" onClick={async () => { try { await profileApi.deleteResume(); await load(); setMessage("Resume removed."); } catch (e) { setFormError(e.response?.data?.message ?? "Failed to remove resume."); } }}><Trash2 size={15} />Remove</Button>
+                      <Button
+                        type="button"
+                        variant="danger"
+                        disabled={resumeDeleting}
+                        onClick={async () => {
+                          setResumeDeleting(true);
+                          try { await profileApi.deleteResume(); await load(); setMessage("Resume removed."); }
+                          catch (e) { setFormError(e.response?.data?.message ?? "Failed to remove resume."); }
+                          finally { setResumeDeleting(false); }
+                        }}
+                      >
+                        <Trash2 size={15} />{resumeDeleting ? "Removing…" : "Remove"}
+                      </Button>
                     </div>
                   </div>
                 )
