@@ -68,6 +68,7 @@ export function Landing() {
                   fontWeight: 700,
                   letterSpacing: "-0.02em",
                   color: "var(--text-primary)",
+                  fontFamily: "'Cabinet Grotesk', 'Satoshi', ui-sans-serif, system-ui, sans-serif",
                 }}
               >
                 Find work that<br />

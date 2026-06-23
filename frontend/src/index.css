@@ -1,16 +1,17 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
+@import url('https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@700,800&f[]=satoshi@700,800&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --bg-base:               #F7F6F2;
+  --bg-base:               #F9F9F8;
   --bg-dark:               #141414;
   --bg-white:              #FFFFFF;
   --bg-elev:               #F0EFEB;
   --bg-surface:            #FFFFFF;
-  --bg-page:               #F7F6F2;
+  --bg-page:               #F9F9F8;
   --accent:                #F2532E;
   --accent-hover:          #D9421F;
   --accent-subtle:         rgba(242,83,46,0.08);
@@ -28,7 +29,7 @@
 html,
 body {
   margin: 0;
-  background: #F7F6F2;
+  background: #F9F9F8;
   color: var(--text-primary);
   font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
