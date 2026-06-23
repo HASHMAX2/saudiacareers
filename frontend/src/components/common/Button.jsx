@@ -7,6 +7,7 @@ const variants = {
 
 export function Button({
   variant = "primary",
+  size,
   className = "",
   type = "button",
   ...props
@@ -14,7 +15,7 @@ export function Button({
   return (
     <button
       type={type}
-      className={`${variants[variant]} ${className}`}
+      className={`${variants[variant]}${size === "sm" ? " btn-sm" : ""} ${className}`}
       {...props}
     />
   );

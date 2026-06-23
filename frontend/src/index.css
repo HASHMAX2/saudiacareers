@@ -81,6 +81,13 @@ h1,h2,h3,h4,h5,h6 {
   .btn-danger:hover { background: #B91C1C; }
   .btn-danger:disabled { opacity: 0.5; cursor: not-allowed; }
 
+  .btn-sm {
+    min-height: 32px !important;
+    padding: 0 12px !important;
+    font-size: 13px !important;
+    gap: 4px !important;
+  }
+
   .btn-dark-outline {
     @apply inline-flex items-center justify-center gap-2 rounded-full text-[15px] font-semibold transition-colors;
     color: var(--text-on-dark);
