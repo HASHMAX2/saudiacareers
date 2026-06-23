@@ -20,9 +20,12 @@ app.use(helmet());
 app.use(
   cors({
     origin(origin, callback) {
-      if (!origin || env.allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
+      if (!origin) return callback(null, true);
+      const allowed =
+        env.allowedOrigins.includes(origin) ||
+        /^https:\/\/[a-z0-9-]+-saudiacareers\.vercel\.app$/.test(origin) ||
+        /^https:\/\/saudiacareers-frontend[a-z0-9-]*\.vercel\.app$/.test(origin);
+      if (allowed) return callback(null, true);
       return callback(new ApiError(403, "Origin is not allowed by CORS"));
     },
     credentials: true,
