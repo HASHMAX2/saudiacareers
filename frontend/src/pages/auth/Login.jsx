@@ -46,13 +46,13 @@ export function Login({ admin = false }) {
       admin={admin}
       title={admin ? "Admin login" : "Welcome back"}
       subtitle={admin ? "Sign in with your administrator credentials." : "Sign in to manage your profile and applications."}
-      footer={!admin ? <p className="mt-6 text-center text-sm text-slate-600">New to SaudiaCareers? <Link className="font-semibold text-brand-700 hover:underline" to="/register">Create an account</Link></p> : <p className="mt-6 text-center text-sm text-slate-500"><Link className="font-medium hover:text-brand-700" to="/login">Candidate login</Link></p>}
+      footer={!admin ? <p className="mt-6 text-center text-sm" style={{ color: "var(--text-secondary)" }}>New to SaudiaCareers? <Link className="font-semibold hover:underline" style={{ color: "var(--accent)" }} to="/register">Create an account</Link></p> : <p className="mt-6 text-center text-sm" style={{ color: "var(--text-tertiary)" }}><Link className="font-medium" style={{ color: "var(--accent)" }} to="/login">Candidate login</Link></p>}
     >
       <form className="space-y-4" onSubmit={handleSubmit}>
         <Input autoComplete="email" id={admin ? "admin-email" : "email"} label="Email address" onChange={(event) => setForm({ ...form, email: event.target.value })} placeholder="you@example.com" required type="email" value={form.email} />
         <div>
           <Input autoComplete="current-password" id={admin ? "admin-password" : "password"} label="Password" onChange={(event) => setForm({ ...form, password: event.target.value })} placeholder="Enter your password" required type="password" value={form.password} />
-          {!admin && <div className="mt-2 text-right"><Link className="text-sm font-semibold text-brand-700 hover:underline" to="/forgot-password">Forgot password?</Link></div>}
+          {!admin && <div className="mt-2 text-right"><Link className="font-mono text-xs hover:underline" style={{ color: "var(--accent)" }} to="/forgot-password">Forgot password?</Link></div>}
         </div>
         {error && <Alert>{error}</Alert>}
         <Button className="w-full" disabled={submitting} type="submit">{submitting ? "Signing in..." : "Sign in"}</Button>

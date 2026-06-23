@@ -1,22 +1,31 @@
-import { ArrowRight, BriefcaseBusiness, CheckCircle2, MapPin, Search, UserRoundCheck } from "lucide-react";
+import { ArrowRight, CheckCircle2, MapPin, Search, UserRoundCheck } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { Button } from "../../components/common/Button.jsx";
 
-const values = [
+const companies = [
+  "Saudi Aramco", "STC", "SABIC", "Noon", "Jarir", "stc pay",
+  "Almarai", "NCB", "Bupa Arabia", "Tamimi",
+  "Saudi Aramco", "STC", "SABIC", "Noon", "Jarir", "stc pay",
+  "Almarai", "NCB", "Bupa Arabia", "Tamimi",
+];
+
+const features = [
   {
     icon: Search,
     title: "Browse Saudi jobs",
     text: "Discover relevant opportunities across Riyadh, Jeddah, Dammam, and beyond.",
+    img: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=600&q=80",
   },
   {
     icon: UserRoundCheck,
     title: "Apply with one profile",
     text: "Keep your professional details and resume ready for a faster application process.",
+    img: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=600&q=80",
   },
   {
     icon: CheckCircle2,
     title: "Track applications",
     text: "See every application and its latest status from your candidate dashboard.",
+    img: "https://images.unsplash.com/photo-1600880292089-90a7e086ee0c?w=600&q=80",
   },
 ];
 
@@ -31,66 +40,148 @@ export function Landing() {
 
   return (
     <div className="-mt-6 sm:-mt-10">
-      <section className="relative overflow-hidden rounded-b-3xl bg-brand-950 px-5 py-16 text-white sm:px-10 sm:py-20 lg:px-16 lg:py-24">
-        <div className="absolute inset-y-0 right-0 hidden w-2/5 opacity-20 lg:block">
-          <div className="absolute right-20 top-20 h-64 w-64 rounded-full border border-white/30" />
-          <div className="absolute right-4 top-36 h-80 w-80 rounded-full border border-white/20" />
-        </div>
-        <div className="relative max-w-3xl">
-          <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-brand-100">
-            <MapPin size={14} /> Careers across Saudi Arabia
-          </span>
-          <h1 className="mt-6 text-4xl font-bold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
-            Your next career move starts here.
-          </h1>
-          <p className="mt-6 max-w-2xl text-base leading-7 text-slate-200 sm:text-lg">
-            Find trusted opportunities, build one professional profile, and manage your applications in one secure place.
-          </p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Link to="/jobs"> 
-            <Button className="w-full border border-emerald-300/40 bg-emerald-900/30 text-white hover:bg-emerald-700/60 sm:w-auto">
-      Browse jobs <ArrowRight size={16} />
-    </Button></Link>
-            {/* <Link to="/register"><Button
-      className="w-full border border-emerald-300/40 bg-emerald-900/30 text-red hover:bg-emerald-700/60 sm:w-auto"
-      variant="secondary"
-    >
-      Create profile
-    </Button></Link> */}
-          </div>
-          <form className="mt-10 flex flex-col gap-3 rounded-2xl bg-white p-3 shadow-2xl sm:flex-row" onSubmit={searchJobs}>
-            <div className="flex min-w-0 flex-1 items-center gap-3 px-2">
-              <Search className="shrink-0 text-slate-400" size={20} />
-              <input className="min-h-11 w-full border-0 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:ring-0" name="search" placeholder="Search by title, company, or skill" />
+      {/* Hero */}
+      <section className="grain relative overflow-hidden px-5 pb-24 pt-20 sm:px-10 lg:px-16 lg:pb-32 lg:pt-28">
+        <div className="mx-auto max-w-7xl">
+          <div className="grid items-center gap-12 lg:grid-cols-12">
+            <div className="lg:col-span-7 fade-up">
+              <span className="chip mb-6 inline-flex items-center gap-2">
+                <MapPin size={13} style={{ color: "var(--accent)" }} />
+                <span style={{ color: "var(--text-secondary)" }}>Careers across Saudi Arabia</span>
+              </span>
+              <h1 className="page-title text-balance leading-[1.08]">
+                Your next career move<br />starts here.
+              </h1>
+              <p className="mt-6 max-w-xl text-lg leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+                Find trusted opportunities, build one professional profile, and manage your applications in one secure place.
+              </p>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+                <Link to="/jobs" className="btn-primary">
+                  Browse jobs <ArrowRight size={16} />
+                </Link>
+                <Link to="/register" className="btn-secondary">
+                  Create profile
+                </Link>
+              </div>
+              <div className="mt-8 flex flex-wrap gap-5">
+                {["Verified employers", "Secure applications", "Free for candidates"].map((t) => (
+                  <span key={t} className="flex items-center gap-1.5 text-xs font-medium" style={{ color: "var(--text-tertiary)" }}>
+                    <CheckCircle2 size={13} style={{ color: "var(--accent)" }} />{t}
+                  </span>
+                ))}
+              </div>
             </div>
-            <Button className="sm:px-7" type="submit">Search jobs</Button>
-          </form>
+            <div className="hidden lg:col-span-5 lg:block">
+              <div className="relative h-[480px]">
+                <img
+                  src="https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=500&q=80"
+                  alt=""
+                  className="absolute right-0 top-0 h-72 w-72 rounded-3xl object-cover shadow-2xl"
+                />
+                <img
+                  src="https://images.unsplash.com/photo-1543269865-cbf427effbad?w=400&q=80"
+                  alt=""
+                  className="absolute bottom-8 left-0 h-56 w-56 rounded-2xl object-cover shadow-xl"
+                />
+                <img
+                  src="https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=400&q=80"
+                  alt=""
+                  className="absolute right-16 top-44 h-44 w-44 rounded-2xl object-cover shadow-lg border-4 border-white"
+                />
+                <div className="chip absolute bottom-28 right-2 whitespace-nowrap px-4 py-2 shadow-lg">
+                  <span className="font-medium" style={{ color: "var(--text-primary)" }}>500+ open roles</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      <section className="py-14 sm:py-18">
-        <div className="text-center">
-          <p className="text-sm font-semibold uppercase tracking-wider text-brand-700">Built for candidates</p>
-          <h2 className="mt-2 text-3xl font-bold tracking-tight text-slate-950">A simpler way to manage your job search</h2>
+      {/* Search bar */}
+      <div className="mx-auto max-w-2xl px-5 -mt-8 sm:px-10 lg:px-0 relative z-10">
+        <form
+          className="flex items-center gap-3 rounded-full bg-white px-5 py-3 shadow-lg"
+          style={{ border: "1px solid var(--border-default)" }}
+          onSubmit={searchJobs}
+        >
+          <Search size={18} style={{ color: "var(--text-tertiary)" }} className="shrink-0" />
+          <input
+            className="min-w-0 flex-1 bg-transparent text-sm outline-none"
+            style={{ color: "var(--text-primary)" }}
+            name="search"
+            placeholder="Search by title, company, or skill..."
+          />
+          <button type="submit" className="btn-primary shrink-0 py-2 px-5 text-sm">Search</button>
+        </form>
+      </div>
+
+      {/* Marquee */}
+      <div className="mt-16 overflow-hidden py-4">
+        <p className="section-label text-center mb-4">Trusted by leading Saudi companies</p>
+        <div className="relative flex overflow-hidden">
+          <div className="marquee-track flex items-center gap-10">
+            {companies.map((name, i) => (
+              <span key={i} className="whitespace-nowrap text-sm font-semibold" style={{ color: "var(--text-tertiary)" }}>
+                {name}
+              </span>
+            ))}
+          </div>
         </div>
-        <div className="mt-9 grid gap-5 md:grid-cols-3">
-          {values.map(({ icon: Icon, title, text }) => (
-            <article className="surface-card p-6 sm:p-7" key={title}>
-              <span className="grid h-11 w-11 place-items-center rounded-xl bg-brand-50 text-brand-700"><Icon size={21} /></span>
-              <h3 className="mt-5 text-lg font-bold text-slate-900">{title}</h3>
-              <p className="mt-2 text-sm leading-6 text-slate-600">{text}</p>
+      </div>
+
+      {/* Feature strip */}
+      <section className="mx-auto max-w-7xl px-5 py-20 sm:px-10 lg:px-16">
+        <p className="section-label">Why SaudiaCareers</p>
+        <h2 className="text-3xl font-bold tracking-tight" style={{ color: "var(--text-primary)", fontFamily: "'Cabinet Grotesk', sans-serif" }}>
+          A simpler way to manage your job search
+        </h2>
+        <div className="mt-10 grid gap-5 md:grid-cols-3">
+          {features.map(({ icon: Icon, title, text, img }) => (
+            <article className="card-soft" key={title}>
+              <div className="h-44 overflow-hidden">
+                <img src={img} alt="" className="h-full w-full object-cover" />
+              </div>
+              <div className="p-6">
+                <span className="inline-flex h-9 w-9 items-center justify-center rounded-full" style={{ background: "var(--accent-subtle)", color: "var(--accent)" }}>
+                  <Icon size={18} />
+                </span>
+                <h3 className="mt-4 text-lg font-semibold" style={{ color: "var(--text-primary)" }}>{title}</h3>
+                <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-secondary)" }}>{text}</p>
+              </div>
             </article>
           ))}
         </div>
       </section>
 
-      <section className="surface-card flex flex-col items-start justify-between gap-6 bg-slate-900 p-7 text-white sm:p-10 md:flex-row md:items-center">
-        <div>
-          <div className="flex items-center gap-2 text-brand-300"><BriefcaseBusiness size={19} /><span className="text-sm font-semibold">Ready to get started?</span></div>
-          <h2 className="mt-3 text-2xl font-bold sm:text-3xl">Build your candidate profile today.</h2>
-          <p className="mt-2 text-sm leading-6 text-slate-300">Keep your details and resume ready for your next opportunity.</p>
+      {/* Dark CTA */}
+      <section className="mx-auto max-w-7xl px-5 pb-20 sm:px-10 lg:px-16">
+        <div className="relative overflow-hidden rounded-3xl p-10 sm:p-14" style={{ background: "#1A1A19" }}>
+          <div
+            className="absolute -right-24 -top-24 h-72 w-72 rounded-full opacity-30 blur-3xl"
+            style={{ background: "var(--accent)" }}
+          />
+          <div className="relative max-w-xl">
+            <p className="font-mono text-xs uppercase tracking-widest" style={{ color: "var(--accent)" }}>Ready to start?</p>
+            <h2 className="mt-4 text-3xl font-bold leading-tight text-white sm:text-4xl" style={{ fontFamily: "'Cabinet Grotesk', sans-serif" }}>
+              Build your candidate profile today.
+            </h2>
+            <p className="mt-4 text-sm leading-7" style={{ color: "rgba(255,255,255,0.55)" }}>
+              Keep your details and resume ready for your next opportunity.
+            </p>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Link to="/register" className="btn-primary">
+                Sign up free <ArrowRight size={16} />
+              </Link>
+              <Link
+                to="/jobs"
+                className="btn-secondary"
+                style={{ background: "rgba(255,255,255,0.08)", borderColor: "rgba(255,255,255,0.12)", color: "#fff" }}
+              >
+                Browse jobs
+              </Link>
+            </div>
+          </div>
         </div>
-        <Link className="w-full shrink-0 md:w-auto" to="/register"><Button className="w-full md:w-auto">Sign up free <ArrowRight size={16} /></Button></Link>
       </section>
     </div>
   );

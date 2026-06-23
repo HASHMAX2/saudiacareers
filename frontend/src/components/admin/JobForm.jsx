@@ -87,10 +87,10 @@ export function JobForm({ initialValue, onSubmit, submitLabel }) {
   }
 
   return (
-    <form className="space-y-6" onSubmit={submit}>
-      <section className="rounded-2xl border border-slate-200 p-5 sm:p-6">
-        <h2 className="text-lg font-bold">Job information</h2>
-        <p className="mt-1 text-sm text-slate-500">Core details candidates will see on the listing.</p>
+    <form className="space-y-5" onSubmit={submit}>
+      <section className="card-soft p-5 sm:p-6">
+        <h2 className="font-semibold" style={{ color: "var(--text-primary)" }}>Job information</h2>
+        <p className="mt-1 text-sm" style={{ color: "var(--text-secondary)" }}>Core details candidates will see on the listing.</p>
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           <Input id="title" label="Job title" required value={form.title} error={fieldErrors.title} onChange={update("title")} />
           <Input id="companyName" label="Company" required value={form.companyName} error={fieldErrors.companyName} onChange={update("companyName")} />
@@ -102,27 +102,29 @@ export function JobForm({ initialValue, onSubmit, submitLabel }) {
           <Input id="applicationDeadline" label="Application deadline" type="date" value={form.applicationDeadline?.slice?.(0, 10) ?? ""} onChange={update("applicationDeadline")} />
         </div>
       </section>
-      <section className="rounded-2xl border border-slate-200 p-5 sm:p-6">
-        <h2 className="text-lg font-bold">Requirements and routing</h2>
+      <section className="card-soft p-5 sm:p-6">
+        <h2 className="font-semibold" style={{ color: "var(--text-primary)" }}>Requirements and routing</h2>
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           <Input id="requiredSkills" label="Required skills" required value={form.requiredSkills} error={fieldErrors.requiredSkills} onChange={update("requiredSkills")} />
           <Input id="hrEmail" label="HR application email" type="email" required value={form.hrEmail} error={fieldErrors.hrEmail} onChange={update("hrEmail")} />
           <label className="md:col-span-2">
-            <span className="mb-1.5 block text-sm font-semibold text-slate-700">
+            <span className="field-label">
               Full job description <span className="text-red-500" aria-hidden="true">*</span>
             </span>
             <textarea
               aria-invalid={Boolean(fieldErrors.description)}
-              className={`form-control min-h-48 resize-y ${fieldErrors.description ? "border-red-400 focus:border-red-500 focus:ring-red-100" : ""}`}
+              className={`field-box min-h-48 resize-y ${fieldErrors.description ? "border-red-400" : ""}`}
               value={form.description}
               onChange={update("description")}
             />
-            {fieldErrors.description && <span className="mt-1.5 block text-sm text-red-600">{fieldErrors.description}</span>}
+            {fieldErrors.description && <span className="mt-1 block text-xs text-red-600">{fieldErrors.description}</span>}
           </label>
         </div>
       </section>
       {error && <Alert>{error}</Alert>}
-      <div className="flex justify-end"><Button className="w-full sm:w-auto sm:min-w-40" disabled={submitting} type="submit">{submitting ? "Saving..." : submitLabel}</Button></div>
+      <div className="flex justify-end">
+        <Button className="w-full sm:w-auto sm:min-w-40" disabled={submitting} type="submit">{submitting ? "Saving..." : submitLabel}</Button>
+      </div>
     </form>
   );
 }

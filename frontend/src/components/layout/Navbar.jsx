@@ -6,11 +6,7 @@ import { useAuthStore } from "../../store/authStore.js";
 import { Button } from "../common/Button.jsx";
 
 const navClass = ({ isActive }) =>
-  `rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
-    isActive
-      ? "bg-brand-50 text-brand-700"
-      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-  }`;
+  `btn-ghost text-sm ${isActive ? "font-semibold" : "font-medium"}`;
 
 export function Navbar() {
   const user = useAuthStore((state) => state.user);
@@ -29,31 +25,35 @@ export function Navbar() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/95 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-6 px-4 sm:px-6 lg:h-[4.5rem] lg:px-8">
+    <header className="glass-nav sticky top-0 z-40">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-6 px-4 sm:px-6 lg:px-8">
         <Link
-          className="flex items-center gap-2.5 text-xl font-bold tracking-tight text-brand-800"
+          className="flex items-center gap-2.5"
           onClick={() => setIsOpen(false)}
           to="/"
         >
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand-700 text-xs font-bold text-white shadow-sm">
-            SC
+          <span className="grid h-8 w-8 place-items-center rounded-full text-xs font-bold text-white shadow-sm" style={{ background: "var(--accent)" }}>
+            S
           </span>
-          <span>SaudiaCareers</span>
+          <span className="text-base font-bold tracking-tight" style={{ color: "var(--text-primary)", fontFamily: "'Cabinet Grotesk', sans-serif" }}>
+            SaudiaCareers<span className="font-mono text-xs font-normal ml-0.5" style={{ color: "var(--text-tertiary)" }}>/careers</span>
+          </span>
         </Link>
         <button
           aria-expanded={isOpen}
           aria-label="Toggle navigation"
-          className="rounded-lg p-2 text-slate-700 hover:bg-slate-100 md:hidden"
+          className="rounded-full p-2 md:hidden"
+          style={{ color: "var(--text-primary)" }}
           onClick={() => setIsOpen((value) => !value)}
           type="button"
         >
-          {isOpen ? <X size={22} /> : <Menu size={22} />}
+          {isOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
         <nav
           className={`${
             isOpen ? "flex" : "hidden"
-          } absolute inset-x-4 top-[4.5rem] flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl md:static md:flex md:flex-row md:items-center md:gap-2 md:border-0 md:bg-transparent md:p-0 md:shadow-none`}
+          } absolute inset-x-4 top-[4.25rem] flex-col gap-1 rounded-2xl bg-white p-3 shadow-xl md:static md:flex md:flex-row md:items-center md:gap-1 md:bg-transparent md:p-0 md:shadow-none`}
+          style={{ border: isOpen ? "1px solid var(--border-default)" : "none" }}
         >
           <NavLink className={navClass} onClick={() => setIsOpen(false)} to="/jobs">
             Jobs
@@ -67,21 +67,21 @@ export function Navbar() {
               >
                 Dashboard
               </NavLink>
-              <Button className="w-full md:w-auto" variant="secondary" onClick={handleLogout}>
+              <Button className="w-full md:w-auto" variant="ghost" onClick={handleLogout}>
                 Log out
               </Button>
             </>
           ) : (
             <>
               <NavLink className={navClass} onClick={() => setIsOpen(false)} to="/login">
-                Log in
+                Sign in
               </NavLink>
               <NavLink
-                className="rounded-xl bg-brand-600 px-4 py-2.5 text-center text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700"
+                className="btn-primary text-center w-full md:w-auto"
                 onClick={() => setIsOpen(false)}
                 to="/register"
               >
-                Sign up
+                Join free
               </NavLink>
             </>
           )}

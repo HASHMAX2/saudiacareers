@@ -53,7 +53,7 @@ export function ResetPassword() {
             error={passwordError}
             onChange={(event) => { setPassword(event.target.value); setPasswordError(""); }}
           />
-          <p className="mt-1.5 text-xs text-slate-500">At least 8 characters with one uppercase letter and one number.</p>
+          <p className="mt-1.5 font-mono text-xs" style={{ color: "var(--text-tertiary)" }}>At least 8 characters with one uppercase letter and one number.</p>
         </div>
         {error && <Alert>{error}</Alert>}
         <Button className="w-full" disabled={submitting} type="submit">{submitting ? "Updating..." : "Reset password"}</Button>

@@ -52,37 +52,39 @@ export function ChangePassword() {
   }
 
   return (
-    <div className="mx-auto max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-card sm:p-8">
-      <span className="grid h-12 w-12 place-items-center rounded-2xl bg-brand-50 text-brand-700">
-        <LockKeyhole size={22} />
-      </span>
-      <h1 className="mt-5 text-2xl font-bold">Secure your admin account</h1>
-      <p className="mt-2 text-sm leading-6 text-slate-600">Replace the seeded password before accessing administrator features.</p>
-      <form className="mt-7 space-y-4" onSubmit={handleSubmit}>
-        <Input
-          id="currentPassword"
-          label="Current password"
-          type="password"
-          required
-          value={form.currentPassword}
-          error={fieldErrors.currentPassword}
-          onChange={update("currentPassword")}
-        />
-        <div>
+    <div className="mx-auto max-w-lg">
+      <div className="card-soft p-6 sm:p-8">
+        <span className="grid h-12 w-12 place-items-center rounded-full" style={{ background: "var(--accent-subtle)", color: "var(--accent)" }}>
+          <LockKeyhole size={20} />
+        </span>
+        <h1 className="mt-5 text-2xl font-bold" style={{ fontFamily: "'Cabinet Grotesk', sans-serif", color: "var(--text-primary)" }}>Secure your admin account</h1>
+        <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-secondary)" }}>Replace the seeded password before accessing administrator features.</p>
+        <form className="mt-7 space-y-4" onSubmit={handleSubmit}>
           <Input
-            id="newPassword"
-            label="New password"
+            id="currentPassword"
+            label="Current password"
             type="password"
             required
-            value={form.newPassword}
-            error={fieldErrors.newPassword}
-            onChange={update("newPassword")}
+            value={form.currentPassword}
+            error={fieldErrors.currentPassword}
+            onChange={update("currentPassword")}
           />
-          <p className="mt-1.5 text-xs text-slate-500">At least 8 characters with one uppercase letter and one number.</p>
-        </div>
-        {error && <Alert>{error}</Alert>}
-        <Button className="w-full" disabled={submitting} type="submit">{submitting ? "Updating..." : "Change password"}</Button>
-      </form>
+          <div>
+            <Input
+              id="newPassword"
+              label="New password"
+              type="password"
+              required
+              value={form.newPassword}
+              error={fieldErrors.newPassword}
+              onChange={update("newPassword")}
+            />
+            <p className="mt-1.5 font-mono text-xs" style={{ color: "var(--text-tertiary)" }}>At least 8 characters with one uppercase letter and one number.</p>
+          </div>
+          {error && <Alert>{error}</Alert>}
+          <Button className="w-full" disabled={submitting} type="submit">{submitting ? "Updating..." : "Change password"}</Button>
+        </form>
+      </div>
     </div>
   );
 }

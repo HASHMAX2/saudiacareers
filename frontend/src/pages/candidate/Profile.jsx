@@ -9,8 +9,8 @@ import { Spinner } from "../../components/common/Spinner.jsx";
 import { LOCATIONS } from "../../utils/constants.js";
 import { isValidMobile, isStrongPassword } from "../../utils/validators.js";
 
-const selectClass = "form-control";
-const sectionClass = "rounded-2xl border border-slate-200 p-5 sm:p-6";
+const selectClass = "field-box";
+const sectionClass = "card-soft p-5 sm:p-6";
 const requiredFields = ["name", "mobile", "location", "designation", "experience", "skills", "education"];
 
 function validateProfile(profile) {
@@ -139,31 +139,37 @@ export function Profile() {
 
   return (
     <div>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div><h1 className="page-heading">Candidate profile</h1><p className="page-subheading">Keep your information complete and current for faster applications.</p></div>
-        <span className="text-sm font-bold text-brand-700">{profile.profileCompletion}% complete</span>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-2">
+        <div>
+          <p className="section-label">Your account</p>
+          <h1 className="page-title text-3xl md:text-4xl">Candidate profile</h1>
+          <p className="mt-2 text-base" style={{ color: "var(--text-secondary)" }}>Keep your information complete and current for faster applications.</p>
+        </div>
+        <span className="font-mono text-sm font-semibold" style={{ color: "var(--accent)" }}>{profile.profileCompletion}% complete</span>
       </div>
-      <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-brand-600 transition-all" style={{ width: `${profile.profileCompletion}%` }} /></div>
-      {message && <div className="mt-5"><Alert tone="success">{message}</Alert></div>}
-      {formError && <div className="mt-5"><Alert>{formError}</Alert></div>}
+      <div className="h-1.5 overflow-hidden rounded-full mb-6" style={{ background: "var(--bg-elev)" }}>
+        <div className="h-full rounded-full transition-all" style={{ width: `${profile.profileCompletion}%`, background: "var(--accent)" }} />
+      </div>
+      {message && <div className="mb-5"><Alert tone="success">{message}</Alert></div>}
+      {formError && <div className="mb-5"><Alert>{formError}</Alert></div>}
 
-      <div className="mt-7 space-y-6">
+      <div className="space-y-5">
         {/* Profile photo — independent of the save form */}
         <section className={sectionClass}>
           <SectionTitle icon={Camera} title="Profile photo" text="Add a professional photo to personalize your candidate profile." />
           <div className="mt-5 flex flex-col items-start gap-5 sm:flex-row sm:items-center">
             {profile.profilePhotoUrl
-              ? <img alt={`${profile.name} profile`} className="h-24 w-24 rounded-2xl border border-slate-200 object-cover shadow-sm" src={profile.profilePhotoUrl} />
-              : <div className="grid h-24 w-24 place-items-center rounded-2xl bg-brand-50 text-3xl font-bold text-brand-700">{profile.name?.[0]}</div>}
+              ? <img alt={`${profile.name} profile`} className="h-24 w-24 rounded-2xl object-cover shadow-sm" style={{ border: "1px solid var(--border-default)" }} src={profile.profilePhotoUrl} />
+              : <div className="grid h-24 w-24 place-items-center rounded-2xl text-3xl font-bold" style={{ background: "var(--accent-subtle)", color: "var(--accent)" }}>{profile.name?.[0]}</div>}
             <div className="flex flex-wrap gap-3">
-              <label className={`inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-sm ${photoUploading ? "bg-brand-400 cursor-not-allowed" : "bg-brand-600 hover:bg-brand-700"}`}>
-                <Camera size={16} />
+              <label className={`btn-primary cursor-pointer text-sm ${photoUploading ? "opacity-50 cursor-not-allowed" : ""}`}>
+                <Camera size={15} />
                 {photoUploading ? "Uploading…" : "Upload photo"}
                 <input className="sr-only" accept="image/jpeg,image/png,image/webp" disabled={photoUploading} onChange={uploadPhoto} type="file" />
               </label>
               {profile.profilePhotoPath && (
                 <Button variant="secondary" onClick={async () => { try { await profileApi.deletePhoto(); await load(); setMessage("Photo removed."); } catch (e) { setFormError(e.response?.data?.message ?? "Failed to remove photo."); } }}>
-                  <Trash2 size={16} />Remove
+                  <Trash2 size={15} />Remove
                 </Button>
               )}
             </div>
@@ -171,7 +177,7 @@ export function Profile() {
         </section>
 
         {/* Main profile form: personal info + professional info + resume + save */}
-        <form className="space-y-6" onSubmit={save}>
+        <form className="space-y-5" onSubmit={save}>
           <section className={sectionClass}>
             <SectionTitle icon={UserRound} title="Personal information" text="Your contact details are used for your applications." />
             <div className="mt-5 grid gap-4 md:grid-cols-2">
@@ -179,19 +185,19 @@ export function Profile() {
               <Input id="email" label="Email address" value={profile.email ?? ""} readOnly />
               <Input id="mobile" label="Mobile number" required error={fieldErrors.mobile} value={profile.mobile ?? ""} onChange={update("mobile")} />
               <label>
-                <span className="mb-1.5 block text-sm font-semibold text-slate-700">
+                <span className="field-label">
                   Location <span className="text-red-500" aria-hidden="true">*</span>
                 </span>
                 <select
                   aria-invalid={Boolean(fieldErrors.location)}
-                  className={`${selectClass} ${fieldErrors.location ? "border-red-400 focus:border-red-500 focus:ring-red-100" : ""}`}
+                  className={`${selectClass} ${fieldErrors.location ? "border-red-400" : ""}`}
                   value={profile.location ?? ""}
                   onChange={update("location")}
                 >
                   <option value="" disabled>Select location</option>
                   {LOCATIONS.map((location) => <option key={location} value={location}>{location}</option>)}
                 </select>
-                {fieldErrors.location ? <span className="mt-1.5 block text-sm text-red-600">{fieldErrors.location}</span> : null}
+                {fieldErrors.location ? <span className="mt-1 block text-xs text-red-600">{fieldErrors.location}</span> : null}
               </label>
             </div>
           </section>
@@ -213,45 +219,48 @@ export function Profile() {
               <Input id="skills" label="Skills (comma separated)" required error={fieldErrors.skills} value={profile.skills ?? ""} onChange={update("skills")} />
               <Input id="education" label="Education" required error={fieldErrors.education} value={profile.education ?? ""} onChange={update("education")} />
               <label className="md:col-span-2">
-                <span className="mb-1.5 block text-sm font-semibold text-slate-700">Professional summary</span>
+                <span className="field-label">Professional summary</span>
                 <textarea
                   aria-invalid={Boolean(fieldErrors.summary)}
-                  className={`form-control min-h-32 resize-y ${fieldErrors.summary ? "border-red-400 focus:border-red-500 focus:ring-red-100" : ""}`}
+                  className={`field-box min-h-32 resize-y ${fieldErrors.summary ? "border-red-400" : ""}`}
                   value={profile.summary ?? ""}
                   onChange={update("summary")}
                 />
-                {fieldErrors.summary ? <span className="mt-1.5 block text-sm text-red-600">{fieldErrors.summary}</span> : null}
+                {fieldErrors.summary ? <span className="mt-1 block text-xs text-red-600">{fieldErrors.summary}</span> : null}
               </label>
             </div>
           </section>
 
           <section className={sectionClass}>
             <SectionTitle icon={FileText} title="Resume" text="PDF, DOC, or DOCX. Maximum file size 5 MB." />
-            <div className="mt-5 rounded-xl bg-slate-50 p-4">
+            <div className="mt-5 rounded-xl p-4" style={{ background: "var(--bg-elev)" }}>
               {profile.resumeFilename
                 ? (
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
-                      <p className="truncate font-semibold text-slate-900">{profile.resumeFilename}</p>
-                      <p className="mt-1 text-xs text-slate-500">Uploaded {new Date(profile.resumeUploadedAt).toLocaleDateString()}</p>
+                      <p className="truncate font-medium text-sm" style={{ color: "var(--text-primary)" }}>{profile.resumeFilename}</p>
+                      <p className="mt-1 font-mono text-xs" style={{ color: "var(--text-tertiary)" }}>Uploaded {new Date(profile.resumeUploadedAt).toLocaleDateString()}</p>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      <Button type="button" variant="secondary" onClick={download}><Download size={16} />Download</Button>
-                      <Button type="button" variant="danger" onClick={async () => { try { await profileApi.deleteResume(); await load(); setMessage("Resume removed."); } catch (e) { setFormError(e.response?.data?.message ?? "Failed to remove resume."); } }}><Trash2 size={16} />Remove</Button>
+                      <Button type="button" variant="secondary" onClick={download}><Download size={15} />Download</Button>
+                      <Button type="button" variant="danger" onClick={async () => { try { await profileApi.deleteResume(); await load(); setMessage("Resume removed."); } catch (e) { setFormError(e.response?.data?.message ?? "Failed to remove resume."); } }}><Trash2 size={15} />Remove</Button>
                     </div>
                   </div>
                 )
-                : <p className="text-sm text-slate-600">No resume uploaded yet.</p>}
+                : <p className="text-sm" style={{ color: "var(--text-secondary)" }}>No resume uploaded yet.</p>}
             </div>
-            <label className={`mt-4 inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold shadow-sm ${resumeUploading ? "cursor-not-allowed text-slate-400" : "text-slate-700 hover:bg-slate-50"}`}>
-              <FileText size={16} />
+            <label className={`btn-secondary mt-4 cursor-pointer ${resumeUploading ? "opacity-50 cursor-not-allowed" : ""}`}>
+              <FileText size={15} />
               {resumeUploading ? "Uploading…" : (profile.resumePath ? "Replace resume" : "Upload resume")}
               <input className="sr-only" accept=".pdf,.doc,.docx" disabled={resumeUploading} onChange={uploadResume} type="file" />
             </label>
           </section>
 
           <div className="flex justify-end">
-            <Button className="w-full sm:w-auto sm:min-w-40 inline-flex items-center justify-center gap-2" disabled={saving} type="submit">{saving && <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />}{saving ? "Saving…" : "Save profile"}</Button>
+            <Button className="w-full sm:w-auto sm:min-w-40" disabled={saving} type="submit">
+              {saving && <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />}
+              {saving ? "Saving…" : "Save profile"}
+            </Button>
           </div>
         </form>
 
@@ -262,7 +271,17 @@ export function Profile() {
 }
 
 function SectionTitle({ icon: Icon, title, text }) {
-  return <div className="flex gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700"><Icon size={19} /></span><div><h2 className="font-bold text-slate-900">{title}</h2><p className="mt-0.5 text-sm leading-6 text-slate-500">{text}</p></div></div>;
+  return (
+    <div className="flex gap-3">
+      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full" style={{ background: "var(--accent-subtle)", color: "var(--accent)" }}>
+        <Icon size={18} />
+      </span>
+      <div>
+        <h2 className="font-semibold" style={{ color: "var(--text-primary)" }}>{title}</h2>
+        <p className="mt-0.5 text-sm leading-6" style={{ color: "var(--text-secondary)" }}>{text}</p>
+      </div>
+    </div>
+  );
 }
 
 function PasswordForm() {
@@ -310,13 +329,13 @@ function PasswordForm() {
   }
 
   return (
-    <form className={sectionClass} onSubmit={submit}>
+    <form className="card-soft p-5 sm:p-6" onSubmit={submit}>
       <SectionTitle icon={LockKeyhole} title="Change password" text="Use a strong password that is different from your current password." />
       <div className="mt-5 grid gap-4 md:grid-cols-2">
         <Input id="currentPassword" label="Current password" type="password" required value={form.currentPassword} error={fieldErrors.currentPassword} onChange={update("currentPassword")} />
         <Input id="newPassword" label="New password" type="password" required value={form.newPassword} error={fieldErrors.newPassword} onChange={update("newPassword")} />
       </div>
-      <p className="mt-1.5 text-xs text-slate-500">At least 8 characters with one uppercase letter and one number.</p>
+      <p className="mt-1.5 font-mono text-xs" style={{ color: "var(--text-tertiary)" }}>At least 8 characters with one uppercase letter and one number.</p>
       {error && <div className="mt-4"><Alert>{error}</Alert></div>}
       {message && <div className="mt-4"><Alert tone="success">{message}</Alert></div>}
       <Button className="mt-5 w-full sm:w-auto" disabled={saving} type="submit">{saving ? "Saving…" : "Change password"}</Button>
