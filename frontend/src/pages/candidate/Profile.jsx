@@ -81,9 +81,10 @@ export function Profile() {
     try {
       const keys = ["name", "mobile", "location", "designation", "experience", "skills", "education", "summary"];
       const payload = Object.fromEntries(keys.map((key) => [key, profile[key]?.trim() ?? ""]));
-      const { data } = await profileApi.update(payload);
-      setProfile(data.data);
+      await profileApi.update(payload);
+      await load();
       setMessage("Profile saved successfully.");
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (requestError) {
       setFormError(requestError.response?.data?.message ?? "Failed to save profile.");
     } finally {
@@ -250,7 +251,7 @@ export function Profile() {
           </section>
 
           <div className="flex justify-end">
-            <Button className="w-full sm:w-auto sm:min-w-40" disabled={saving} type="submit">{saving ? "Saving…" : "Save profile"}</Button>
+            <Button className="w-full sm:w-auto sm:min-w-40 inline-flex items-center justify-center gap-2" disabled={saving} type="submit">{saving && <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />}{saving ? "Saving…" : "Save profile"}</Button>
           </div>
         </form>
 
