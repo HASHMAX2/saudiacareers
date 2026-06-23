@@ -1,6 +1,6 @@
 # SaudiaCareers Project Progress
 
-Last updated: June 23, 2026
+Last updated: June 23, 2026 (Nexus design system pass)
 
 Future sessions must read both `CLAUDE.md` and this file before coding.
 
@@ -206,7 +206,7 @@ Current automated test count: 7 passing tests covering auth, profile, and job va
 - `Profile > PasswordForm`: required marks, inline strength/differ validation, error and success states.
 - `JobForm`: full `validateJob` function matching `jobBody` Zod schema (all required fields, description min 20, hrEmail format, max lengths), inline errors under each field including the description textarea.
 
-### Responsive UI/UX redesign
+### Responsive UI/UX redesign (first pass)
 
 - Added a cohesive deep-green, white, and soft-gray visual system using Tailwind CSS.
 - Improved shared typography, cards, spacing, shadows, form controls, focus states, buttons, badges, alerts, modals, toasts, spinners, and pagination.
@@ -223,6 +223,58 @@ Current automated test count: 7 passing tests covering auth, profile, and job va
 - Admin job/application data uses desktop tables and mobile stacked cards to avoid horizontal overflow.
 - Responsive layouts target mobile (~375px), tablet (~768px), and desktop (~1366px) using Tailwind breakpoints.
 - No backend logic, routes, API contracts, Zustand behavior, or Axios refresh-token behavior changed during the UI pass.
+
+### Nexus design system pass (June 23, 2026)
+
+Applied a full design-system overhaul based on the Nexus spec to the `app-enhancement` branch. Committed as `146ee17`, pushed to `origin/app-enhancement`. Not yet merged into `main`.
+
+**Design tokens (`index.css`):**
+- Primary accent changed from Saudi green `#006C35` to orange-red `#F2532E` (`--accent`, `--accent-hover: #D9421F`).
+- Page background set to warm off-white `#F7F6F2` on both `html` and `body` (hardcoded, not via variable, to prevent override).
+- `--bg-elev` tuned to `#F0EFEB` (closer to base, avoids looking too warm).
+- Font stack replaced: Inter (Google Fonts) for all text including headings — Cabinet Grotesk, Satoshi, and JetBrains Mono removed.
+- Border tokens switched from `rgba()` to hex: `--border-default: #E5E3DE`, `--border-strong: #D0CEC9`, `--border-pill: #E0DED8`.
+- Card shadows removed — cards rely on `1px solid var(--border-default)` only per spec.
+- Button height standardised to `min-height: 48px`, `border-radius: 999px`, `padding: 0 24px`.
+- Added `.btn-dark-outline` variant for use on the dark CTA banner.
+- `alert-success` hardcoded to emerald green (not `--accent`) since accent is now orange.
+
+**Navbar:**
+- Height 80px, `var(--bg-base)` background with `1px solid var(--border-default)` bottom border (replaces frosted glass).
+- Logo: black circle (`#141414`) with "S" + "SaudiaCareers / careers" wordmark.
+- NavLink active state: `var(--accent)` text + pill outline border around the label.
+- "Join free" button: orange-red `btn-primary` with `Sparkles` icon prefix, compact `40px` height in navbar.
+
+**Landing page:**
+- Hero H1 at `clamp(44px, 7.5vw, 88px)` / 700 weight / `line-height: 0.95` — "Find work that / *feels* like yours." with "feels" in italic orange-red.
+- Trust row: Shield / Zap / CheckCircle2 icons with "Verified employers", "1-click apply", "Free for candidates".
+- Company marquee extended to full viewport width via `width: 100vw; margin-left: calc(-50vw + 50%)` breakout — font size increased to 28px bold.
+- Feature section header updated to "Roles worth your attention" with "View all →" link.
+- Dark CTA banner: `#141414` background with warm radial glow (`rgba(180,40,20,0.35)`), "Less scrolling. More signing." headline, primary + dark-outline button pair.
+
+**JobCard:**
+- Gradient top bar removed.
+- Variant B layout: eyebrow row (industry left / experience right, 12px/600 uppercase), 22px/600 title, 16px company, location + salary row (space-between), skill chip pills, "Closed" pill state instead of red Badge.
+
+**Jobs (Browse) page:**
+- "Browse" eyebrow label above H1.
+- H1 "All open roles" at `clamp(32px, 5vw, 56px)` / 700.
+- Search bar: 56px height, full pill, 16px placeholder text.
+- Filter row: `SlidersHorizontal` icon button + pill-shaped location/industry/experience/type selects + sort select.
+
+**Footer:**
+- Columns renamed to "For Talent" and "For Employers" per spec.
+- Logo updated to black circle style.
+- Background set to `var(--bg-base)`.
+- Copyright line in tracked uppercase: "© YEAR SaudiaCareers · Built with care".
+
+**Badge:**
+- `green` tone hardcoded to `emerald-50 / emerald-200 / emerald-700` (no longer references `--accent` which is now orange).
+
+**AuthShell:**
+- Title at 40px / 700.
+- Logo updated to black circle style.
+- Candidate left panel background: `var(--accent)` (orange-red). Admin left panel: `#141414`.
 
 UI verification completed:
 
@@ -245,7 +297,7 @@ Current runtime state:
 
 ```text
 PostgreSQL Docker container: running
-Frontend development server: stopped
+Frontend development server: running (http://localhost:5173)
 Backend development server: stopped
 ```
 
