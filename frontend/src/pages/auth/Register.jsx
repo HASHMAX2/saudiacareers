@@ -1,12 +1,15 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { authApi } from "../../api/auth.js";
 import { AuthShell } from "../../components/auth/AuthShell.jsx";
 import { Alert } from "../../components/common/Alert.jsx";
 import { Button } from "../../components/common/Button.jsx";
 import { Input } from "../../components/common/Input.jsx";
+import { Toast } from "../../components/common/Toast.jsx";
 import { useAuthStore } from "../../store/authStore.js";
 import { isValidMobile, isStrongPassword } from "../../utils/validators.js";
+
+const REDIRECT_DELAY = 3000;
 
 function validateForm(form) {
   const errors = {};
@@ -36,8 +39,12 @@ export function Register() {
   const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [toast, setToast] = useState({ show: false, text: "" });
+  const timerRef = useRef(null);
   const setSession = useAuthStore((state) => state.setSession);
   const navigate = useNavigate();
+
+  useEffect(() => () => clearTimeout(timerRef.current), []);
 
   const update = (key) => (event) => {
     setForm({ ...form, [key]: event.target.value });
@@ -57,8 +64,15 @@ export function Register() {
     setSubmitting(true);
     try {
       const { data } = await authApi.register(form);
-      setSession(data.data);
-      navigate("/dashboard/profile");
+      const pendingSession = data.data;
+      setToast({ show: true, text: "Account created! Taking you to your profile…" });
+      timerRef.current = setTimeout(() => {
+        setToast((prev) => ({ ...prev, show: false }));
+        setTimeout(() => {
+          setSession(pendingSession);
+          navigate("/dashboard/profile");
+        }, 400);
+      }, REDIRECT_DELAY);
     } catch (requestError) {
       setError(requestError.response?.data?.message ?? "Registration failed");
     } finally {
@@ -67,6 +81,8 @@ export function Register() {
   }
 
   return (
+    <>
+    <Toast show={toast.show} message={toast.text} tone="success" duration={REDIRECT_DELAY} />
     <AuthShell
       title="Create your profile"
       subtitle="Join SaudiaCareers and apply to opportunities with one professional profile."
@@ -87,5 +103,6 @@ export function Register() {
         <Button className="w-full" disabled={submitting} type="submit">{submitting ? "Creating account..." : "Create account"}</Button>
       </form>
     </AuthShell>
+    </>
   );
 }

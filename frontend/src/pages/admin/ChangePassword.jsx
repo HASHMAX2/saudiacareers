@@ -1,20 +1,27 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { LockKeyhole } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { authApi } from "../../api/auth.js";
 import { Alert } from "../../components/common/Alert.jsx";
 import { Button } from "../../components/common/Button.jsx";
 import { Input } from "../../components/common/Input.jsx";
+import { Toast } from "../../components/common/Toast.jsx";
 import { useAuthStore } from "../../store/authStore.js";
 import { isStrongPassword } from "../../utils/validators.js";
+
+const REDIRECT_DELAY = 3000;
 
 export function ChangePassword() {
   const [form, setForm] = useState({ currentPassword: "", newPassword: "" });
   const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [toast, setToast] = useState({ show: false, text: "" });
+  const timerRef = useRef(null);
   const setSession = useAuthStore((state) => state.setSession);
   const navigate = useNavigate();
+
+  useEffect(() => () => clearTimeout(timerRef.current), []);
 
   const update = (key) => (event) => {
     setForm({ ...form, [key]: event.target.value });
@@ -43,7 +50,11 @@ export function ChangePassword() {
     try {
       const { data } = await authApi.changePassword(form);
       setSession(data.data);
-      navigate("/admin/dashboard", { replace: true });
+      setToast({ show: true, text: "Password updated! Taking you to the dashboard…" });
+      timerRef.current = setTimeout(() => {
+        setToast((prev) => ({ ...prev, show: false }));
+        setTimeout(() => navigate("/admin/dashboard", { replace: true }), 400);
+      }, REDIRECT_DELAY);
     } catch (requestError) {
       setError(requestError.response?.data?.message ?? "Password change failed");
     } finally {
@@ -52,6 +63,8 @@ export function ChangePassword() {
   }
 
   return (
+    <>
+    <Toast show={toast.show} message={toast.text} tone="success" duration={REDIRECT_DELAY} />
     <div className="mx-auto max-w-lg">
       <div className="card-soft p-6 sm:p-8">
         <span className="grid h-12 w-12 place-items-center rounded-full" style={{ background: "var(--accent-subtle)", color: "var(--accent)" }}>
@@ -86,5 +99,6 @@ export function ChangePassword() {
         </form>
       </div>
     </div>
+    </>
   );
 }

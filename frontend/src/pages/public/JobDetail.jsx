@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Banknote, BriefcaseBusiness, CalendarDays, Check, Clock3, MapPin, Share2 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { applicationsApi } from "../../api/applications.js";
@@ -8,8 +8,11 @@ import { Alert } from "../../components/common/Alert.jsx";
 import { Badge } from "../../components/common/Badge.jsx";
 import { Button } from "../../components/common/Button.jsx";
 import { Spinner } from "../../components/common/Spinner.jsx";
+import { Toast } from "../../components/common/Toast.jsx";
 import { useAuthStore } from "../../store/authStore.js";
 import { formatDate } from "../../utils/formatDate.js";
+
+const REDIRECT_DELAY = 3500;
 
 export function JobDetail() {
   const { id } = useParams();
@@ -19,6 +22,18 @@ export function JobDetail() {
   const [message, setMessage] = useState("");
   const [alreadyApplied, setAlreadyApplied] = useState(false);
   const [applying, setApplying] = useState(false);
+  const [toast, setToast] = useState({ show: false, text: "", tone: "error" });
+  const timerRef = useRef(null);
+
+  function showRedirectToast(text, path) {
+    setToast({ show: true, text, tone: "error" });
+    timerRef.current = setTimeout(() => {
+      setToast((prev) => ({ ...prev, show: false }));
+      setTimeout(() => navigate(path), 400);
+    }, REDIRECT_DELAY);
+  }
+
+  useEffect(() => () => clearTimeout(timerRef.current), []);
 
   useEffect(() => {
     jobsApi.get(id).then(({ data }) => setJob(data.data));
@@ -40,11 +55,11 @@ export function JobDetail() {
       const { data: profileResponse } = await profileApi.get();
       const profile = profileResponse.data;
       if (!profile.isApplicationProfileComplete) {
-        navigate("/dashboard/profile", { state: { message: "Complete designation, experience, and skills before applying." } });
+        showRedirectToast("Your profile is incomplete — please add your designation, experience, and skills before applying.", "/dashboard/profile");
         return;
       }
       if (!profile.resumePath) {
-        navigate("/dashboard/profile", { state: { message: "Upload a resume before applying." } });
+        showRedirectToast("You haven't uploaded a resume yet. Please upload one before applying.", "/dashboard/profile");
         return;
       }
       await applicationsApi.apply(job.id);
@@ -53,7 +68,9 @@ export function JobDetail() {
     } catch (error) {
       const text = error.response?.data?.message ?? "Application failed";
       setMessage(text);
-      if (error.response?.status === 422) navigate("/dashboard/profile", { state: { message: text } });
+      if (error.response?.status === 422) {
+        showRedirectToast(text, "/dashboard/profile");
+      }
     } finally {
       setApplying(false);
     }
@@ -62,6 +79,8 @@ export function JobDetail() {
   const skills = job.requiredSkills.split(",").map((skill) => skill.trim()).filter(Boolean);
 
   return (
+    <>
+    <Toast show={toast.show} message={toast.text} tone={toast.tone} duration={REDIRECT_DELAY} />
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
       <div className="space-y-5">
         <header className="card-soft p-6 sm:p-8">
@@ -128,5 +147,6 @@ export function JobDetail() {
         </div>
       </aside>
     </div>
+    </>
   );
 }

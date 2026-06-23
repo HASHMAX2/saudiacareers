@@ -283,6 +283,37 @@ npm run lint
 npm run build
 ```
 
+### Toast notifications and smooth redirects (June 24, 2026)
+
+Replaced silent redirects with animated floating toasts across all post-action navigations.
+
+**Toast component (`frontend/src/components/common/Toast.jsx`):**
+- Full rewrite: slide-down + fade-in on mount (CSS `opacity`/`transform` transition with 10ms rAF trick), slide-up + fade-out on dismiss.
+- Draining progress bar at the bottom — width transitions from 100% to 0% over the toast `duration` so users can see how long they have.
+- Icon prefix: `AlertCircle` for error tone, `CheckCircle2` for success tone.
+- Centered at top of viewport via `position: fixed; left: 0; right: 0; margin: 0 auto`.
+- White card, `1px` tone-coloured border, `box-shadow` for depth.
+
+**Pages updated with toast-before-redirect pattern:**
+
+| Page | Tone | Message | Timer |
+|---|---|---|---|
+| `JobDetail` — incomplete profile | Error | "Your profile is incomplete — please add your designation, experience, and skills before applying." | 3500ms |
+| `JobDetail` — no resume | Error | "You haven't uploaded a resume yet. Please upload one before applying." | 3500ms |
+| `Register` | Success | "Account created! Taking you to your profile…" | 3000ms |
+| `ResetPassword` | Success | "Password reset successfully! You can now sign in." | 3000ms |
+| `ChangePassword` (admin) | Success | "Password updated! Taking you to the dashboard…" | 3000ms |
+| `CreateJob` | Success | "Job published! Taking you to the jobs list…" | 3000ms |
+| `EditJob` | Success | "Changes saved! Taking you to the jobs list…" | 3000ms |
+
+**Bug fixed — Register premature session set:**
+- Original code called `setSession(data.data)` immediately after registration, which updated Zustand and triggered `<PublicOnlyRoute>` to redirect away before the toast could render.
+- Fixed by storing the session data in a local variable (`pendingSession`), showing the toast, and only calling `setSession` + `navigate` together after the toast delay completes.
+
+**Landing page typography and background (June 24, 2026):**
+- Hero H1 font changed to `'Cabinet Grotesk', 'Satoshi', ui-sans-serif, system-ui, sans-serif` — fonts loaded from Fontshare CDN (cabinet-grotesk and satoshi, weights 700/800).
+- Page background token `--bg-base` and hardcoded `body` background updated from `#F7F6F2` to `#F9F9F8`.
+
 Both commands pass. The running development servers were temporarily stopped to release Prisma's Windows query-engine file for the root build, then restarted.
 
 Local development endpoints when the servers are started:
