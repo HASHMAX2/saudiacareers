@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
-import { BriefcaseBusiness, Camera, Download, FileText, LockKeyhole, Trash2, UserRound } from "lucide-react";
-import { authApi } from "../../api/auth.js";
+import { BriefcaseBusiness, Camera, Download, FileText, Trash2, UserRound } from "lucide-react";
 import { profileApi } from "../../api/profile.js";
 import { Alert } from "../../components/common/Alert.jsx";
 import { Button } from "../../components/common/Button.jsx";
 import { Input } from "../../components/common/Input.jsx";
 import { Spinner } from "../../components/common/Spinner.jsx";
 import { LOCATIONS } from "../../utils/constants.js";
-import { isValidMobile, isStrongPassword } from "../../utils/validators.js";
+import { isValidMobile } from "../../utils/validators.js";
 
 const selectClass = "field-box";
 const sectionClass = "card-soft p-5 sm:p-6";
@@ -264,7 +263,6 @@ export function Profile() {
           </div>
         </form>
 
-        <PasswordForm />
       </div>
     </div>
   );
@@ -284,61 +282,3 @@ function SectionTitle({ icon: Icon, title, text }) {
   );
 }
 
-function PasswordForm() {
-  const [form, setForm] = useState({ currentPassword: "", newPassword: "" });
-  const [fieldErrors, setFieldErrors] = useState({});
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
-  const [saving, setSaving] = useState(false);
-
-  const update = (key) => (event) => {
-    setForm((prev) => ({ ...prev, [key]: event.target.value }));
-    setFieldErrors((prev) => ({ ...prev, [key]: undefined }));
-    setError("");
-    setMessage("");
-  };
-
-  async function submit(event) {
-    event.preventDefault();
-    const errors = {};
-    if (!form.currentPassword) errors.currentPassword = "Current password is required.";
-    if (!form.newPassword) {
-      errors.newPassword = "New password is required.";
-    } else if (!isStrongPassword(form.newPassword)) {
-      errors.newPassword = "Password must be at least 8 characters with one uppercase letter and one number.";
-    } else if (form.currentPassword && form.currentPassword === form.newPassword) {
-      errors.newPassword = "New password must be different from your current password.";
-    }
-    if (Object.keys(errors).length > 0) {
-      setFieldErrors(errors);
-      return;
-    }
-    setFieldErrors({});
-    setError("");
-    setMessage("");
-    setSaving(true);
-    try {
-      await authApi.changePassword(form);
-      setMessage("Password changed successfully.");
-      setForm({ currentPassword: "", newPassword: "" });
-    } catch (requestError) {
-      setError(requestError.response?.data?.message ?? "Password change failed.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <form className="card-soft p-5 sm:p-6" onSubmit={submit}>
-      <SectionTitle icon={LockKeyhole} title="Change password" text="Use a strong password that is different from your current password." />
-      <div className="mt-5 grid gap-4 md:grid-cols-2">
-        <Input id="currentPassword" label="Current password" type="password" required value={form.currentPassword} error={fieldErrors.currentPassword} onChange={update("currentPassword")} />
-        <Input id="newPassword" label="New password" type="password" required value={form.newPassword} error={fieldErrors.newPassword} onChange={update("newPassword")} />
-      </div>
-      <p className="mt-1.5 font-mono text-xs" style={{ color: "var(--text-tertiary)" }}>At least 8 characters with one uppercase letter and one number.</p>
-      {error && <div className="mt-4"><Alert>{error}</Alert></div>}
-      {message && <div className="mt-4"><Alert tone="success">{message}</Alert></div>}
-      <Button className="mt-5 w-full sm:w-auto" disabled={saving} type="submit">{saving ? "Saving…" : "Change password"}</Button>
-    </form>
-  );
-}

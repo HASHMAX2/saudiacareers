@@ -25,8 +25,8 @@ export function JobDetail() {
   const [toast, setToast] = useState({ show: false, text: "", tone: "error" });
   const timerRef = useRef(null);
 
-  function showRedirectToast(text, path) {
-    setToast({ show: true, text, tone: "error" });
+  function showRedirectToast(text, path, tone = "error") {
+    setToast({ show: true, text, tone });
     timerRef.current = setTimeout(() => {
       setToast((prev) => ({ ...prev, show: false }));
       setTimeout(() => navigate(path), 400);
@@ -63,8 +63,8 @@ export function JobDetail() {
         return;
       }
       await applicationsApi.apply(job.id);
-      setMessage("Application submitted successfully.");
       setAlreadyApplied(true);
+      showRedirectToast("Application submitted successfully! Taking you to your dashboard…", "/dashboard", "success");
     } catch (error) {
       const text = error.response?.data?.message ?? "Application failed";
       setMessage(text);

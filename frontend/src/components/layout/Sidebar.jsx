@@ -7,7 +7,7 @@ export function Sidebar({ links }) {
         {links.map((link) => (
           <NavLink
             className={({ isActive }) =>
-              `whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
+              `flex items-center gap-2.5 whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
                 isActive ? "bg-brand-50 text-brand-700 shadow-sm" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
               }`
             }
@@ -15,6 +15,7 @@ export function Sidebar({ links }) {
             to={link.to}
             end={link.end}
           >
+            {link.icon && <link.icon size={16} className="shrink-0" />}
             {link.label}
           </NavLink>
         ))}

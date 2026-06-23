@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { FileText, LayoutDashboard, LockKeyhole, Search, UserRound } from "lucide-react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { restoreSession } from "./api/client.js";
 import { AppLayout } from "./components/layout/AppLayout.jsx";
@@ -18,6 +19,7 @@ import { Login } from "./pages/auth/Login.jsx";
 import { Register } from "./pages/auth/Register.jsx";
 import { ResetPassword } from "./pages/auth/ResetPassword.jsx";
 import { Dashboard } from "./pages/candidate/Dashboard.jsx";
+import { CandidateChangePassword } from "./pages/candidate/CandidateChangePassword.jsx";
 import { MyApplications } from "./pages/candidate/MyApplications.jsx";
 import { Profile } from "./pages/candidate/Profile.jsx";
 import { JobDetail } from "./pages/public/JobDetail.jsx";
@@ -27,9 +29,11 @@ import { NotFound } from "./pages/shared/NotFound.jsx";
 import { Unauthorized } from "./pages/shared/Unauthorized.jsx";
 
 const candidateLinks = [
-  { label: "Overview", to: "/dashboard", end: true },
-  { label: "Profile", to: "/dashboard/profile" },
-  { label: "Applications", to: "/dashboard/applications" },
+  { label: "Overview",         to: "/dashboard",                  end: true, icon: LayoutDashboard },
+  { label: "Profile",          to: "/dashboard/profile",                     icon: UserRound       },
+  { label: "Browse Jobs",      to: "/jobs",                                  icon: Search          },
+  { label: "Applications",     to: "/dashboard/applications",                icon: FileText        },
+  { label: "Change Password",  to: "/dashboard/change-password",             icon: LockKeyhole     },
 ];
 
 const adminLinks = [
@@ -63,6 +67,7 @@ export default function App() {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="dashboard/profile" element={<Profile />} />
             <Route path="dashboard/applications" element={<MyApplications />} />
+            <Route path="dashboard/change-password" element={<CandidateChangePassword />} />
           </Route>
         </Route>
 
