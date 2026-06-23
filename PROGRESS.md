@@ -1,16 +1,32 @@
 # SaudiaCareers Project Progress
 
-Last updated: June 20, 2026 (evening)
+Last updated: June 23, 2026
 
-Future sessions must read both `AGENTS.md` and this file before coding.
+Future sessions must read both `CLAUDE.md` and this file before coding.
 
 ## Current Checkpoint
 
-The repository-side MVP, responsive frontend redesign, frontend form validation overhaul, job API field-stripping fix, international mobile validation, profile upload UX fixes, and Axios 401 interceptor bug fix are all implemented. Static validation, production builds, dependency audit, and seven backend validation tests pass.
+The app is fully deployed and live in production. Backend is on Render, frontend is on Vercel. Supabase and Resend are configured with real credentials. The production database has migrations applied and the admin user seeded. A UI enhancement pass is next — design references will be placed in `ui-refs/` and the redesign will be done on the `app-enhancement` branch.
 
-Local PostgreSQL is running in Docker. The frontend (`http://localhost:5173`) and backend (`http://localhost:5000`) development servers are running. Supabase and Resend still require valid external credentials and configuration — photo and resume uploads will show a visible error message until Supabase is configured.
+Current branch: `app-enhancement` (branched from `main` on June 23, 2026).
 
-Branch `edit-job` is pushed to origin with 2 commits ahead of `main`.
+## Live URLs
+
+| Service | URL |
+|---|---|
+| Frontend (Vercel) | `https://saudiacareers-frontend.vercel.app` |
+| Backend (Render) | `https://saudiacareers-1.onrender.com` |
+| Health check | `https://saudiacareers-1.onrender.com/api/health` |
+| Custom domain (pending DNS) | `https://saudiacareers.com` |
+
+## Deployment Status
+
+- Backend deployed to Render (free tier, Singapore region, spins down after inactivity)
+- Frontend deployed to Vercel with `vercel.json` SPA rewrite rules
+- Production database: Supabase PostgreSQL — migration `20260619180000_init` applied, admin seeded
+- Supabase Storage bucket `SaudiaCareers` — private, verified working
+- Resend API key configured — domain `saudiacareers.com` verification still pending
+- DNS (Hostinger → Vercel/Render) not yet configured — using Vercel/Render default URLs for now
 
 ## Completed
 
@@ -110,6 +126,30 @@ Branch `edit-job` is pushed to origin with 2 commits ahead of `main`.
 - Welcome, password reset, HR application, and application-status HTML templates.
 - Supabase private upload, delete, download, and signed-URL service.
 - No secret values are hardcoded.
+
+### Production credentials and external services
+
+- Supabase project `slrqzvqwqrskbglptasj` configured — `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` set in both `backend/.env` and Render environment.
+- Supabase Storage bucket `SaudiaCareers` confirmed private and reachable.
+- Prisma `schema.prisma` updated with `directUrl` field — `DATABASE_URL` uses transaction pooler (port 6543), `DIRECT_URL` uses direct connection (port 5432) for migrations.
+- Production migration applied to Supabase via `prisma migrate deploy`.
+- Production admin user seeded via `prisma db seed`.
+- Resend send-only API key configured — domain `saudiacareers.com` verification pending in Resend dashboard.
+
+### Deployment
+
+- `render.yaml` added at repo root — Render web service, Node 20, Singapore region, build: `cd backend && npm install && npx prisma generate`, start: `cd backend && node server.js`, health check at `/api/health`.
+- `frontend/vercel.json` added — SPA rewrite rule for React Router, immutable cache headers for hashed assets, security headers on all routes.
+- `edit-job` branch merged into `main` — all 6 commits merged via fast-forward.
+- Backend live at `https://saudiacareers-1.onrender.com` — health endpoint verified.
+- Frontend live at `https://saudiacareers-frontend.vercel.app` — login verified working.
+- CORS updated: regex patterns added to allow all `saudiacareers-frontend*.vercel.app` preview URLs automatically without env var changes per deploy.
+
+### Profile save bug fixes (June 23, 2026)
+
+- **Photo disappearing on save:** `save()` was calling `setProfile(data.data)` with the update response which does not include a fresh signed photo URL. Fixed by calling `await load()` after save to re-fetch the full profile including signed URL.
+- **Spinner on save button:** Added inline animated spinner inside the Save Profile button while `saving` is true.
+- **Scroll to top after save:** Added `window.scrollTo({ top: 0, behavior: "smooth" })` after successful save so the success alert is visible.
 
 ### Verification
 
@@ -211,26 +251,21 @@ Backend development server: stopped
 
 ## Partially Completed
 
-### Live database verification
+### End-to-end flow verification
 
-- Schema and migration files exist.
-- Local `backend/.env` and `frontend/.env` files now exist.
-- PostgreSQL 16 is reachable through Docker on `localhost:5432`.
-- The initial migration has been applied successfully.
-- The seed command completed successfully.
-- The backend has started successfully and its health endpoint was verified previously.
-- Full database-backed API behavior has not yet been exercised through integration or browser end-to-end tests.
+- Registration and login confirmed working in production.
+- Profile save, photo upload, and resume upload are implemented and Supabase-connected but full end-to-end browser test of the complete apply flow has not been completed.
+- HR email and candidate status-update emails are implemented but cannot be fully verified until Resend domain `saudiacareers.com` is verified.
 
 ### Automated testing
 
-- Validation unit tests exist and pass.
-- Database integration tests, HTTP endpoint tests, frontend component tests, and end-to-end application-flow tests still require a test database and additional test harness setup.
+- 7 validation unit tests exist and pass.
+- Integration tests, endpoint tests, frontend component tests, and E2E tests are planned but not yet written (deferred — UI enhancement pass takes priority).
 
-### Live Resend and Supabase verification
+### DNS and custom domain
 
-- Real integration code is implemented.
-- No credentials or private bucket are configured, so actual upload/download/email behavior has not been verified.
-- Resend domain verification and production test emails remain external tasks.
+- Hostinger DNS records for `saudiacareers.com` → Vercel and `api.saudiacareers.com` → Render not yet configured.
+- Resend DNS records for email sending not yet added to Hostinger.
 
 ### Deployment
 
@@ -368,15 +403,12 @@ npm run prisma:studio --workspace backend
 
 ## Next Required Actions
 
-1. Configure valid Supabase and Resend credentials in `backend/.env`.
-2. Create and verify the private Supabase storage bucket.
-3. Start the backend and frontend development servers when testing.
-4. Run database-backed HTTP integration and browser end-to-end tests.
-5. Perform manual responsive browser review at 375px, 768px, and 1366px with live data.
-6. Fix any runtime or visual defects found by those tests.
-7. Commit the repository.
-8. Deploy Render and Vercel.
-9. Configure DNS and complete the production checklist in `AGENTS.md`.
+1. **UI enhancement pass** — drop design reference images into `ui-refs/` folder, then redesign all pages on the `app-enhancement` branch.
+2. Verify Resend domain `saudiacareers.com` in Resend dashboard and add DNS records in Hostinger.
+3. Configure Hostinger DNS: apex + www → Vercel, api subdomain → Render, Resend records.
+4. Update `VITE_API_URL` in Vercel to `https://api.saudiacareers.com/api` once DNS is live.
+5. Complete end-to-end browser test of the full apply flow in production.
+6. Write integration and E2E test suite (deferred until after UI pass).
 
 ## TODO
 
