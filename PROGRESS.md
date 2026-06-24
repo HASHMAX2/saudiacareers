@@ -1,6 +1,6 @@
 # SaudiaCareers Project Progress
 
-Last updated: June 23, 2026 (Nexus design system pass)
+Last updated: June 24, 2026 (app-enhancement session 2)
 
 Future sessions must read both `CLAUDE.md` and this file before coding.
 
@@ -332,6 +332,50 @@ Frontend development server: running (http://localhost:5173)
 Backend development server: stopped
 ```
 
+### App-enhancement session 2 (June 24, 2026)
+
+All changes are on the `app-enhancement` branch. Not yet merged into `main`.
+
+**Candidate sidebar navigation (`App.jsx`, `Sidebar.jsx`):**
+- Sidebar now renders Lucide icons per link — `link.icon` is rendered at 16px with `shrink-0` if provided.
+- `candidateLinks` reordered and expanded: Overview → Profile → Browse Jobs → Applications → Change Password.
+- Browse Jobs links to `/jobs` (leaves dashboard; never shows as active).
+- Change Password links to `/dashboard/change-password` (new protected route).
+
+**Candidate Change Password page (`CandidateChangePassword.jsx`):**
+- New standalone page at `/dashboard/change-password` inside `PrivateRoute` + `DashboardLayout`.
+- Fields: Current Password, New Password. Validation mirrors backend (min 8 chars, 1 uppercase, 1 number, must differ). Success inline alert, no redirect.
+- `PasswordForm` section removed from `Profile.jsx` — profile page no longer handles password changes.
+
+**Apply button race condition fix (`JobDetail.jsx`):**
+- `setAlreadyApplied(true)` is now called immediately after `applicationsApi.apply()` succeeds, before `showRedirectToast`.
+- Previously, `finally { setApplying(false) }` ran while the toast was still showing, re-enabling the button with "Apply now" text for 3.5 seconds. The fix keeps the button locked as "Applied ✓" for the entire toast window.
+
+**Post-apply success flow (`JobDetail.jsx`):**
+- After a successful application, a success toast ("Application submitted successfully! Taking you to your dashboard…") displays for 3.5 seconds, then navigates to `/dashboard`.
+
+**Loading states on delete/toggle buttons (`Profile.jsx`, `ManageJobs.jsx`):**
+- Profile page: `photoDeleting` and `resumeDeleting` state variables — Remove buttons show "Removing…" and disable during the API call.
+- ManageJobs `Actions` component: `deleting` and `toggling` local state with spinner icons. Both `handleDelete` and `handleToggle` now `await load()` before clearing their loading state, so the button stays locked until the refreshed list returns and the row is gone or updated.
+
+**Admin ManageJobs — pagination, bulk delete, small buttons (`ManageJobs.jsx`, `Button.jsx`, `index.css`):**
+- Added `size="sm"` prop to `Button` component; adds `.btn-sm` CSS class (32px height, 12px h-padding, 13px font-size).
+- All three action buttons (Edit, Activate/Deactivate, Delete) now use `size="sm"` and fit on one line with `gap-1.5`.
+- Edit button replaced `<Link><Button /></Link>` with `<Button onClick={() => navigate(...)}>` so `disabled` actually prevents navigation.
+- Toggle button gets `min-w-[108px]` so switching between "Deactivate" and "Activate" labels doesn't change the button width.
+- Pagination: `ManageJobs` passes `page` (state) and `limit: 30` to the API; backend already returned `pagination.totalPages`. `Pagination` component shown below the table when `totalPages > 1`. Filter changes reset `page` to 1 via React 18 batched state updates. A "Showing X–Y of Z jobs" count is shown above the table.
+- Checkboxes: each row has a checkbox; header has a "select all on this page" checkbox. Selecting any rows reveals an accent-coloured banner with a "Delete selected" button that deletes all selected jobs in parallel, then refreshes the list.
+- Global busy state: `ManageJobs` owns `deletingIds: Set<number>`. Any row starting a single delete or toggle calls `markBusy(id)`; finishing calls `markDone(id)`. `anyBusy = deletingIds.size > 0 || bulkDeleting` is passed to every `Actions` instance — all rows lock simultaneously the moment one is in-flight. Checkboxes also disable when `anyBusy`.
+
+**Sample job seeds (`backend/prisma/seedJobs.js`, `seedJobs2.js`):**
+- `seedJobs.js`: 10 diverse sample jobs (Technology, E-commerce, Energy, Fintech, Finance, Retail, Manufacturing, Technology×2).
+- `seedJobs2.js`: 52 additional jobs across Technology, Finance, Healthcare, Education, Retail, Hospitality, Engineering, Construction, HR, Legal, Marketing, Logistics, Real Estate, Contract/Part-time/Remote categories. Includes 3 jobs with past deadlines (show as "Closed") and 4 with no deadline. Total in DB: 64 jobs.
+
+**Frontend route added:**
+```text
+/dashboard/change-password   Candidate change password (protected)
+```
+
 ## Partially Completed
 
 ### End-to-end flow verification
@@ -443,6 +487,7 @@ All routes in `AGENTS.md` are registered and have functional pages:
 /dashboard
 /dashboard/profile
 /dashboard/applications
+/dashboard/change-password
 /admin/login
 /admin/change-password
 /admin/dashboard

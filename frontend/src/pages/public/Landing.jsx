@@ -1,5 +1,5 @@
-import { ArrowRight, MapPin, Search, Shield, Sparkles, Zap, CheckCircle2 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { ArrowRight, Search, Shield, Sparkles, Zap, CheckCircle2 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const companies = [
   "Saudi Aramco", "STC", "SABIC", "Noon", "Jarir", "stc pay",
@@ -36,19 +36,11 @@ const features = [
 ];
 
 export function Landing() {
-  const navigate = useNavigate();
-
-  function searchJobs(event) {
-    event.preventDefault();
-    const search = new FormData(event.currentTarget).get("search");
-    navigate(search ? `/jobs?search=${encodeURIComponent(search)}` : "/jobs");
-  }
-
   return (
     <div className="-mt-6 sm:-mt-10">
 
       {/* Hero */}
-      <section className="relative overflow-hidden px-5 pb-24 pt-20 sm:px-10 lg:px-16 lg:pb-32 lg:pt-28">
+      <section className="relative overflow-hidden px-5 pb-8 pt-20 sm:px-10 lg:px-16 lg:pb-12 lg:pt-28">
         <div className="mx-auto max-w-7xl">
           <div className="grid items-center gap-12 lg:grid-cols-12">
 
@@ -139,29 +131,9 @@ export function Landing() {
         </div>
       </section>
 
-      {/* Search bar */}
-      <div className="mx-auto max-w-2xl px-5 -mt-8 sm:px-10 lg:px-0 relative z-10">
-        <form
-          className="flex items-center gap-3 rounded-full bg-white px-5 py-3"
-          style={{ border: "1px solid var(--border-default)", boxShadow: "0 4px 12px rgba(0,0,0,0.06)" }}
-          onSubmit={searchJobs}
-        >
-          <Search size={18} style={{ color: "var(--text-tertiary)" }} className="shrink-0" />
-          <input
-            className="min-w-0 flex-1 bg-transparent text-[16px] outline-none placeholder:text-[var(--text-tertiary)]"
-            style={{ color: "var(--text-primary)" }}
-            name="search"
-            placeholder="Search role, company, skill…"
-          />
-          <button type="submit" className="btn-primary shrink-0" style={{ minHeight: "40px", padding: "0 20px", fontSize: "14px" }}>
-            Search
-          </button>
-        </form>
-      </div>
-
       {/* Trust / Logo marquee — full viewport width breakout */}
       <div
-        className="mt-20 overflow-hidden"
+        className="mt-0 overflow-hidden"
         style={{
           width: "100vw",
           marginLeft: "calc(-50vw + 50%)",
@@ -203,7 +175,7 @@ export function Landing() {
 
         <div className="mt-10 grid gap-6 md:grid-cols-3">
           {features.map(({ icon: Icon, title, text, img }) => (
-            <article className="card-soft" key={title}>
+            <article className="card-soft card-lift" key={title}>
               <div className="h-48 overflow-hidden">
                 <img src={img} alt="" className="h-full w-full object-cover" />
               </div>
@@ -242,7 +214,7 @@ export function Landing() {
               width: "320px",
               height: "320px",
               borderRadius: "50%",
-              background: "radial-gradient(circle, rgba(180,40,20,0.35) 0%, transparent 70%)",
+              background: "radial-gradient(circle, rgba(244,67,54,0.35) 0%, transparent 70%)",
             }}
           />
           <div className="relative max-w-xl">

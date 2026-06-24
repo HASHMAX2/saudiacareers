@@ -23,9 +23,14 @@ export async function listJobs(req, res) {
     employmentType,
     sort,
   } = req.validated.query;
+  const now = new Date();
   const where = {
     status: JobStatus.ACTIVE,
     isDeleted: false,
+    OR: [
+      { applicationDeadline: null },
+      { applicationDeadline: { gt: now } },
+    ],
     ...(location ? { location } : {}),
     ...(industry ? { industry } : {}),
     ...(experience ? { experienceRequired: experience } : {}),

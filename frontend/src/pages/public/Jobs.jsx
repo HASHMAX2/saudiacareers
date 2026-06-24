@@ -137,7 +137,7 @@ export function Jobs() {
       {loading ? (
         <div className="grid min-h-64 place-items-center"><Spinner label="Loading jobs" /></div>
       ) : result.jobs.length ? (
-        <div className="masonry">{result.jobs.map((job) => <JobCard key={job.id} job={job} />)}</div>
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{result.jobs.map((job) => <JobCard key={job.id} job={job} />)}</div>
       ) : (
         <div className="card-soft mt-6 grid min-h-64 place-items-center p-8 text-center">
           <div>

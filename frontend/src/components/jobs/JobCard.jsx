@@ -64,27 +64,18 @@ export function JobCard({ job }) {
       {/* Footer */}
       <div
         className="mt-auto pt-5 flex items-center justify-between gap-4"
-        style={{ borderTop: "1px solid var(--border-default)", marginTop: "20px" }}
+        style={{ borderTop: "1px solid var(--border-default)" }}
       >
         <span className="text-[13px]" style={{ color: "var(--text-tertiary)" }}>
           {formatDate(job.createdAt)}
         </span>
-        {job.isClosed ? (
-          <span
-            className="text-[13px] font-medium rounded-full px-3 py-1"
-            style={{ background: "var(--bg-elev)", color: "var(--text-tertiary)" }}
-          >
-            Closed
-          </span>
-        ) : (
-          <Link
-            to={`/jobs/${job.id}`}
-            className="btn-primary"
-            style={{ minHeight: "36px", padding: "0 16px", fontSize: "13px" }}
-          >
-            View role
-          </Link>
-        )}
+        <Link
+          to={`/jobs/${job.id}`}
+          className="btn-primary"
+          style={{ minHeight: "36px", padding: "0 16px", fontSize: "13px" }}
+        >
+          View role
+        </Link>
       </div>
     </article>
   );
