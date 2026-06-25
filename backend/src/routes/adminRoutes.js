@@ -12,6 +12,7 @@ import {
   updateJob,
   updateJobStatus,
 } from "../controllers/adminController.js";
+import { parseImport } from "../controllers/importController.js";
 import { authenticate } from "../middleware/authenticate.js";
 import {
   authorizeAdmin,
@@ -42,3 +43,4 @@ adminRouter.get("/applications/export", validate(adminApplicationsQuerySchema), 
 adminRouter.get("/applications", validate(adminApplicationsQuerySchema), asyncHandler(listApplications));
 adminRouter.get("/applications/:id", validate(adminIdSchema), asyncHandler(getApplication));
 adminRouter.patch("/applications/:id/status", validate(applicationStatusSchema), asyncHandler(updateApplicationStatus));
+adminRouter.post("/import/parse", asyncHandler(parseImport));

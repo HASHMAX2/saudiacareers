@@ -20,4 +20,5 @@ export const adminApi = {
     api.patch(`/admin/applications/${id}/status`, { status }),
   exportApplications: (params = {}) =>
     api.get("/admin/applications/export", { params, responseType: "blob" }),
+  parseImport: (text) => api.post("/admin/import/parse", { text }),
 };

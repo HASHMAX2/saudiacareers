@@ -13,6 +13,7 @@ import { Applications } from "./pages/admin/Applications.jsx";
 import { ChangePassword } from "./pages/admin/ChangePassword.jsx";
 import { CreateJob } from "./pages/admin/CreateJob.jsx";
 import { EditJob } from "./pages/admin/EditJob.jsx";
+import { ImportJobs } from "./pages/admin/ImportJobs.jsx";
 import { ManageJobs } from "./pages/admin/ManageJobs.jsx";
 import { ForgotPassword } from "./pages/auth/ForgotPassword.jsx";
 import { Login } from "./pages/auth/Login.jsx";
@@ -38,7 +39,8 @@ const candidateLinks = [
 
 const adminLinks = [
   { label: "Overview", to: "/admin/dashboard", end: true },
-  { label: "Jobs", to: "/admin/jobs" },
+  { label: "Jobs", to: "/admin/jobs", end: true },
+  { label: "Import Jobs", to: "/admin/jobs/import" },
   { label: "Applications", to: "/admin/applications" },
 ];
 
@@ -77,6 +79,7 @@ export default function App() {
             <Route path="admin/dashboard" element={<AdminDashboard />} />
             <Route path="admin/jobs" element={<ManageJobs />} />
             <Route path="admin/jobs/create" element={<CreateJob />} />
+            <Route path="admin/jobs/import" element={<ImportJobs />} />
             <Route path="admin/jobs/:id/edit" element={<EditJob />} />
             <Route path="admin/applications" element={<Applications />} />
             <Route path="admin/applications/:id" element={<ApplicationDetail />} />
