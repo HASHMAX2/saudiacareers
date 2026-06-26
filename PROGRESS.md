@@ -1,6 +1,6 @@
 # SaudiaCareers Project Progress
 
-Last updated: June 26, 2026 (Job-filters session)
+Last updated: June 26, 2026 (Job-filters session 2)
 
 Future sessions must read both `CLAUDE.md` and this file before coding.
 
@@ -451,56 +451,69 @@ POST   /api/admin/import/parse   Parse WhatsApp messages via Claude AI
 
 ### Job filters feature (June 26, 2026)
 
-All changes are on the `Job-filters` branch (branched from `app-enhancement`/`main`). Committed as `8b34110`.
+All changes are on the `Job-filters` branch (branched from `app-enhancement`/`main`). Commits: `8b34110` (initial filters), `a9f57c2` (progress update), `3555ab5` (salary filter + bug fixes). **Branch pushed to GitHub and all 13 Playwright browser tests passing.**
 
 **Database:**
 - `gender` (default `"Any"`) and `nationality` (default `"Any Nationality"`) columns added to the `Job` model in `schema.prisma`.
-- Migration `20260626085337_add_gender_nationality_to_jobs` created — SQL: `ALTER TABLE "Job" ADD COLUMN "gender" TEXT DEFAULT 'Any', ADD COLUMN "nationality" TEXT DEFAULT 'Any Nationality'`.
-- Migration not yet applied to local Docker DB (Docker Desktop was offline during session) or production Supabase — must be run before the backend will start without errors.
+- Migration `20260626085337_add_gender_nationality_to_jobs` applied to production Supabase database.
+- `backend/prisma/seedFilterJobs.js` added — seeds 24 test jobs covering all filter combinations (all salary ranges, locations, employment types, experience levels, genders, nationalities, freshness dates).
 
 **Backend:**
-- `jobSchemas.js` — `listJobsSchema` rewritten to accept multi-value CSV params: `locations`, `industries`, `employmentTypes`, `experiences`, `genders`, `nationalities`, and date-range params `postedAfter`/`postedBefore`. Single-value `location`, `industry`, `experience`, `employmentType`, and `search` params removed.
-- `jobController.js` — `listJobs` rewritten to build an AND-condition array from all active filter params; supports OR expansion for experience (contains match) and gender (specific gender also surfaces "Any" jobs). New `getFilterOptions` function returns distinct `industries` and `nationalities` from active non-deleted jobs.
+- `jobSchemas.js` — `listJobsSchema` accepts multi-value pipe-separated params: `locations`, `industries`, `employmentTypes`, `experiences`, `salaries`, `genders`, `nationalities`, and date-range params `postedAfter`/`postedBefore`.
+- `jobController.js` — `listJobs` builds an AND-condition array from all active filter params; supports OR expansion for experience (contains match) and gender (specific gender also surfaces "Any" jobs); `parseList` splits on `|` pipe not `,` comma (salary ranges like "5,000 – 10,000 SAR" contain commas). New `getFilterOptions` returns distinct `industries` and `nationalities` from active non-deleted jobs.
 - `jobRoutes.js` — `GET /api/jobs/filter-options` route added (before `/:id` to avoid param collision).
 - `adminSchemas.js` — `gender` and `nationality` added to `jobBody` Zod schema (both optional strings, max 50/100 chars).
 
 **Frontend:**
+- `frontend/src/utils/constants.js` — `SALARY_RANGES` array added (6 SAR ranges, single source of truth shared between FilterPanel and JobForm). `EMPTY_FILTERS` object moved here (was in FilterPanel — lint rule: component files should only export components).
 - `frontend/src/api/jobs.js` — `filterOptions()` method added.
 - `frontend/src/api/admin.js` — `gender` and `nationality` added to `JOB_FIELDS` whitelist in `pickJobFields`.
-- `frontend/src/components/admin/JobForm.jsx` — gender (Any/Male/Female) and nationality (Any Nationality/Saudi/Non-Saudi) dropdown selects added to the job info section.
-- `frontend/src/components/jobs/FilterPanel.jsx` — new component. Collapsible `FilterCard` sections per filter group. Staged/apply pattern (changes only take effect on "Apply filters"). "Reset all" clears all filters at once. Sections: Sort, Location, Industry (dynamic), Employment type, Experience, Posted within, Gender, Nationality (dynamic). Industry and Nationality panels only render when `filterOptions` returns values for them. `olderTab` prop hides "Posted within" when on the Older tab.
-- `frontend/src/pages/public/Jobs.jsx` — fully rewritten. Sidebar layout (260px fixed sidebar on lg+, mobile drawer). "Recent" / "Older than 60 days" tab switcher. `filtersToParams` converts filter state to API query params. Active filter count badge on mobile toggle button. Fetches `filterOptions` on mount.
-- `frontend/src/pages/public/JobDetail.jsx` — gender and nationality shown as chips in the job header when not set to defaults ("Any" / "Any Nationality").
+- `frontend/src/components/admin/JobForm.jsx` — salary field changed to dropdown using `SALARY_RANGES` constants; gender (Any/Male/Female) and nationality (Any Nationality/Saudi/Non-Saudi) dropdown selects added.
+- `frontend/src/components/jobs/FilterPanel.jsx` — new component. Sticky header row with active filter count badge, Clear (disabled when nothing active) and Apply (disabled when nothing changed) buttons with hover/active transitions. Toast notifications: "N filter(s) applied" on apply, "Filters cleared" on clear. Collapsible `FilterCard` sections. Sections: Sort, Location, Industry (dynamic), Employment type, Salary (SAR), Experience, Posted within, Gender, Nationality (dynamic). Industry and Nationality panels only render when `filterOptions` returns values. Staged/apply pattern — changes only fire API when Apply is clicked.
+- `frontend/src/pages/public/Jobs.jsx` — fully rewritten. Sidebar layout (260px fixed sidebar on lg+, mobile drawer). Tab buttons (Recent/Older than 60 days) removed. `filtersToParams` joins all multi-value params with `|` pipe separator to match backend's split. Active filter count badge on mobile toggle button.
+- `frontend/src/components/common/Toast.jsx` — `top` changed from `24px` to `80px` so toasts render below the 64px navbar.
 
-**Bug fixes in same commit:**
-- `JobCard.jsx` — removed unused `Briefcase` import.
-- `ImportJobs.jsx` — removed unused `pendingJobs` variable.
-- `Landing.jsx` — escaped unescaped apostrophe (`you'd` → `you&apos;d`).
+**Bug fixes (commit `3555ab5`):**
+- **Navbar logout spinner stuck:** `loggingOut` state was never reset to `false` after logout. Navbar stays mounted inside `AppLayout` across all routes — on re-login, `user` repopulated from store but `loggingOut` was still `true`, showing "Signing out…" immediately. Fixed by adding `setLoggingOut(false)` and moving `navigate("/")` before `clearSession()` in the logout timer callback to avoid `AdminRoute` racing to redirect to `/admin/login` before the imperative navigate fires.
+- **Salary filter returning 0 results:** `parseList` was splitting on `,` but salary values like `"5,000 – 10,000 SAR"` contain commas. Fixed by switching separator to `|` in both `filtersToParams` (frontend join) and `parseList` (backend split).
+- **Fast-refresh lint warning:** `EMPTY_FILTERS` was a non-component export in `FilterPanel.jsx`. Moved to `constants.js`; both `FilterPanel` and `Jobs` import from there.
 
-**Pending action before this branch can be used:**
-```bash
-# Local (requires Docker Desktop running):
-npm run prisma:migrate --workspace backend
+#### Playwright browser test results (13/13 passing)
 
-# Production:
-npm run prisma:deploy --workspace backend
-```
+Tests run against live dev servers (`localhost:5173` / `localhost:5000`):
+
+| Check | Result |
+|---|---|
+| Landing page loads | ✓ |
+| Jobs page — 19 cards visible | ✓ |
+| Filter sidebar visible | ✓ |
+| Salary (SAR) filter section exists | ✓ |
+| Salary filter `Under 5,000 SAR` → 12 jobs | ✓ |
+| Toast "1 filter applied" appears | ✓ |
+| Clear restores all 19 jobs | ✓ |
+| Location filter works | ✓ |
+| Admin login → `/admin/dashboard` | ✓ |
+| Logout button shows "Log out" (not stuck spinning) | ✓ |
+| After logout — user is signed out | ✓ |
+| After re-login — logout button not stuck spinning | ✓ |
+| Two salary ranges combined → 18 jobs | ✓ |
 
 #### New API endpoint added
 ```text
 GET    /api/jobs/filter-options   Returns distinct industries and nationalities from active jobs
 ```
 
-#### Filter params added to GET /api/jobs
+#### Filter params for GET /api/jobs (all pipe-separated)
 ```text
-locations        CSV of location values  (e.g. "Riyadh,Jeddah")
-industries       CSV of industry values
-employmentTypes  CSV of employment type values
-experiences      CSV of experience level values
-genders          CSV — "Any", "Male", "Female"
-nationalities    CSV of nationality values
-postedAfter      ISO date string — show jobs created on or after this date
-postedBefore     ISO date string — show jobs created before this date
+locations        e.g. "Riyadh|Jeddah"
+industries       e.g. "Technology|Finance"
+employmentTypes  e.g. "Full-time|Contract"
+experiences      e.g. "1-2 years|3-5 years"
+salaries         e.g. "5,000 – 10,000 SAR|10,000 – 15,000 SAR"
+genders          e.g. "Male|Female"
+nationalities    e.g. "Saudi|Non-Saudi"
+postedAfter      ISO date string
+postedBefore     ISO date string
 sort             "newest" (default) | "deadline"
 ```
 

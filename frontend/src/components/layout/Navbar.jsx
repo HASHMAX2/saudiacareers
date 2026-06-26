@@ -38,10 +38,10 @@ export function Navbar() {
     setShowToast(true);
     timerRef.current = setTimeout(() => {
       setShowToast(false);
+      navigate("/");
       clearSession();
       setLoggingOut(false);
       setIsOpen(false);
-      navigate("/");
     }, LOGOUT_DELAY);
   }
 
