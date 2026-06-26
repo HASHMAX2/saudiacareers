@@ -5,6 +5,7 @@ import { restoreSession } from "./api/client.js";
 import { AppLayout } from "./components/layout/AppLayout.jsx";
 import { DashboardLayout } from "./components/layout/DashboardLayout.jsx";
 import { AdminRoute } from "./routes/AdminRoute.jsx";
+import { EmployerRoute } from "./routes/EmployerRoute.jsx";
 import { PrivateRoute } from "./routes/PrivateRoute.jsx";
 import { PublicOnlyRoute } from "./routes/PublicOnlyRoute.jsx";
 import { AdminDashboard } from "./pages/admin/AdminDashboard.jsx";
@@ -24,6 +25,13 @@ import { CandidateChangePassword } from "./pages/candidate/CandidateChangePasswo
 import { MyApplications } from "./pages/candidate/MyApplications.jsx";
 import { Profile } from "./pages/candidate/Profile.jsx";
 import { SavedJobs } from "./pages/candidate/SavedJobs.jsx";
+import { EmployerRegister } from "./pages/employer/EmployerRegister.jsx";
+import { EmployerDashboard } from "./pages/employer/EmployerDashboard.jsx";
+import { EmployerJobs } from "./pages/employer/EmployerJobs.jsx";
+import { EmployerCreateJob } from "./pages/employer/EmployerCreateJob.jsx";
+import { EmployerEditJob } from "./pages/employer/EmployerEditJob.jsx";
+import { EmployerApplications } from "./pages/employer/EmployerApplications.jsx";
+import { Contact } from "./pages/public/Contact.jsx";
 import { JobDetail } from "./pages/public/JobDetail.jsx";
 import { Jobs } from "./pages/public/Jobs.jsx";
 import { Landing } from "./pages/public/Landing.jsx";
@@ -37,6 +45,12 @@ const candidateLinks = [
   { label: "Saved Jobs",       to: "/dashboard/saved-jobs",                  icon: Bookmark        },
   { label: "Applications",     to: "/dashboard/applications",                icon: FileText        },
   { label: "Change Password",  to: "/dashboard/change-password",             icon: LockKeyhole     },
+];
+
+const employerLinks = [
+  { label: "Overview",  to: "/employer/dashboard",  end: true },
+  { label: "My Jobs",   to: "/employer/jobs",        end: true },
+  { label: "Post a Job",to: "/employer/jobs/create"           },
 ];
 
 const adminLinks = [
@@ -57,10 +71,13 @@ export default function App() {
         <Route index element={<Landing />} />
         <Route path="jobs" element={<Jobs />} />
         <Route path="jobs/:id" element={<JobDetail />} />
+        <Route path="contact" element={<Contact />} />
 
         <Route element={<PublicOnlyRoute />}>
           <Route path="login" element={<Login />} />
           <Route path="register" element={<Register />} />
+          <Route path="employer/login" element={<Login employer />} />
+          <Route path="employer/register" element={<EmployerRegister />} />
           <Route path="admin/login" element={<Login admin />} />
         </Route>
         <Route path="forgot-password" element={<ForgotPassword />} />
@@ -73,6 +90,16 @@ export default function App() {
             <Route path="dashboard/saved-jobs" element={<SavedJobs />} />
             <Route path="dashboard/applications" element={<MyApplications />} />
             <Route path="dashboard/change-password" element={<CandidateChangePassword />} />
+          </Route>
+        </Route>
+
+        <Route element={<EmployerRoute />}>
+          <Route element={<DashboardLayout links={employerLinks} />}>
+            <Route path="employer/dashboard" element={<EmployerDashboard />} />
+            <Route path="employer/jobs" element={<EmployerJobs />} />
+            <Route path="employer/jobs/create" element={<EmployerCreateJob />} />
+            <Route path="employer/jobs/:id/edit" element={<EmployerEditJob />} />
+            <Route path="employer/jobs/:id/applications" element={<EmployerApplications />} />
           </Route>
         </Route>
 

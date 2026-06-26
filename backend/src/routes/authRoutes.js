@@ -6,6 +6,7 @@ import {
   logout,
   refreshToken,
   register,
+  registerEmployer,
   resetPassword,
 } from "../controllers/authController.js";
 import { authenticate } from "../middleware/authenticate.js";
@@ -19,11 +20,13 @@ import {
   registerSchema,
   resetPasswordSchema,
 } from "../validation/authSchemas.js";
+import { employerRegisterSchema } from "../validation/employerSchemas.js";
 
 export const authRouter = Router();
 
 authRouter.use(authRateLimiter);
 authRouter.post("/register", validate(registerSchema), asyncHandler(register));
+authRouter.post("/employer/register", validate(employerRegisterSchema), asyncHandler(registerEmployer));
 authRouter.post("/login", validate(loginSchema), asyncHandler(login));
 authRouter.post("/logout", asyncHandler(logout));
 authRouter.post("/refresh-token", asyncHandler(refreshToken));

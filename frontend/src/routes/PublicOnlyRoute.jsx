@@ -7,7 +7,10 @@ export function PublicOnlyRoute() {
 
   if (!isInitialized) return <Spinner label="Restoring session" />;
   if (isAuthenticated) {
-    const target = user.role === "ADMIN" ? "/admin/dashboard" : "/dashboard";
+    const target =
+      user.role === "ADMIN"     ? "/admin/dashboard"    :
+      user.role === "EMPLOYER"  ? "/employer/dashboard" :
+                                  "/dashboard";
     return <Navigate replace to={target} />;
   }
   return <Outlet />;

@@ -20,6 +20,7 @@ model User {
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
   profile            CandidateProfile?
+  employerProfile    EmployerProfile?
   applications       Application[]
   jobs               Job[]
   savedJobs          SavedJob[]
@@ -33,6 +34,7 @@ model User {
 enum Role {
   CANDIDATE
   ADMIN
+  EMPLOYER
 }
 
 model CandidateProfile {
@@ -118,6 +120,8 @@ model Application {
 enum ApplicationStatus {
   APPLIED
   UNDER_REVIEW
+  SHORTLISTED
+  ON_HOLD
   SELECTED
   REJECTED
 }
@@ -154,6 +158,35 @@ model PasswordResetToken {
   @@index([userId])
   @@index([expiresAt])
   @@index([usedAt])
+}
+
+model EmployerProfile {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @unique
+  user        User     @relation(fields: [userId], references: [id])
+  companyName String
+  industry    String?
+  location    String?
+  website     String?
+  phone       String?
+  description String?
+  logoPath    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([companyName])
+}
+
+model Enquiry {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String
+  company   String?
+  subject   String
+  message   String
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
 }
 
 model SavedJob {

@@ -1,6 +1,6 @@
 # SaudiaCareers Project Progress
 
-Last updated: June 26, 2026 (employer branch created)
+Last updated: June 26, 2026 (employer features complete)
 
 Future sessions must read both `CLAUDE.md` and this file before coding.
 
@@ -8,7 +8,7 @@ Future sessions must read both `CLAUDE.md` and this file before coding.
 
 The app is fully deployed and live in production. Backend is on Render, frontend is on Vercel. Supabase and Resend are configured with real credentials. The production database has migrations applied and the admin user seeded. A UI enhancement pass is next — design references will be placed in `ui-refs/` and the redesign will be done on the `app-enhancement` branch.
 
-Current branch: `employer` (branched from `Job-filters` on June 26, 2026). Employer features are being built on this branch.
+Current branch: `employer` (branched from `Job-filters` on June 26, 2026). Employer features are complete and committed on this branch. 12/12 Playwright browser tests passing.
 
 ## Live URLs
 
@@ -567,6 +567,102 @@ GET    /api/saved-jobs         Returns full saved job data with savedAt + isClos
 GET    /api/saved-jobs/ids     Returns array of saved jobId numbers (lightweight)
 POST   /api/saved-jobs         Save a job { jobId }
 DELETE /api/saved-jobs/:jobId  Unsave a job
+```
+
+### Employer features (June 26, 2026)
+
+All changes are on the `employer` branch (branched from `Job-filters`). All 12 Playwright browser tests passing.
+
+**Admin password:** `Admin@5678`
+
+**Database migration:** `20260626150000_add_employer_features` — applied to production Supabase.
+- `EMPLOYER` added to `Role` enum.
+- `SHORTLISTED` and `ON_HOLD` added to `ApplicationStatus` enum.
+- `EmployerProfile` table added (one-to-one with User): `companyName`, `industry`, `location`, `website`, `phone`, `description`, `logoPath`.
+- `Enquiry` table added: `name`, `email`, `company`, `subject`, `message`.
+
+**Backend:**
+- `authorizeEmployer` middleware in `authorizeAdmin.js`.
+- `backend/src/validation/employerSchemas.js` — schemas for employer register, profile update, job queries, application status updates, and enquiry submission.
+- `registerEmployer` controller in `authController.js` — creates `User` with `role: EMPLOYER` + `EmployerProfile` atomically.
+- `POST /api/auth/employer/register` route.
+- `backend/src/controllers/employerController.js` — full CRUD:
+  - `getEmployerDashboard` — metrics scoped to `createdBy: userId`
+  - `getEmployerProfile`, `updateEmployerProfile`
+  - `listEmployerJobs`, `createEmployerJob` (always ACTIVE), `updateEmployerJob`, `updateEmployerJobStatus`, `deleteEmployerJob`
+  - `listJobApplications` — paginated with search/status filter; verifies job ownership
+  - `updateApplicationStatus` — restricts to APPLIED/SHORTLISTED/ON_HOLD/REJECTED; verifies job ownership; triggers candidate email
+  - `getApplicationDetail` — includes signed resume URL
+- `backend/src/routes/employerRoutes.js` — all routes protected by `authenticate + authorizeEmployer`.
+- `backend/src/controllers/enquiryController.js` + `backend/src/routes/enquiryRoutes.js` — `POST /api/enquiries` (rate-limited, no auth required).
+- `app.js` — mounts `/api/employer` and `/api/enquiries` routers.
+
+**Frontend:**
+- `frontend/src/api/employer.js` — `employerApi` (register, profile, dashboard, job CRUD, applications) and `enquiryApi` (submit).
+- `frontend/src/routes/EmployerRoute.jsx` — redirects unauthenticated → `/employer/login`, wrong role → `/unauthorized`.
+- `frontend/src/routes/PublicOnlyRoute.jsx` — updated to redirect employers to `/employer/dashboard`.
+- `frontend/src/pages/auth/Login.jsx` — extended with `employer` prop for employer-specific title, subtitle, footer, and redirect.
+- `frontend/src/pages/employer/EmployerRegister.jsx` — fields: name, companyName, email, phone, password. Success toast → navigate to `/employer/dashboard`.
+- `frontend/src/pages/employer/EmployerDashboard.jsx` — 4 metric cards: Total jobs, Active listings, Total applicants, New (last 7 days). Quick links: Post a new job, Manage listings.
+- `frontend/src/pages/employer/EmployerJobs.jsx` — table with Edit, Unpublish/Publish, Delete, View applications actions. Search, pagination, loading/empty states.
+- `frontend/src/pages/employer/EmployerCreateJob.jsx` — pre-populates companyName/hrEmail from employer profile. Reuses admin `JobForm` component.
+- `frontend/src/pages/employer/EmployerEditJob.jsx` — fetches job via public API; reuses admin `JobForm` component. Calls `employerApi.updateJob` on submit.
+- `frontend/src/pages/employer/EmployerApplications.jsx` — applicants list per job. Status filter, search, pagination. Shortlisted/On Hold/Rejected action buttons per applicant. Resume download via signed URL.
+- `frontend/src/pages/public/Contact.jsx` — public enquiry form (no auth). Fields: name, email, company (optional), subject, message. Shows success state after submission.
+- `frontend/src/components/layout/Navbar.jsx` — Dashboard routes employers to `/employer/dashboard`; "Employers" link added for guests.
+- `frontend/src/App.jsx` — employer routes wrapped in `<EmployerRoute> + <DashboardLayout links={employerLinks}>`. `/contact` public route added. `/employer/login` and `/employer/register` inside `PublicOnlyRoute`.
+
+**Key design decisions:**
+- Employers can only view/edit/delete their own jobs (all queries scoped by `createdBy: req.user.id`).
+- Employer-created jobs automatically appear in public listings (no special handling needed).
+- `createEmployerJob` strips `status` from body and forces `ACTIVE`.
+- Employer application status actions are restricted to APPLIED/SHORTLISTED/ON_HOLD/REJECTED (UNDER_REVIEW and SELECTED remain admin-only).
+- Enquiry form rate-limited via existing `authRateLimiter`.
+
+#### Playwright browser test results (12/12 passing)
+
+| Check | Result |
+|---|---|
+| Navbar shows Employers link for guests | ✓ |
+| Employer register page loads | ✓ |
+| Employer registration navigates to dashboard | ✓ |
+| Employer dashboard loads | ✓ |
+| Post a job page loads | ✓ |
+| Company name pre-populated from employer profile | ✓ |
+| Job creation navigates to jobs list | ✓ |
+| Created job appears in employer jobs list | ✓ |
+| Employer job visible in public listings | ✓ |
+| Contact page loads | ✓ |
+| Contact form submits successfully | ✓ |
+| Unauthenticated user redirected from employer dashboard | ✓ |
+
+#### Employer API endpoints added
+```text
+POST   /api/auth/employer/register
+GET    /api/employer/profile
+PUT    /api/employer/profile
+GET    /api/employer/dashboard
+GET    /api/employer/jobs
+POST   /api/employer/jobs
+PUT    /api/employer/jobs/:id
+PATCH  /api/employer/jobs/:id/status
+DELETE /api/employer/jobs/:id
+GET    /api/employer/jobs/:jobId/applications
+GET    /api/employer/applications/:id
+PATCH  /api/employer/applications/:id/status
+POST   /api/enquiries
+```
+
+#### Employer frontend routes added
+```text
+/employer/login
+/employer/register
+/employer/dashboard
+/employer/jobs
+/employer/jobs/create
+/employer/jobs/:id/edit
+/employer/jobs/:id/applications
+/contact
 ```
 
 ## Partially Completed

@@ -10,6 +10,8 @@ import { applicationRouter } from "./routes/applicationRoutes.js";
 import { jobRouter } from "./routes/jobRoutes.js";
 import { profileRouter } from "./routes/profileRoutes.js";
 import { savedJobsRouter } from "./routes/savedJobsRoutes.js";
+import { employerRouter } from "./routes/employerRoutes.js";
+import { enquiryRouter } from "./routes/enquiryRoutes.js";
 import { ApiError } from "./utils/ApiError.js";
 import { sendSuccess } from "./utils/ApiResponse.js";
 
@@ -47,6 +49,8 @@ app.use("/api/profile", profileRouter);
 app.use("/api/jobs", jobRouter);
 app.use("/api/applications", applicationRouter);
 app.use("/api/saved-jobs", savedJobsRouter);
+app.use("/api/employer", employerRouter);
+app.use("/api/enquiries", enquiryRouter);
 app.use("/api/admin", adminRouter);
 
 app.use(notFoundHandler);

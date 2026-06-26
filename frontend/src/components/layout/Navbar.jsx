@@ -107,7 +107,7 @@ export function Navbar() {
                   className={navLinkClass}
                   style={navLinkStyle}
                   onClick={() => setIsOpen(false)}
-                  to={user.role === "ADMIN" ? "/admin/dashboard" : "/dashboard"}
+                  to={user.role === "ADMIN" ? "/admin/dashboard" : user.role === "EMPLOYER" ? "/employer/dashboard" : "/dashboard"}
                 >
                   Dashboard
                 </NavLink>
@@ -126,6 +126,14 @@ export function Navbar() {
                   to="/login"
                 >
                   Sign in
+                </Link>
+                <Link
+                  className="text-[15px] font-medium transition-colors hover:opacity-70 px-2"
+                  style={{ color: "var(--text-secondary)" }}
+                  onClick={() => setIsOpen(false)}
+                  to="/employer/login"
+                >
+                  Employers
                 </Link>
                 <Link
                   className="btn-primary w-full md:w-auto justify-center"

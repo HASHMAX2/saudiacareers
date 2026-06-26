@@ -69,6 +69,36 @@ export async function register(req, res) {
   });
 }
 
+export async function registerEmployer(req, res) {
+  const { name, companyName, email, password, phone } = req.validated.body;
+  const existingUser = await prisma.user.findUnique({ where: { email } });
+  if (existingUser) throw new ApiError(409, "An account with this email already exists");
+
+  const passwordHash = await bcrypt.hash(password, 12);
+  const user = await prisma.user.create({
+    data: {
+      name,
+      email,
+      mobile: phone ?? null,
+      passwordHash,
+      role: Role.EMPLOYER,
+      employerProfile: { create: { companyName, phone: phone ?? null } },
+    },
+  });
+
+  const accessToken = await establishSession(res, user);
+  const template = welcomeEmailTemplate({ name: user.name });
+  sendEmail({ to: user.email, ...template }).catch((error) => {
+    console.error("Employer welcome email failed:", error.message);
+  });
+
+  return sendSuccess(res, {
+    statusCode: 201,
+    message: "Employer account created",
+    data: { user: publicUser(user), accessToken },
+  });
+}
+
 export async function login(req, res) {
   const { email, password } = req.validated.body;
   const user = await prisma.user.findUnique({ where: { email } });

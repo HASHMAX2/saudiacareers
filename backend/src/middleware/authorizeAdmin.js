@@ -15,6 +15,13 @@ export function authorizeCandidate(req, _res, next) {
   return next();
 }
 
+export function authorizeEmployer(req, _res, next) {
+  if (req.user?.role !== Role.EMPLOYER) {
+    return next(new ApiError(403, "Employer access required"));
+  }
+  return next();
+}
+
 export function requirePasswordChangeComplete(req, _res, next) {
   if (req.user?.role === Role.ADMIN && req.user.mustChangePassword) {
     return next(new ApiError(403, "Password change required", {
