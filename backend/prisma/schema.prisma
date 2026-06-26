@@ -161,18 +161,20 @@ model PasswordResetToken {
 }
 
 model EmployerProfile {
-  id          Int      @id @default(autoincrement())
-  userId      Int      @unique
-  user        User     @relation(fields: [userId], references: [id])
-  companyName String
-  industry    String?
-  location    String?
-  website     String?
-  phone       String?
-  description String?
-  logoPath    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                 Int      @id @default(autoincrement())
+  userId             Int      @unique
+  user               User     @relation(fields: [userId], references: [id])
+  companyName        String
+  industry           String?
+  location           String?
+  website            String?
+  phone              String?
+  description        String?
+  logoPath           String?
+  companySize        String?
+  contactDesignation String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   @@index([companyName])
 }

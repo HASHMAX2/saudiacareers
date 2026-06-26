@@ -21,6 +21,11 @@ export const employerRegisterSchema = bodyOnly(
       .string()
       .regex(/^\+\d{7,15}$/, "Include country code e.g. +966512345678")
       .optional(),
+    industry: z.string().trim().max(100).optional(),
+    location: z.string().trim().max(100).optional(),
+    website: z.string().trim().url("Enter a valid URL").max(255).optional().or(z.literal("")),
+    companySize: z.string().trim().max(50).optional(),
+    contactDesignation: z.string().trim().max(100).optional(),
   }).strict(),
 );
 

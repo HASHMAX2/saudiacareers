@@ -25,7 +25,9 @@ import { CandidateChangePassword } from "./pages/candidate/CandidateChangePasswo
 import { MyApplications } from "./pages/candidate/MyApplications.jsx";
 import { Profile } from "./pages/candidate/Profile.jsx";
 import { SavedJobs } from "./pages/candidate/SavedJobs.jsx";
+import { EmployerLogin } from "./pages/employer/EmployerLogin.jsx";
 import { EmployerRegister } from "./pages/employer/EmployerRegister.jsx";
+import { EmployerContact } from "./pages/employer/EmployerContact.jsx";
 import { EmployerDashboard } from "./pages/employer/EmployerDashboard.jsx";
 import { EmployerJobs } from "./pages/employer/EmployerJobs.jsx";
 import { EmployerCreateJob } from "./pages/employer/EmployerCreateJob.jsx";
@@ -73,10 +75,12 @@ export default function App() {
         <Route path="jobs/:id" element={<JobDetail />} />
         <Route path="contact" element={<Contact />} />
 
+        <Route path="employer/contact" element={<EmployerContact />} />
+
         <Route element={<PublicOnlyRoute />}>
           <Route path="login" element={<Login />} />
           <Route path="register" element={<Register />} />
-          <Route path="employer/login" element={<Login employer />} />
+          <Route path="employer/login" element={<EmployerLogin />} />
           <Route path="employer/register" element={<EmployerRegister />} />
           <Route path="admin/login" element={<Login admin />} />
         </Route>

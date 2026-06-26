@@ -1,4 +1,4 @@
-import { Loader2, Menu, Sparkles, X } from "lucide-react";
+import { ChevronDown, Loader2, Menu, Sparkles, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { authApi } from "../../api/auth.js";
@@ -24,6 +24,7 @@ export function Navbar() {
   const resetSaved = useSavedJobsStore((state) => state.reset);
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
+  const [empOpen, setEmpOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const timerRef = useRef(null);
@@ -127,14 +128,75 @@ export function Navbar() {
                 >
                   Sign in
                 </Link>
-                <Link
-                  className="text-[15px] font-medium transition-colors hover:opacity-70 px-2"
-                  style={{ color: "var(--text-secondary)" }}
-                  onClick={() => setIsOpen(false)}
-                  to="/employer/login"
+
+                {/* Desktop employer dropdown */}
+                <div
+                  className="relative hidden md:block"
+                  onMouseEnter={() => setEmpOpen(true)}
+                  onMouseLeave={() => setEmpOpen(false)}
                 >
-                  Employers
-                </Link>
+                  <button
+                    className="flex items-center gap-1 px-2 text-[15px] font-medium transition-colors hover:opacity-70"
+                    style={{ color: "var(--text-secondary)" }}
+                    type="button"
+                  >
+                    Employers
+                    <ChevronDown
+                      size={14}
+                      style={{ transition: "transform 200ms", transform: empOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+                    />
+                  </button>
+                  <div
+                    className="absolute right-0 top-full w-44 rounded-xl bg-white py-1.5 shadow-lg"
+                    style={{
+                      border: "1px solid var(--border-default)",
+                      marginTop: "8px",
+                      opacity: empOpen ? 1 : 0,
+                      transform: empOpen ? "translateY(0)" : "translateY(-6px)",
+                      pointerEvents: empOpen ? "auto" : "none",
+                      transition: "opacity 150ms ease, transform 150ms ease",
+                    }}
+                  >
+                    {[
+                      { label: "Login",      to: "/employer/login"    },
+                      { label: "Register",   to: "/employer/register" },
+                      { label: "Contact Us", to: "/employer/contact"  },
+                    ].map(({ label, to }) => (
+                      <Link
+                        key={to}
+                        to={to}
+                        onClick={() => setEmpOpen(false)}
+                        className="block px-4 py-2.5 text-[14px] font-medium transition-colors hover:bg-gray-50"
+                        style={{ color: "var(--text-primary)" }}
+                      >
+                        {label}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Mobile employer links (inside open nav) */}
+                <div className="md:hidden w-full">
+                  <p className="px-2 pt-1 pb-0.5 text-[11px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-tertiary)" }}>
+                    Employers
+                  </p>
+                  {[
+                    { label: "Login",      to: "/employer/login"    },
+                    { label: "Register",   to: "/employer/register" },
+                    { label: "Contact Us", to: "/employer/contact"  },
+                  ].map(({ label, to }) => (
+                    <Link
+                      key={to}
+                      to={to}
+                      onClick={() => setIsOpen(false)}
+                      className="block px-2 py-1.5 text-[15px] font-medium transition-colors hover:opacity-70"
+                      style={{ color: "var(--text-secondary)" }}
+                    >
+                      {label}
+                    </Link>
+                  ))}
+                </div>
+
                 <Link
                   className="btn-primary w-full md:w-auto justify-center"
                   style={{ paddingLeft: "20px", paddingRight: "20px", minHeight: "36px" }}

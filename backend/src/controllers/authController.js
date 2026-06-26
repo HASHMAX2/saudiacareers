@@ -70,7 +70,7 @@ export async function register(req, res) {
 }
 
 export async function registerEmployer(req, res) {
-  const { name, companyName, email, password, phone } = req.validated.body;
+  const { name, companyName, email, password, phone, industry, location, website, companySize, contactDesignation } = req.validated.body;
   const existingUser = await prisma.user.findUnique({ where: { email } });
   if (existingUser) throw new ApiError(409, "An account with this email already exists");
 
@@ -82,7 +82,17 @@ export async function registerEmployer(req, res) {
       mobile: phone ?? null,
       passwordHash,
       role: Role.EMPLOYER,
-      employerProfile: { create: { companyName, phone: phone ?? null } },
+      employerProfile: {
+        create: {
+          companyName,
+          phone: phone ?? null,
+          industry: industry ?? null,
+          location: location ?? null,
+          website: website || null,
+          companySize: companySize ?? null,
+          contactDesignation: contactDesignation ?? null,
+        },
+      },
     },
   });
 
