@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { FileText, LayoutDashboard, LockKeyhole, Search, UserRound } from "lucide-react";
+import { Bookmark, FileText, LayoutDashboard, LockKeyhole, Search, UserRound } from "lucide-react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { restoreSession } from "./api/client.js";
 import { AppLayout } from "./components/layout/AppLayout.jsx";
@@ -23,6 +23,7 @@ import { Dashboard } from "./pages/candidate/Dashboard.jsx";
 import { CandidateChangePassword } from "./pages/candidate/CandidateChangePassword.jsx";
 import { MyApplications } from "./pages/candidate/MyApplications.jsx";
 import { Profile } from "./pages/candidate/Profile.jsx";
+import { SavedJobs } from "./pages/candidate/SavedJobs.jsx";
 import { JobDetail } from "./pages/public/JobDetail.jsx";
 import { Jobs } from "./pages/public/Jobs.jsx";
 import { Landing } from "./pages/public/Landing.jsx";
@@ -33,6 +34,7 @@ const candidateLinks = [
   { label: "Overview",         to: "/dashboard",                  end: true, icon: LayoutDashboard },
   { label: "Profile",          to: "/dashboard/profile",                     icon: UserRound       },
   { label: "Browse Jobs",      to: "/jobs",                                  icon: Search          },
+  { label: "Saved Jobs",       to: "/dashboard/saved-jobs",                  icon: Bookmark        },
   { label: "Applications",     to: "/dashboard/applications",                icon: FileText        },
   { label: "Change Password",  to: "/dashboard/change-password",             icon: LockKeyhole     },
 ];
@@ -68,6 +70,7 @@ export default function App() {
           <Route element={<DashboardLayout links={candidateLinks} />}>
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="dashboard/profile" element={<Profile />} />
+            <Route path="dashboard/saved-jobs" element={<SavedJobs />} />
             <Route path="dashboard/applications" element={<MyApplications />} />
             <Route path="dashboard/change-password" element={<CandidateChangePassword />} />
           </Route>

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { authApi } from "../../api/auth.js";
 import { useAuthStore } from "../../store/authStore.js";
+import { useSavedJobsStore } from "../../store/savedJobsStore.js";
 import { Button } from "../common/Button.jsx";
 import { Toast } from "../common/Toast.jsx";
 
@@ -20,6 +21,7 @@ const navLinkStyle = ({ isActive }) => ({
 export function Navbar() {
   const user = useAuthStore((state) => state.user);
   const clearSession = useAuthStore((state) => state.clearSession);
+  const resetSaved = useSavedJobsStore((state) => state.reset);
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -39,6 +41,7 @@ export function Navbar() {
     timerRef.current = setTimeout(() => {
       setShowToast(false);
       navigate("/");
+      resetSaved();
       clearSession();
       setLoggingOut(false);
       setIsOpen(false);

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Banknote, BriefcaseBusiness, CalendarDays, Check, Clock3, MapPin, Share2, Users } from "lucide-react";
+import { Banknote, Bookmark, BriefcaseBusiness, CalendarDays, Check, Clock3, MapPin, Share2, Users } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { applicationsApi } from "../../api/applications.js";
 import { jobsApi } from "../../api/jobs.js";
@@ -10,6 +10,7 @@ import { Button } from "../../components/common/Button.jsx";
 import { Spinner } from "../../components/common/Spinner.jsx";
 import { Toast } from "../../components/common/Toast.jsx";
 import { useAuthStore } from "../../store/authStore.js";
+import { useSavedJobsStore } from "../../store/savedJobsStore.js";
 import { formatDate } from "../../utils/formatDate.js";
 
 const REDIRECT_DELAY = 3500;
@@ -18,6 +19,8 @@ export function JobDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
+  const { isSaved, toggle: toggleSave, fetchIds } = useSavedJobsStore();
+  const isCandidate = user?.role === "CANDIDATE";
   const [job, setJob] = useState(null);
   const [message, setMessage] = useState("");
   const [alreadyApplied, setAlreadyApplied] = useState(false);
@@ -38,10 +41,12 @@ export function JobDetail() {
   useEffect(() => {
     jobsApi.get(id).then(({ data }) => setJob(data.data));
     if (user?.role === "CANDIDATE") {
+      fetchIds();
       applicationsApi.mine().then(({ data }) =>
         setAlreadyApplied(data.data.some((application) => application.jobId === Number(id))),
       );
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, user]);
 
   if (!job) return <div className="grid min-h-72 place-items-center"><Spinner label="Loading job details" /></div>;
@@ -93,9 +98,28 @@ export function JobDetail() {
               <h1 className="page-title text-3xl md:text-4xl">{job.title}</h1>
               <p className="mt-2 text-lg font-medium" style={{ color: "var(--text-secondary)" }}>{job.companyName}</p>
             </div>
-            <Button variant="secondary" onClick={() => navigator.clipboard.writeText(window.location.href)}>
-              <Share2 size={16} />Share
-            </Button>
+            <div className="flex items-center gap-2">
+              {isCandidate && (
+                <Button
+                  variant="secondary"
+                  onClick={() => toggleSave(Number(id))}
+                  aria-label={isSaved(Number(id)) ? "Remove from saved" : "Save job"}
+                >
+                  <Bookmark
+                    size={16}
+                    style={{
+                      fill: isSaved(Number(id)) ? "var(--accent)" : "none",
+                      color: isSaved(Number(id)) ? "var(--accent)" : "currentColor",
+                      transition: "fill 0.15s, color 0.15s",
+                    }}
+                  />
+                  {isSaved(Number(id)) ? "Saved" : "Save"}
+                </Button>
+              )}
+              <Button variant="secondary" onClick={() => navigator.clipboard.writeText(window.location.href)}>
+                <Share2 size={16} />Share
+              </Button>
+            </div>
           </div>
           <div className="mt-6 flex flex-wrap gap-3 pt-6" style={{ borderTop: "1px solid var(--border-default)" }}>
             <span className="chip flex items-center gap-2"><MapPin size={14} style={{ color: "var(--accent)" }} />{job.location}</span>

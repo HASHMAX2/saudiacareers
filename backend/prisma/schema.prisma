@@ -22,6 +22,7 @@ model User {
   profile            CandidateProfile?
   applications       Application[]
   jobs               Job[]
+  savedJobs          SavedJob[]
   refreshTokens      RefreshToken[]
   passwordResets     PasswordResetToken[]
 
@@ -77,6 +78,7 @@ model Job {
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
   applications        Application[]
+  savedBy             SavedJob[]
 
   @@index([status, isDeleted])
   @@index([location])
@@ -152,5 +154,18 @@ model PasswordResetToken {
   @@index([userId])
   @@index([expiresAt])
   @@index([usedAt])
+}
+
+model SavedJob {
+  id      Int      @id @default(autoincrement())
+  userId  Int
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobId   Int
+  job     Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  savedAt DateTime @default(now())
+
+  @@unique([userId, jobId])
+  @@index([userId])
+  @@index([jobId])
 }
 

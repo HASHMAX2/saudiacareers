@@ -1,15 +1,22 @@
-import { MapPin, Banknote } from "lucide-react";
+import { Banknote, Bookmark, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAuthStore } from "../../store/authStore.js";
+import { useSavedJobsStore } from "../../store/savedJobsStore.js";
 import { formatDate } from "../../utils/formatDate.js";
 
 export function JobCard({ job }) {
+  const user = useAuthStore((state) => state.user);
+  const { isSaved, toggle } = useSavedJobsStore();
+  const isCandidate = user?.role === "CANDIDATE";
+  const saved = isCandidate && isSaved(job.id);
+
   const skills = job.requiredSkills
     ? job.requiredSkills.split(",").map((s) => s.trim()).filter(Boolean).slice(0, 4)
     : [];
 
   return (
     <article className="card-soft p-5 sm:p-6">
-      {/* Top row: meta tags + View role button */}
+      {/* Top row: meta tags + actions */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex flex-wrap items-center gap-2">
           <span
@@ -31,13 +38,33 @@ export function JobCard({ job }) {
             {job.experienceRequired}
           </span>
         </div>
-        <Link
-          to={`/jobs/${job.id}`}
-          className="btn-primary shrink-0"
-          style={{ minHeight: "34px", padding: "0 14px", fontSize: "13px" }}
-        >
-          View role
-        </Link>
+        <div className="flex shrink-0 items-center gap-2">
+          {isCandidate && (
+            <button
+              type="button"
+              aria-label={saved ? "Remove from saved" : "Save job"}
+              onClick={(e) => { e.preventDefault(); toggle(job.id); }}
+              className="grid h-[34px] w-[34px] place-items-center rounded-full transition-colors hover:bg-[var(--bg-elev)]"
+              style={{ border: "1px solid var(--border-default)" }}
+            >
+              <Bookmark
+                size={15}
+                style={{
+                  fill: saved ? "var(--accent)" : "none",
+                  color: saved ? "var(--accent)" : "var(--text-tertiary)",
+                  transition: "fill 0.15s, color 0.15s",
+                }}
+              />
+            </button>
+          )}
+          <Link
+            to={`/jobs/${job.id}`}
+            className="btn-primary shrink-0"
+            style={{ minHeight: "34px", padding: "0 14px", fontSize: "13px" }}
+          >
+            View role
+          </Link>
+        </div>
       </div>
 
       {/* Title + company */}

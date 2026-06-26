@@ -5,6 +5,8 @@ import { Pagination } from "../../components/common/Pagination.jsx";
 import { Spinner } from "../../components/common/Spinner.jsx";
 import { JobCard } from "../../components/jobs/JobCard.jsx";
 import { FilterPanel } from "../../components/jobs/FilterPanel.jsx";
+import { useAuthStore } from "../../store/authStore.js";
+import { useSavedJobsStore } from "../../store/savedJobsStore.js";
 import { EMPTY_FILTERS } from "../../utils/constants.js";
 
 function filtersToParams(filters) {
@@ -37,6 +39,9 @@ function countActive(filters) {
 }
 
 export function Jobs() {
+  const user           = useAuthStore((state) => state.user);
+  const fetchSavedIds  = useSavedJobsStore((state) => state.fetchIds);
+
   const [applied, setApplied]             = useState(EMPTY_FILTERS);
   const [page, setPage]                   = useState(1);
   const [result, setResult]               = useState({ jobs: [], pagination: { page: 1, totalPages: 1, total: 0 } });
@@ -47,6 +52,11 @@ export function Jobs() {
   useEffect(() => {
     jobsApi.filterOptions().then(({ data }) => setFilterOptions(data.data)).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (user?.role === "CANDIDATE") fetchSavedIds();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   useEffect(() => {
     setLoading(true);
