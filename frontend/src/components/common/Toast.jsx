@@ -28,7 +28,7 @@ export function Toast({ show, message, tone = "success", duration, onDismiss }) 
     <div
       style={{
         position: "fixed",
-        top: "24px",
+        top: "80px",
         left: 0,
         right: 0,
         margin: "0 auto",

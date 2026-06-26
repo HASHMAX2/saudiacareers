@@ -18,6 +18,7 @@ export const listJobsSchema = z.object({
     industries: csvString,
     employmentTypes: csvString,
     experiences: csvString,
+    salaries: csvString,
     genders: csvString,
     nationalities: csvString,
     postedAfter: z.string().trim().optional(),

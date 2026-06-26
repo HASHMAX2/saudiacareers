@@ -39,6 +39,7 @@ export function Navbar() {
     timerRef.current = setTimeout(() => {
       setShowToast(false);
       clearSession();
+      setLoggingOut(false);
       setIsOpen(false);
       navigate("/");
     }, LOGOUT_DELAY);

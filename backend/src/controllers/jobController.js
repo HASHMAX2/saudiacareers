@@ -11,7 +11,7 @@ function serializeJob(job) {
 }
 
 function parseList(csv) {
-  return csv ? csv.split(",").map((v) => v.trim()).filter(Boolean) : [];
+  return csv ? csv.split("|").map((v) => v.trim()).filter(Boolean) : [];
 }
 
 export async function getFilterOptions(req, res) {
@@ -43,15 +43,16 @@ export async function getFilterOptions(req, res) {
 }
 
 export async function listJobs(req, res) {
-  const { page, limit, locations, industries, employmentTypes, experiences, genders, nationalities, postedAfter, postedBefore, sort } = req.validated.query;
+  const { page, limit, locations, industries, employmentTypes, experiences, salaries, genders, nationalities, postedAfter, postedBefore, sort } = req.validated.query;
   const now = new Date();
 
-  const locationsList     = parseList(locations);
-  const industriesList    = parseList(industries);
+  const locationsList       = parseList(locations);
+  const industriesList      = parseList(industries);
   const employmentTypesList = parseList(employmentTypes);
-  const experiencesList   = parseList(experiences);
-  const gendersList       = parseList(genders);
-  const nationalitiesList = parseList(nationalities);
+  const experiencesList     = parseList(experiences);
+  const salariesList        = parseList(salaries);
+  const gendersList         = parseList(genders);
+  const nationalitiesList   = parseList(nationalities);
 
   const conditions = [
     { status: JobStatus.ACTIVE },
@@ -59,9 +60,10 @@ export async function listJobs(req, res) {
     { OR: [{ applicationDeadline: null }, { applicationDeadline: { gt: now } }] },
   ];
 
-  if (locationsList.length)      conditions.push({ location: { in: locationsList } });
-  if (industriesList.length)     conditions.push({ industry: { in: industriesList } });
+  if (locationsList.length)       conditions.push({ location: { in: locationsList } });
+  if (industriesList.length)      conditions.push({ industry: { in: industriesList } });
   if (employmentTypesList.length) conditions.push({ employmentType: { in: employmentTypesList } });
+  if (salariesList.length)        conditions.push({ salaryRange: { in: salariesList } });
 
   if (experiencesList.length) {
     conditions.push({ OR: experiencesList.map((exp) => ({ experienceRequired: { contains: exp, mode: "insensitive" } })) });

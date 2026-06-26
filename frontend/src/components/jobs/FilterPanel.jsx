@@ -1,10 +1,12 @@
 import { ChevronDown, SlidersHorizontal, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Toast } from "../common/Toast.jsx";
+import { EMPTY_FILTERS, SALARY_RANGES } from "../../utils/constants.js";
 
-const LOCATIONS       = ["Riyadh", "Jeddah", "Dammam", "Other"];
+const LOCATIONS        = ["Riyadh", "Jeddah", "Dammam", "Other"];
 const EMPLOYMENT_TYPES = ["Full-time", "Part-time", "Contract", "Internship"];
 const EXPERIENCE_LEVELS = ["Fresh graduate", "1-2 years", "2-3 years", "3-5 years", "5-10 years", "10+ years"];
-const GENDERS         = ["Any", "Male", "Female"];
+const GENDERS          = ["Any", "Male", "Female"];
 const FRESHNESS_OPTIONS = [
   { value: 1,  label: "Last 24 hours" },
   { value: 3,  label: "Last 3 days" },
@@ -13,23 +15,13 @@ const FRESHNESS_OPTIONS = [
   { value: 60, label: "Last 60 days" },
 ];
 
-export const EMPTY_FILTERS = {
-  locations:       [],
-  industries:      [],
-  employmentTypes: [],
-  experiences:     [],
-  genders:         [],
-  nationalities:   [],
-  freshness:       [],
-  sort:            "newest",
-};
-
 function countActive(filters) {
   return (
     filters.locations.length +
     filters.industries.length +
     filters.employmentTypes.length +
     filters.experiences.length +
+    (filters.salaries?.length ?? 0) +
     filters.genders.length +
     filters.nationalities.length +
     filters.freshness.length
@@ -111,14 +103,21 @@ function CheckboxList({ options, selected, onToggle }) {
   );
 }
 
-export function FilterPanel({ filters, onApply, filterOptions, onClose, olderTab = false }) {
+export function FilterPanel({ filters, onApply, filterOptions, onClose }) {
   const [staged, setStaged] = useState({ ...filters });
 
   useEffect(() => { setStaged({ ...filters }); }, [filters]);
 
-  const totalActive  = countActive(staged);
   const appliedCount = countActive(filters);
   const isDirty      = JSON.stringify(staged) !== JSON.stringify(filters);
+  const [toast, setToast] = useState({ show: false, message: "", tone: "success" });
+  const toastTimer = useRef(null);
+
+  function showToast(message, tone = "success") {
+    clearTimeout(toastTimer.current);
+    setToast({ show: true, message, tone });
+    toastTimer.current = setTimeout(() => setToast((t) => ({ ...t, show: false })), 2500);
+  }
 
   function toggle(key, value) {
     setStaged((prev) => {
@@ -134,36 +133,39 @@ export function FilterPanel({ filters, onApply, filterOptions, onClose, olderTab
     setStaged((prev) => ({ ...prev, [key]: [] }));
   }
 
-  function apply() { onApply(staged); onClose?.(); }
+  function apply() {
+    onApply(staged);
+    onClose?.();
+    const count = countActive(staged);
+    showToast(count > 0 ? `${count} filter${count !== 1 ? "s" : ""} applied` : "Filters applied");
+  }
 
-  function reset() {
+  function clear() {
     const cleared = { ...EMPTY_FILTERS, sort: staged.sort };
     setStaged(cleared);
     onApply(cleared);
     onClose?.();
+    showToast("Filters cleared", "error");
   }
+
+  const hasActive = countActive(staged) > 0;
 
   const industries    = filterOptions?.industries    ?? [];
   const nationalities = filterOptions?.nationalities ?? [];
 
   return (
     <div>
-      {/*
-        Sticky header — stays pinned to the top of the scrollable sidebar.
-        The sidebar in Jobs.jsx has overflow-y: auto, so position:sticky here
-        pins relative to the sidebar scroll container, not the viewport.
-      */}
+      <Toast show={toast.show} message={toast.message} tone={toast.tone} duration={2500} />
+      {/* Sticky title row */}
       <div
         style={{
           position: "sticky",
           top: 0,
           zIndex: 10,
-          background: "var(--bg-page)",
-          paddingBottom: "12px",
-          marginBottom: "4px",
+          background: "#F9F9F8",
+          paddingBottom: "10px",
         }}
       >
-        {/* Title row */}
         <div className="flex items-center justify-between py-2">
           <span className="flex items-center gap-2 text-[13px] font-semibold" style={{ color: "var(--text-primary)" }}>
             <SlidersHorizontal size={13} />
@@ -177,49 +179,46 @@ export function FilterPanel({ filters, onApply, filterOptions, onClose, olderTab
               </span>
             )}
           </span>
-          {onClose && (
-            <button type="button" className="rounded p-1" style={{ color: "var(--text-tertiary)" }} onClick={onClose}>
-              <X size={15} />
-            </button>
-          )}
-        </div>
-
-        {/* Action buttons — always visible */}
-        <div className="flex gap-2">
-          {totalActive > 0 && (
+          <div className="flex items-center gap-2">
             <button
               type="button"
-              className="flex-1 rounded py-2 text-[12px] font-medium transition-colors"
+              className="rounded-lg px-3 py-1 text-[12px] font-semibold transition-all hover:brightness-95 active:scale-95"
               style={{
+                background: "var(--bg-elev)",
+                color: hasActive ? "var(--text-secondary)" : "var(--text-tertiary)",
                 border: "1px solid var(--border-default)",
-                background: "var(--bg-white)",
-                color: "var(--text-secondary)",
+                cursor: hasActive ? "pointer" : "default",
+                opacity: hasActive ? 1 : 0.45,
               }}
-              onClick={reset}
+              disabled={!hasActive}
+              onClick={clear}
             >
-              Reset all
+              Clear
             </button>
-          )}
-          <button
-            type="button"
-            className="flex-1 rounded py-2 text-[12px] font-semibold transition-opacity"
-            style={{
-              background: isDirty ? "var(--accent)" : "var(--bg-elev)",
-              color: isDirty ? "#fff" : "var(--text-tertiary)",
-              cursor: isDirty ? "pointer" : "default",
-            }}
-            disabled={!isDirty}
-            onClick={apply}
-          >
-            Apply filters
-          </button>
+            <button
+              type="button"
+              className="rounded-lg px-3 py-1 text-[12px] font-semibold transition-all hover:brightness-90 active:scale-95"
+              style={{
+                background: isDirty ? "var(--accent)" : "var(--bg-elev)",
+                color: isDirty ? "#fff" : "var(--text-tertiary)",
+                cursor: isDirty ? "pointer" : "default",
+              }}
+              disabled={!isDirty}
+              onClick={apply}
+            >
+              Apply
+            </button>
+            {onClose && (
+              <button type="button" className="rounded p-1" style={{ color: "var(--text-tertiary)" }} onClick={onClose}>
+                <X size={15} />
+              </button>
+            )}
+          </div>
         </div>
-
-        {/* Divider below header */}
-        <div style={{ borderBottom: "1px solid var(--border-default)", marginTop: "12px" }} />
+        <div style={{ borderBottom: "1px solid var(--border-default)" }} />
       </div>
 
-      {/* Filter cards — scroll naturally inside the sidebar */}
+      {/* Filter cards — scroll within the sidebar */}
       <div className="flex flex-col gap-3 pb-4">
 
         {/* Sort */}
@@ -256,22 +255,24 @@ export function FilterPanel({ filters, onApply, filterOptions, onClose, olderTab
           <CheckboxList options={EMPLOYMENT_TYPES} selected={staged.employmentTypes} onToggle={(v) => toggle("employmentTypes", v)} />
         </FilterCard>
 
+        <FilterCard title="Salary (SAR)" selectedCount={staged.salaries?.length ?? 0} onClearSection={() => clearSection("salaries")}>
+          <CheckboxList options={SALARY_RANGES} selected={staged.salaries ?? []} onToggle={(v) => toggle("salaries", v)} />
+        </FilterCard>
+
         <FilterCard title="Experience" selectedCount={staged.experiences.length} onClearSection={() => clearSection("experiences")}>
           <CheckboxList options={EXPERIENCE_LEVELS} selected={staged.experiences} onToggle={(v) => toggle("experiences", v)} />
         </FilterCard>
 
-        {!olderTab && (
-          <FilterCard title="Posted within" selectedCount={staged.freshness.length} onClearSection={() => clearSection("freshness")}>
-            <CheckboxList
-              options={FRESHNESS_OPTIONS.map((o) => o.label)}
-              selected={staged.freshness.map((v) => FRESHNESS_OPTIONS.find((o) => o.value === v)?.label).filter(Boolean)}
-              onToggle={(label) => {
-                const opt = FRESHNESS_OPTIONS.find((o) => o.label === label);
-                if (opt) toggle("freshness", opt.value);
-              }}
-            />
-          </FilterCard>
-        )}
+        <FilterCard title="Posted within" selectedCount={staged.freshness.length} onClearSection={() => clearSection("freshness")}>
+          <CheckboxList
+            options={FRESHNESS_OPTIONS.map((o) => o.label)}
+            selected={staged.freshness.map((v) => FRESHNESS_OPTIONS.find((o) => o.value === v)?.label).filter(Boolean)}
+            onToggle={(label) => {
+              const opt = FRESHNESS_OPTIONS.find((o) => o.label === label);
+              if (opt) toggle("freshness", opt.value);
+            }}
+          />
+        </FilterCard>
 
         <FilterCard title="Gender" selectedCount={staged.genders.length} onClearSection={() => clearSection("genders")}>
           <CheckboxList options={GENDERS} selected={staged.genders} onToggle={(v) => toggle("genders", v)} />

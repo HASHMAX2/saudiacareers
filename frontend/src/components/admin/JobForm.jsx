@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Alert } from "../common/Alert.jsx";
 import { Button } from "../common/Button.jsx";
 import { Input } from "../common/Input.jsx";
+import { SALARY_RANGES } from "../../utils/constants.js";
 
 const GENDER_OPTIONS = ["Any", "Male", "Female"];
 const NATIONALITY_OPTIONS = ["Any Nationality", "Saudi", "Non-Saudi"];
@@ -107,7 +108,13 @@ export function JobForm({ initialValue, onSubmit, submitLabel }) {
           <Input id="industry" label="Industry" required value={form.industry} error={fieldErrors.industry} onChange={update("industry")} />
           <Input id="employmentType" label="Employment type" required value={form.employmentType} error={fieldErrors.employmentType} onChange={update("employmentType")} />
           <Input id="experienceRequired" label="Experience required" required value={form.experienceRequired} error={fieldErrors.experienceRequired} onChange={update("experienceRequired")} />
-          <Input id="salaryRange" label="Salary range (optional)" value={form.salaryRange ?? ""} error={fieldErrors.salaryRange} onChange={update("salaryRange")} />
+          <label>
+            <span className="field-label">Salary range (optional)</span>
+            <select className="form-control appearance-none" value={form.salaryRange ?? ""} onChange={update("salaryRange")}>
+              <option value="">Not specified</option>
+              {SALARY_RANGES.map((r) => <option key={r} value={r}>{r}</option>)}
+            </select>
+          </label>
           <Input id="applicationDeadline" label="Application deadline" type="date" value={form.applicationDeadline?.slice?.(0, 10) ?? ""} onChange={update("applicationDeadline")} />
           <label>
             <span className="field-label">Gender preference</span>

@@ -4,26 +4,22 @@ import { jobsApi } from "../../api/jobs.js";
 import { Pagination } from "../../components/common/Pagination.jsx";
 import { Spinner } from "../../components/common/Spinner.jsx";
 import { JobCard } from "../../components/jobs/JobCard.jsx";
-import { EMPTY_FILTERS, FilterPanel } from "../../components/jobs/FilterPanel.jsx";
+import { FilterPanel } from "../../components/jobs/FilterPanel.jsx";
+import { EMPTY_FILTERS } from "../../utils/constants.js";
 
-const OLDER_CUTOFF_DAYS = 60;
-
-function filtersToParams(filters, tab) {
+function filtersToParams(filters) {
   const params = { sort: filters.sort };
-  if (filters.locations.length)       params.locations       = filters.locations.join(",");
-  if (filters.industries.length)      params.industries      = filters.industries.join(",");
-  if (filters.employmentTypes.length) params.employmentTypes = filters.employmentTypes.join(",");
-  if (filters.experiences.length)     params.experiences     = filters.experiences.join(",");
-  if (filters.genders.length)         params.genders         = filters.genders.join(",");
-  if (filters.nationalities.length)   params.nationalities   = filters.nationalities.join(",");
-
-  if (tab === "older") {
-    params.postedBefore = new Date(Date.now() - OLDER_CUTOFF_DAYS * 86400000).toISOString();
-  } else if (filters.freshness.length) {
+  if (filters.locations.length)       params.locations       = filters.locations.join("|");
+  if (filters.industries.length)      params.industries      = filters.industries.join("|");
+  if (filters.employmentTypes.length) params.employmentTypes = filters.employmentTypes.join("|");
+  if (filters.experiences.length)     params.experiences     = filters.experiences.join("|");
+  if (filters.salaries?.length)        params.salaries        = filters.salaries.join("|");
+  if (filters.genders.length)         params.genders         = filters.genders.join("|");
+  if (filters.nationalities.length)   params.nationalities   = filters.nationalities.join("|");
+  if (filters.freshness.length) {
     const maxDays = Math.max(...filters.freshness);
     params.postedAfter = new Date(Date.now() - maxDays * 86400000).toISOString();
   }
-
   return params;
 }
 
@@ -33,37 +29,20 @@ function countActive(filters) {
     filters.industries.length +
     filters.employmentTypes.length +
     filters.experiences.length +
+    (filters.salaries?.length ?? 0) +
     filters.genders.length +
     filters.nationalities.length +
     filters.freshness.length
   );
 }
 
-function TabButton({ active, onClick, children }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="px-4 py-1.5 text-[13px] font-semibold rounded transition-colors"
-      style={
-        active
-          ? { background: "var(--accent)", color: "#fff" }
-          : { background: "var(--bg-elev)", color: "var(--text-secondary)" }
-      }
-    >
-      {children}
-    </button>
-  );
-}
-
 export function Jobs() {
-  const [tab, setTab]                 = useState("recent");
-  const [applied, setApplied]         = useState(EMPTY_FILTERS);
-  const [page, setPage]               = useState(1);
-  const [result, setResult]           = useState({ jobs: [], pagination: { page: 1, totalPages: 1, total: 0 } });
-  const [loading, setLoading]         = useState(true);
+  const [applied, setApplied]             = useState(EMPTY_FILTERS);
+  const [page, setPage]                   = useState(1);
+  const [result, setResult]               = useState({ jobs: [], pagination: { page: 1, totalPages: 1, total: 0 } });
+  const [loading, setLoading]             = useState(true);
   const [filterOptions, setFilterOptions] = useState(null);
-  const [mobileOpen, setMobileOpen]   = useState(false);
+  const [mobileOpen, setMobileOpen]       = useState(false);
 
   useEffect(() => {
     jobsApi.filterOptions().then(({ data }) => setFilterOptions(data.data)).catch(() => {});
@@ -71,12 +50,11 @@ export function Jobs() {
 
   useEffect(() => {
     setLoading(true);
-    const params = { page, ...filtersToParams(applied, tab) };
     jobsApi
-      .list(params)
+      .list({ page, ...filtersToParams(applied) })
       .then(({ data }) => setResult(data.data))
       .finally(() => setLoading(false));
-  }, [page, applied, tab]);
+  }, [page, applied]);
 
   function handleApply(newFilters) {
     setPage(1);
@@ -84,17 +62,7 @@ export function Jobs() {
     setMobileOpen(false);
   }
 
-  function handleTabChange(newTab) {
-    setTab(newTab);
-    setPage(1);
-    // Clear freshness when switching to older tab (not applicable there)
-    if (newTab === "older") {
-      setApplied((prev) => ({ ...prev, freshness: [] }));
-    }
-  }
-
   const active = countActive(applied);
-  const olderTab = tab === "older";
 
   return (
     <section>
@@ -144,7 +112,6 @@ export function Jobs() {
               onApply={handleApply}
               filterOptions={filterOptions}
               onClose={() => setMobileOpen(false)}
-              olderTab={olderTab}
             />
           </div>
         )}
@@ -156,29 +123,18 @@ export function Jobs() {
         {/* Filter sidebar — desktop only */}
         <aside className="hidden lg:block">
           <div
-            style={{ position: "sticky", top: "80px", maxHeight: "calc(100vh - 100px)", overflowY: "auto", padding: "12px 0" }}
+            style={{ position: "sticky", top: "80px", maxHeight: "calc(100vh - 100px)", overflowY: "auto", paddingBottom: "12px" }}
           >
             <FilterPanel
               filters={applied}
               onApply={handleApply}
               filterOptions={filterOptions}
-              olderTab={olderTab}
             />
           </div>
         </aside>
 
         {/* Job results */}
         <div>
-          {/* Tab switcher */}
-          <div className="mb-5 flex items-center gap-2">
-            <TabButton active={!olderTab} onClick={() => handleTabChange("recent")}>
-              Recent
-            </TabButton>
-            <TabButton active={olderTab} onClick={() => handleTabChange("older")}>
-              Older than {OLDER_CUTOFF_DAYS} days
-            </TabButton>
-          </div>
-
           {!loading && (
             <p className="mb-4 text-[13px]" style={{ color: "var(--text-tertiary)" }}>
               {result.pagination.total} role{result.pagination.total !== 1 ? "s" : ""} found
@@ -205,9 +161,7 @@ export function Jobs() {
                 </span>
                 <h2 className="mt-4 text-lg font-bold">No roles found</h2>
                 <p className="mt-2 text-[15px]" style={{ color: "var(--text-secondary)" }}>
-                  {olderTab
-                    ? "No roles older than 60 days match your filters."
-                    : "Try adjusting or clearing your filters."}
+                  Try adjusting or clearing your filters.
                 </p>
                 {active > 0 && (
                   <button
