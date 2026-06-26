@@ -1,6 +1,6 @@
 # SaudiaCareers Project Progress
 
-Last updated: June 24, 2026 (app-enhancement session 2)
+Last updated: June 25, 2026 (app-enhancement session 3)
 
 Future sessions must read both `CLAUDE.md` and this file before coding.
 
@@ -376,6 +376,79 @@ All changes are on the `app-enhancement` branch. Not yet merged into `main`.
 /dashboard/change-password   Candidate change password (protected)
 ```
 
+### App-enhancement session 3 (June 25, 2026)
+
+All changes are on the `app-enhancement` branch. Not yet merged into `main`. Two commits: `1eb0071` (UI polish) and `daa660e` (WhatsApp import).
+
+**Admin password:** `Admin@5678` (changed from seeded default).
+
+#### UI polish (commit `1eb0071`)
+
+**Navbar (`Navbar.jsx`, `index.css`):**
+- Height reduced from 80px to 64px (`.nav-header` class, `height: 64px`).
+- "Join free" button label shortened to "Join".
+- Accent color updated from `#F2532E` to `#F44336` across all CSS tokens (`--accent`, `--accent-hover: #D32F2F`, `--accent-subtle`).
+- Hover effect on navbar bottom border: `inset 0 -1px 0 var(--accent)` + `0 4px 16px rgba(0,0,0,0.07)` lift shadow, 250ms ease transition.
+- Logout: `Loader2` spinner + `loggingOut` state while API call is in flight. `Toast` shown for 1500ms then auto-dismissed via `setTimeout` before `clearSession()` + `navigate('/')`. `timerRef` cleans up on unmount. Root cause of previous toast-not-dismissing bug: `duration` prop on Toast only animates the progress bar — parent must call `setShowToast(false)`.
+
+**Landing page (`Landing.jsx`):**
+- Search bar removed entirely (was in hero section; not needed since "Browse roles" button exists).
+- Company marquee `mt-20` → `mt-0` so it is visible without scrolling immediately below the hero.
+- Feature cards ("Roles worth your attention") given `className="card-soft card-lift"` for hover lift animation.
+- CTA glow color updated to match new accent `rgba(244,67,54,0.35)`.
+
+**Feature card hover animation (`index.css`):**
+- `.card-soft` placed before `.card-lift` in `@layer components`. Critical: `@apply transition-colors duration-200` inside `.card-soft` expands to individual transition longhands which would override a `transition` shorthand if `.card-lift` appeared earlier in the file (CSS cascade by source order). Fix: `.card-lift` is defined after `.card-soft` and explicitly lists `border-color 200ms ease` to preserve the border hover without relying on card-soft's shorthand.
+- `.card-lift` transition: `transform 320ms ease-out, box-shadow 320ms ease-out, border-color 200ms ease`.
+- `.card-lift:hover`: `translateY(-6px)`, `box-shadow: 0 16px 36px rgba(0,0,0,0.10)`.
+
+**Browse Jobs — closed jobs hidden (`jobController.js`):**
+- Public job listing query now includes `OR: [{ applicationDeadline: null }, { applicationDeadline: { gt: now } }]` so jobs whose deadline has passed never appear in results.
+- "Closed" badge and closed-state branch removed from `JobCard.jsx` — every card the frontend receives is guaranteed open.
+
+**Browse Jobs — uniform card height (`Jobs.jsx`, `JobCard.jsx`):**
+- Layout changed from CSS masonry columns (`column-count`) to CSS grid (`div.grid.gap-5.md:grid-cols-2.xl:grid-cols-3`). Grid stretches all cards in a row to equal height via implicit `align-items: stretch`.
+- `JobCard` footer: `marginTop: "20px"` inline style removed (was overriding `mt-auto` Tailwind class — inline styles have higher specificity). `mt-auto` now correctly pushes "View role" button to the bottom of every card regardless of content height.
+
+#### WhatsApp job import (commit `daa660e`)
+
+**Backend:**
+- `@anthropic-ai/sdk` installed.
+- `ANTHROPIC_API_KEY` added to `backend/.env`.
+- `backend/src/services/aiParserService.js` — calls Claude Haiku (`claude-haiku-4-5-20251001`) with a structured system prompt. Handles: one object per role (multi-role messages split), one object per location (multi-city postings duplicated), location mapping to Riyadh/Jeddah/Dammam/Other, first valid email extracted (WhatsApp numbers ignored), emoji stripping, industry inference, employment type defaulting to Full-time. Strips markdown fences from response before `JSON.parse`.
+- `backend/src/controllers/importController.js` — validates text present and ≤ 60,000 chars, calls parser, returns `{ jobs, count }`.
+- `POST /api/admin/import/parse` added to `adminRoutes.js` — protected by `authenticate + authorizeAdmin + requirePasswordChangeComplete`.
+
+**Frontend:**
+- `adminApi.parseImport(text)` added to `frontend/src/api/admin.js`.
+- `frontend/src/pages/admin/ImportJobs.jsx` — full import page:
+  - Textarea with `id="whatsapp-paste"`, live character counter, multi-message hint in placeholder.
+  - "Parse jobs" button (disabled when textarea empty, shows spinner while parsing).
+  - After parse: summary header with job count + "Publish all (N)" button when >1 pending job.
+  - Per-job `JobReviewCard` component: collapsible (expanded by default), 1/N badge, warning indicator for missing required fields, all fields editable inline (dropdowns for Location/Industry/Employment type, text inputs for everything else), per-card Publish + Discard buttons. Published cards turn green with a checkmark.
+  - "Publish all" calls `adminApi.createJob()` for every pending card in parallel via `Promise.allSettled`, reports success/fail count via toast.
+- `/admin/jobs/import` route added inside `AdminRoute + DashboardLayout` in `App.jsx`.
+- "Import Jobs" entry added to `adminLinks` array in `App.jsx`.
+- "Jobs" link in `adminLinks` given `end: true` to prevent it highlighting on `/admin/jobs/import` (React Router NavLink uses prefix matching by default).
+
+**Known limitation:** Anthropic API key requires credits. The account balance was zero during testing — the endpoint, auth, and parser are correctly wired; the `400 credit balance too low` error comes from the Anthropic API itself, not from application code. Add credits at console.anthropic.com → Billing.
+
+#### Playwright test results (33/33 passing)
+
+Full suite covers: navbar height/accent/hover, no search bar, marquee visibility, card-lift on 3 feature cards, no closed jobs on browse, uniform card heights, "View role" pinned to bottom, candidate register → dashboard, logout spinner + toast + auto-dismiss + redirect, admin login, admin nav highlighting (Jobs end:true fix), Import Jobs page structure, job detail page, route guards for /dashboard and /admin/dashboard.
+
+#### Frontend routes added
+
+```text
+/admin/jobs/import   WhatsApp job import (admin only)
+```
+
+#### Admin API endpoint added
+
+```text
+POST   /api/admin/import/parse   Parse WhatsApp messages via Claude AI
+```
+
 ## Partially Completed
 
 ### End-to-end flow verification
@@ -470,6 +543,7 @@ GET    /api/admin/applications
 GET    /api/admin/applications/export
 GET    /api/admin/applications/:id
 PATCH  /api/admin/applications/:id/status
+POST   /api/admin/import/parse
 ```
 
 ## Frontend Routes
@@ -496,6 +570,7 @@ All routes in `AGENTS.md` are registered and have functional pages:
 /admin/jobs/:id/edit
 /admin/applications
 /admin/applications/:id
+/admin/jobs/import
 /unauthorized
 /*
 ```
