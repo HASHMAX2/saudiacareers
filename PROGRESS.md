@@ -1,6 +1,6 @@
 # SaudiaCareers Project Progress
 
-Last updated: June 26, 2026 (Job-filters session 2)
+Last updated: June 26, 2026 (Job-filters session 3 — saved jobs)
 
 Future sessions must read both `CLAUDE.md` and this file before coding.
 
@@ -517,6 +517,58 @@ postedBefore     ISO date string
 sort             "newest" (default) | "deadline"
 ```
 
+### Saved jobs feature (June 26, 2026)
+
+All changes are on the `Job-filters` branch. Committed as `33d4fb5`. All 9 Playwright browser tests passing.
+
+**Database:**
+- `SavedJob` model added to `schema.prisma` with compound unique key `userId_jobId`, `savedAt` default `now()`, and cascade delete on both `User` and `Job` FK.
+- Migration `20260626130000_add_saved_jobs` applied to production Supabase database.
+
+**Backend:**
+- `backend/src/validation/savedJobSchemas.js` — `saveJobSchema` (body: `jobId` int positive) and `savedJobIdSchema` (params: `jobId` int positive) using the `envelope()` helper.
+- `backend/src/controllers/savedJobsController.js` — four controllers:
+  - `saveJob`: upsert on `userId_jobId` compound key (idempotent)
+  - `unsaveJob`: `deleteMany` (safe even if already unsaved)
+  - `getSavedJobs`: returns full job data + `savedAt` + `isClosed` calculated at query time
+  - `getSavedIds`: lightweight, returns array of jobId numbers for store hydration
+- `backend/src/routes/savedJobsRoutes.js` — all four routes protected by `authenticate + authorizeCandidate`. Router mounted at `/api/saved-jobs` in `app.js`.
+
+**Frontend:**
+- `frontend/src/api/savedJobs.js` — `savedJobsApi.getAll()`, `.getIds()`, `.save(jobId)`, `.unsave(jobId)`.
+- `frontend/src/store/savedJobsStore.js` — Zustand store with `savedIds: Set<number>`, `fetchIds` (idempotent, skips if initialized), `isSaved`, `toggle` (optimistic update with revert on failure), `remove` (single ID removal), `reset` (on logout).
+- `frontend/src/components/jobs/JobCard.jsx` — bookmark button added for candidates only. Uses `aria-label="Save job"` / `"Remove from saved"` that toggles on click via store `toggle()`. Bookmark icon fill reflects saved state.
+- `frontend/src/pages/public/JobDetail.jsx` — Save/Saved button added to job header (candidates only). Same aria-label toggle pattern; calls store `toggle()`. Calls `fetchIds()` on mount when candidate.
+- `frontend/src/pages/candidate/SavedJobs.jsx` — new page at `/dashboard/saved-jobs`. Splits saved jobs into "active" and "unavailable" (deleted/inactive/expired) sections. Status badges: red "Job removed", amber "Inactive", amber "Expired". Remove button (X) per card with spinner. Empty state with "Browse roles" link. Uses `savedJobsApi.getAll()` on mount and `savedJobsApi.unsave()` + store `remove()` on button click.
+- `frontend/src/App.jsx` — "Saved Jobs" link added to `candidateLinks` array (Bookmark icon); `/dashboard/saved-jobs` route added inside `PrivateRoute + DashboardLayout`.
+- `frontend/src/components/layout/Navbar.jsx` — `resetSaved()` called before `clearSession()` on logout to clear saved-jobs store state.
+- `frontend/src/pages/public/Jobs.jsx` — `fetchSavedIds()` called on mount when user is a candidate.
+
+**Bug fixed:**
+- `savedJobsStore.js` was missing the `remove(jobId)` function. `SavedJobs.jsx` destructured `remove` from the store and got `undefined`; calling it threw silently after the API succeeded, so `setJobs` never ran and removed cards never disappeared. Fixed by adding `remove` as a proper store action.
+
+#### Playwright browser test results (9/9 passing)
+
+| Check | Result |
+|---|---|
+| Candidate login succeeds | ✓ |
+| Bookmark buttons visible on job cards | ✓ |
+| Bookmark toggles to saved state (aria-label changes) | ✓ |
+| Saved Jobs link in candidate sidebar | ✓ |
+| Saved Jobs page loads | ✓ |
+| Saved jobs are listed on the page | ✓ |
+| Removing a saved job removes it from the list | ✓ |
+| Save button visible on job detail page | ✓ |
+| Save button on detail page toggles aria-label | ✓ |
+
+#### Saved jobs API endpoints added
+```text
+GET    /api/saved-jobs         Returns full saved job data with savedAt + isClosed
+GET    /api/saved-jobs/ids     Returns array of saved jobId numbers (lightweight)
+POST   /api/saved-jobs         Save a job { jobId }
+DELETE /api/saved-jobs/:jobId  Unsave a job
+```
+
 ## Partially Completed
 
 ### End-to-end flow verification
@@ -597,6 +649,15 @@ POST   /api/applications
 GET    /api/applications/mine
 ```
 
+### Saved jobs
+
+```text
+GET    /api/saved-jobs
+GET    /api/saved-jobs/ids
+POST   /api/saved-jobs
+DELETE /api/saved-jobs/:jobId
+```
+
 ### Admin
 
 ```text
@@ -628,6 +689,7 @@ All routes in `AGENTS.md` are registered and have functional pages:
 /reset-password/:token
 /dashboard
 /dashboard/profile
+/dashboard/saved-jobs
 /dashboard/applications
 /dashboard/change-password
 /admin/login
