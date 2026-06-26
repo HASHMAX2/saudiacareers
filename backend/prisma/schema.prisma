@@ -67,6 +67,8 @@ model Job {
   description         String
   requiredSkills      String
   hrEmail             String
+  gender              String?       @default("Any")
+  nationality         String?       @default("Any Nationality")
   applicationDeadline DateTime?
   status              JobStatus     @default(ACTIVE)
   isDeleted           Boolean       @default(false)

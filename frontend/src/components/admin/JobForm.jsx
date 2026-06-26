@@ -3,7 +3,10 @@ import { Alert } from "../common/Alert.jsx";
 import { Button } from "../common/Button.jsx";
 import { Input } from "../common/Input.jsx";
 
-const emptyJob = { title: "", companyName: "", location: "", industry: "", employmentType: "", experienceRequired: "", salaryRange: "", description: "", requiredSkills: "", hrEmail: "", applicationDeadline: "", status: "ACTIVE" };
+const GENDER_OPTIONS = ["Any", "Male", "Female"];
+const NATIONALITY_OPTIONS = ["Any Nationality", "Saudi", "Non-Saudi"];
+
+const emptyJob = { title: "", companyName: "", location: "", industry: "", employmentType: "", experienceRequired: "", salaryRange: "", description: "", requiredSkills: "", hrEmail: "", gender: "Any", nationality: "Any Nationality", applicationDeadline: "", status: "ACTIVE" };
 
 function validateJob(form) {
   const errors = {};
@@ -78,7 +81,13 @@ export function JobForm({ initialValue, onSubmit, submitLabel }) {
     setError("");
     setSubmitting(true);
     try {
-      await onSubmit({ ...form, salaryRange: form.salaryRange || null, applicationDeadline: form.applicationDeadline ? new Date(form.applicationDeadline).toISOString() : null });
+      await onSubmit({
+        ...form,
+        salaryRange: form.salaryRange || null,
+        gender: form.gender || "Any",
+        nationality: form.nationality || "Any Nationality",
+        applicationDeadline: form.applicationDeadline ? new Date(form.applicationDeadline).toISOString() : null,
+      });
     } catch (requestError) {
       setError(requestError.response?.data?.message ?? "Unable to save job");
     } finally {
@@ -100,6 +109,18 @@ export function JobForm({ initialValue, onSubmit, submitLabel }) {
           <Input id="experienceRequired" label="Experience required" required value={form.experienceRequired} error={fieldErrors.experienceRequired} onChange={update("experienceRequired")} />
           <Input id="salaryRange" label="Salary range (optional)" value={form.salaryRange ?? ""} error={fieldErrors.salaryRange} onChange={update("salaryRange")} />
           <Input id="applicationDeadline" label="Application deadline" type="date" value={form.applicationDeadline?.slice?.(0, 10) ?? ""} onChange={update("applicationDeadline")} />
+          <label>
+            <span className="field-label">Gender preference</span>
+            <select className="form-control appearance-none" value={form.gender ?? "Any"} onChange={update("gender")}>
+              {GENDER_OPTIONS.map((g) => <option key={g} value={g}>{g}</option>)}
+            </select>
+          </label>
+          <label>
+            <span className="field-label">Nationality preference</span>
+            <select className="form-control appearance-none" value={form.nationality ?? "Any Nationality"} onChange={update("nationality")}>
+              {NATIONALITY_OPTIONS.map((n) => <option key={n} value={n}>{n}</option>)}
+            </select>
+          </label>
         </div>
       </section>
       <section className="card-soft p-5 sm:p-6">

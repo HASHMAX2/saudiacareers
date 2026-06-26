@@ -1,6 +1,6 @@
 import { api } from "./client.js";
 
-const JOB_FIELDS = ["title", "companyName", "location", "industry", "employmentType", "experienceRequired", "salaryRange", "description", "requiredSkills", "hrEmail", "applicationDeadline", "status"];
+const JOB_FIELDS = ["title", "companyName", "location", "industry", "employmentType", "experienceRequired", "salaryRange", "description", "requiredSkills", "hrEmail", "gender", "nationality", "applicationDeadline", "status"];
 
 function pickJobFields(payload) {
   return Object.fromEntries(JOB_FIELDS.filter((k) => k in payload).map((k) => [k, payload[k]]));

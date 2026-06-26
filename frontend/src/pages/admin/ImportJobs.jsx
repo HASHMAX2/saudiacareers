@@ -318,8 +318,6 @@ export function ImportJobs() {
     }
   }
 
-  const pendingJobs = jobs?.filter((j) => j._published !== true) ?? [];
-
   async function handlePublishAll() {
     if (!jobs?.length) return;
     setPublishAllBusy(true);

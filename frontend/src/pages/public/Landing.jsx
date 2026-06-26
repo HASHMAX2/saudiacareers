@@ -234,7 +234,7 @@ export function Landing() {
               className="mt-4 text-[18px] leading-7 max-w-md"
               style={{ color: "var(--text-on-dark-secondary)" }}
             >
-              Build a profile in two minutes. Only see roles you'd actually take.
+              Build a profile in two minutes. Only see roles you&apos;d actually take.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link to="/register" className="btn-primary">

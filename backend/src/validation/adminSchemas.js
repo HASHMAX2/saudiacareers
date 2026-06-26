@@ -12,6 +12,8 @@ const jobBody = z.object({
   description: z.string().trim().min(20).max(20000),
   requiredSkills: z.string().trim().min(1).max(2000),
   hrEmail: z.string().email(),
+  gender: z.string().trim().max(50).nullable().optional(),
+  nationality: z.string().trim().max(100).nullable().optional(),
   applicationDeadline: z.coerce.date().nullable().optional(),
   status: z.nativeEnum(JobStatus).optional(),
 });

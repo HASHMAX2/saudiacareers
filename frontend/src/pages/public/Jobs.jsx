@@ -1,41 +1,104 @@
+import { BriefcaseBusiness, SlidersHorizontal, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { BriefcaseBusiness, Search, SlidersHorizontal } from "lucide-react";
-import { useSearchParams } from "react-router-dom";
 import { jobsApi } from "../../api/jobs.js";
 import { Pagination } from "../../components/common/Pagination.jsx";
 import { Spinner } from "../../components/common/Spinner.jsx";
 import { JobCard } from "../../components/jobs/JobCard.jsx";
-import { useDebounce } from "../../hooks/useDebounce.js";
+import { EMPTY_FILTERS, FilterPanel } from "../../components/jobs/FilterPanel.jsx";
 
-const locations      = ["Riyadh", "Jeddah", "Dammam", "Other"];
-const employmentTypes = ["Full-time", "Part-time", "Contract", "Internship"];
-const sortOptions    = [
-  { value: "newest",   label: "Newest first" },
-  { value: "deadline", label: "Deadline soonest" },
-];
+const OLDER_CUTOFF_DAYS = 60;
+
+function filtersToParams(filters, tab) {
+  const params = { sort: filters.sort };
+  if (filters.locations.length)       params.locations       = filters.locations.join(",");
+  if (filters.industries.length)      params.industries      = filters.industries.join(",");
+  if (filters.employmentTypes.length) params.employmentTypes = filters.employmentTypes.join(",");
+  if (filters.experiences.length)     params.experiences     = filters.experiences.join(",");
+  if (filters.genders.length)         params.genders         = filters.genders.join(",");
+  if (filters.nationalities.length)   params.nationalities   = filters.nationalities.join(",");
+
+  if (tab === "older") {
+    params.postedBefore = new Date(Date.now() - OLDER_CUTOFF_DAYS * 86400000).toISOString();
+  } else if (filters.freshness.length) {
+    const maxDays = Math.max(...filters.freshness);
+    params.postedAfter = new Date(Date.now() - maxDays * 86400000).toISOString();
+  }
+
+  return params;
+}
+
+function countActive(filters) {
+  return (
+    filters.locations.length +
+    filters.industries.length +
+    filters.employmentTypes.length +
+    filters.experiences.length +
+    filters.genders.length +
+    filters.nationalities.length +
+    filters.freshness.length
+  );
+}
+
+function TabButton({ active, onClick, children }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="px-4 py-1.5 text-[13px] font-semibold rounded transition-colors"
+      style={
+        active
+          ? { background: "var(--accent)", color: "#fff" }
+          : { background: "var(--bg-elev)", color: "var(--text-secondary)" }
+      }
+    >
+      {children}
+    </button>
+  );
+}
 
 export function Jobs() {
-  const [searchParams] = useSearchParams();
-  const [search, setSearch]   = useState(searchParams.get("search") ?? "");
-  const [params, setParams]   = useState({ page: 1, sort: "newest" });
-  const [result, setResult]   = useState({ jobs: [], pagination: { page: 1, totalPages: 1, total: 0 } });
-  const [loading, setLoading] = useState(true);
-  const debouncedSearch       = useDebounce(search);
+  const [tab, setTab]                 = useState("recent");
+  const [applied, setApplied]         = useState(EMPTY_FILTERS);
+  const [page, setPage]               = useState(1);
+  const [result, setResult]           = useState({ jobs: [], pagination: { page: 1, totalPages: 1, total: 0 } });
+  const [loading, setLoading]         = useState(true);
+  const [filterOptions, setFilterOptions] = useState(null);
+  const [mobileOpen, setMobileOpen]   = useState(false);
+
+  useEffect(() => {
+    jobsApi.filterOptions().then(({ data }) => setFilterOptions(data.data)).catch(() => {});
+  }, []);
 
   useEffect(() => {
     setLoading(true);
+    const params = { page, ...filtersToParams(applied, tab) };
     jobsApi
-      .list({ ...params, search: debouncedSearch || undefined })
+      .list(params)
       .then(({ data }) => setResult(data.data))
       .finally(() => setLoading(false));
-  }, [params, debouncedSearch]);
+  }, [page, applied, tab]);
 
-  const updateParam = (key) => (event) =>
-    setParams((current) => ({ ...current, page: 1, [key]: event.target.value || undefined }));
+  function handleApply(newFilters) {
+    setPage(1);
+    setApplied(newFilters);
+    setMobileOpen(false);
+  }
+
+  function handleTabChange(newTab) {
+    setTab(newTab);
+    setPage(1);
+    // Clear freshness when switching to older tab (not applicable there)
+    if (newTab === "older") {
+      setApplied((prev) => ({ ...prev, freshness: [] }));
+    }
+  }
+
+  const active = countActive(applied);
+  const olderTab = tab === "older";
 
   return (
     <section>
-      {/* Header */}
+      {/* Page header */}
       <div className="mb-8">
         <p className="section-label">Browse</p>
         <h1
@@ -45,125 +108,132 @@ export function Jobs() {
           All open roles
         </h1>
         <p className="mt-3 max-w-xl text-[18px] leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-          Search trusted openings and narrow results by location, industry, experience, or type.
+          Filter by location, industry, experience, and more.
         </p>
       </div>
 
-      {/* Search bar */}
-      <div
-        className="flex items-center gap-3 rounded-full bg-white px-5 mb-4"
-        style={{ border: "1px solid var(--border-default)", height: "56px" }}
-      >
-        <Search size={20} style={{ color: "var(--text-tertiary)" }} className="shrink-0" />
-        <input
-          className="min-w-0 flex-1 bg-transparent text-[16px] outline-none placeholder:text-[var(--text-tertiary)]"
-          style={{ color: "var(--text-primary)" }}
-          id="search"
-          placeholder="Search role, company, or skill…"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-        />
-      </div>
-
-      {/* Filter chips */}
-      <div className="flex flex-wrap items-center gap-2 mb-6">
+      {/* Mobile filter toggle */}
+      <div className="mb-4 lg:hidden">
         <button
           type="button"
-          className="inline-flex items-center gap-2 rounded-[10px] border bg-white transition-colors hover:bg-[var(--bg-elev)]"
-          style={{ border: "1px solid var(--border-default)", padding: "10px 14px" }}
-          aria-label="Filters"
+          className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-colors"
+          style={{
+            border: "1px solid var(--border-default)",
+            background: active > 0 ? "var(--accent-subtle)" : "var(--bg-white)",
+            color: active > 0 ? "var(--accent)" : "var(--text-primary)",
+          }}
+          onClick={() => setMobileOpen((v) => !v)}
         >
-          <SlidersHorizontal size={16} style={{ color: "var(--text-secondary)" }} />
+          <SlidersHorizontal size={15} />
+          {mobileOpen ? "Hide filters" : "Filters"}
+          {active > 0 && (
+            <span
+              className="grid h-5 w-5 place-items-center rounded-full text-[11px] font-bold text-white"
+              style={{ background: "var(--accent)" }}
+            >
+              {active}
+            </span>
+          )}
+          {mobileOpen ? <X size={14} /> : null}
         </button>
 
-        <select
-          aria-label="Location"
-          className="inline-flex items-center rounded-full border bg-white text-[14px] font-medium cursor-pointer appearance-none outline-none transition-colors hover:bg-[var(--bg-elev)]"
-          style={{ border: "1px solid var(--border-pill)", padding: "10px 18px", color: "var(--text-primary)" }}
-          value={params.location ?? ""}
-          onChange={updateParam("location")}
-        >
-          <option value="">All locations</option>
-          {locations.map((l) => <option key={l}>{l}</option>)}
-        </select>
-
-        <input
-          className="inline-flex items-center rounded-full border bg-white text-[14px] font-medium outline-none transition-colors placeholder:text-[var(--text-tertiary)] hover:bg-[var(--bg-elev)]"
-          style={{ border: "1px solid var(--border-pill)", padding: "10px 18px", color: "var(--text-primary)" }}
-          placeholder="Industry"
-          value={params.industry ?? ""}
-          onChange={updateParam("industry")}
-        />
-
-        <input
-          className="inline-flex items-center rounded-full border bg-white text-[14px] font-medium outline-none transition-colors placeholder:text-[var(--text-tertiary)] hover:bg-[var(--bg-elev)]"
-          style={{ border: "1px solid var(--border-pill)", padding: "10px 18px", color: "var(--text-primary)" }}
-          placeholder="Experience"
-          value={params.experience ?? ""}
-          onChange={updateParam("experience")}
-        />
-
-        <select
-          aria-label="Employment type"
-          className="inline-flex items-center rounded-full border bg-white text-[14px] font-medium cursor-pointer appearance-none outline-none transition-colors hover:bg-[var(--bg-elev)]"
-          style={{ border: "1px solid var(--border-pill)", padding: "10px 18px", color: "var(--text-primary)" }}
-          value={params.employmentType ?? ""}
-          onChange={updateParam("employmentType")}
-        >
-          <option value="">All types</option>
-          {employmentTypes.map((t) => <option key={t}>{t}</option>)}
-        </select>
-
-        <span style={{ color: "var(--border-default)", userSelect: "none" }}>·</span>
-
-        <select
-          aria-label="Sort jobs"
-          className="inline-flex items-center rounded-full border bg-white text-[14px] font-medium cursor-pointer appearance-none outline-none transition-colors hover:bg-[var(--bg-elev)]"
-          style={{ border: "1px solid var(--border-pill)", padding: "10px 18px", color: "var(--text-primary)" }}
-          value={params.sort}
-          onChange={updateParam("sort")}
-        >
-          {sortOptions.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
-        </select>
-
-        {!loading && (
-          <span className="ml-auto text-[13px]" style={{ color: "var(--text-tertiary)" }}>
-            {result.pagination.total ?? result.jobs.length} roles
-          </span>
+        {mobileOpen && (
+          <div className="mt-3">
+            <FilterPanel
+              filters={applied}
+              onApply={handleApply}
+              filterOptions={filterOptions}
+              onClose={() => setMobileOpen(false)}
+              olderTab={olderTab}
+            />
+          </div>
         )}
       </div>
 
-      {/* Results */}
-      {loading ? (
-        <div className="grid min-h-64 place-items-center"><Spinner label="Loading jobs" /></div>
-      ) : result.jobs.length ? (
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{result.jobs.map((job) => <JobCard key={job.id} job={job} />)}</div>
-      ) : (
-        <div className="card-soft mt-6 grid min-h-64 place-items-center p-8 text-center">
-          <div>
-            <span
-              className="mx-auto grid h-12 w-12 place-items-center rounded-full"
-              style={{ background: "var(--bg-elev)", color: "var(--text-tertiary)" }}
-            >
-              <BriefcaseBusiness size={23} />
-            </span>
-            <h2 className="mt-4 text-lg font-bold">No roles found</h2>
-            <p className="mt-2 text-[15px]" style={{ color: "var(--text-secondary)" }}>
-              Try broadening your search or clearing some filters.
-            </p>
-          </div>
-        </div>
-      )}
+      {/* 2-column layout */}
+      <div className="lg:grid lg:gap-8" style={{ gridTemplateColumns: "260px 1fr" }}>
 
-      {!loading && result.jobs.length > 0 && (
-        <div className="mt-8">
-          <Pagination
-            page={result.pagination.page}
-            totalPages={result.pagination.totalPages}
-            onPageChange={(page) => setParams((current) => ({ ...current, page }))}
-          />
+        {/* Filter sidebar — desktop only */}
+        <aside className="hidden lg:block">
+          <div
+            style={{ position: "sticky", top: "80px", maxHeight: "calc(100vh - 100px)", overflowY: "auto", padding: "12px 0" }}
+          >
+            <FilterPanel
+              filters={applied}
+              onApply={handleApply}
+              filterOptions={filterOptions}
+              olderTab={olderTab}
+            />
+          </div>
+        </aside>
+
+        {/* Job results */}
+        <div>
+          {/* Tab switcher */}
+          <div className="mb-5 flex items-center gap-2">
+            <TabButton active={!olderTab} onClick={() => handleTabChange("recent")}>
+              Recent
+            </TabButton>
+            <TabButton active={olderTab} onClick={() => handleTabChange("older")}>
+              Older than {OLDER_CUTOFF_DAYS} days
+            </TabButton>
+          </div>
+
+          {!loading && (
+            <p className="mb-4 text-[13px]" style={{ color: "var(--text-tertiary)" }}>
+              {result.pagination.total} role{result.pagination.total !== 1 ? "s" : ""} found
+              {active > 0 && " · filtered"}
+            </p>
+          )}
+
+          {loading ? (
+            <div className="grid min-h-64 place-items-center">
+              <Spinner label="Loading jobs" />
+            </div>
+          ) : result.jobs.length ? (
+            <div className="grid gap-4">
+              {result.jobs.map((job) => <JobCard key={job.id} job={job} />)}
+            </div>
+          ) : (
+            <div className="card-soft grid min-h-64 place-items-center p-8 text-center">
+              <div>
+                <span
+                  className="mx-auto grid h-12 w-12 place-items-center rounded-full"
+                  style={{ background: "var(--bg-elev)", color: "var(--text-tertiary)" }}
+                >
+                  <BriefcaseBusiness size={23} />
+                </span>
+                <h2 className="mt-4 text-lg font-bold">No roles found</h2>
+                <p className="mt-2 text-[15px]" style={{ color: "var(--text-secondary)" }}>
+                  {olderTab
+                    ? "No roles older than 60 days match your filters."
+                    : "Try adjusting or clearing your filters."}
+                </p>
+                {active > 0 && (
+                  <button
+                    type="button"
+                    className="mt-4 text-sm font-semibold hover:underline"
+                    style={{ color: "var(--accent)" }}
+                    onClick={() => handleApply(EMPTY_FILTERS)}
+                  >
+                    Clear all filters
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {!loading && result.jobs.length > 0 && result.pagination.totalPages > 1 && (
+            <div className="mt-8">
+              <Pagination
+                page={result.pagination.page}
+                totalPages={result.pagination.totalPages}
+                onPageChange={(p) => setPage(p)}
+              />
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </section>
   );
 }

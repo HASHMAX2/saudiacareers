@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Banknote, BriefcaseBusiness, CalendarDays, Check, Clock3, MapPin, Share2 } from "lucide-react";
+import { Banknote, BriefcaseBusiness, CalendarDays, Check, Clock3, MapPin, Share2, Users } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { applicationsApi } from "../../api/applications.js";
 import { jobsApi } from "../../api/jobs.js";
@@ -102,6 +102,8 @@ export function JobDetail() {
             <span className="chip flex items-center gap-2"><BriefcaseBusiness size={14} style={{ color: "var(--accent)" }} />{job.employmentType}</span>
             <span className="chip flex items-center gap-2"><Clock3 size={14} style={{ color: "var(--accent)" }} />{job.experienceRequired}</span>
             {job.salaryRange && <span className="chip flex items-center gap-2"><Banknote size={14} style={{ color: "var(--accent)" }} />{job.salaryRange}</span>}
+            {job.gender && job.gender !== "Any" && <span className="chip flex items-center gap-2"><Users size={14} style={{ color: "var(--accent)" }} />{job.gender} only</span>}
+            {job.nationality && job.nationality !== "Any Nationality" && <span className="chip flex items-center gap-2"><MapPin size={14} style={{ color: "var(--accent)" }} />{job.nationality}</span>}
           </div>
         </header>
 
