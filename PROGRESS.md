@@ -1,6 +1,6 @@
 # SaudiaCareers Project Progress
 
-Last updated: June 26, 2026 (Job-filters session 3 — saved jobs)
+Last updated: June 26, 2026 (employer branch created)
 
 Future sessions must read both `CLAUDE.md` and this file before coding.
 
@@ -8,7 +8,7 @@ Future sessions must read both `CLAUDE.md` and this file before coding.
 
 The app is fully deployed and live in production. Backend is on Render, frontend is on Vercel. Supabase and Resend are configured with real credentials. The production database has migrations applied and the admin user seeded. A UI enhancement pass is next — design references will be placed in `ui-refs/` and the redesign will be done on the `app-enhancement` branch.
 
-Current branch: `Job-filters` (branched from `app-enhancement`/`main` on June 26, 2026).
+Current branch: `employer` (branched from `Job-filters` on June 26, 2026). Employer features are being built on this branch.
 
 ## Live URLs
 
