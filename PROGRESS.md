@@ -1,6 +1,6 @@
 # SaudiaCareers Project Progress
 
-Last updated: June 25, 2026 (app-enhancement session 3)
+Last updated: June 26, 2026 (Job-filters session)
 
 Future sessions must read both `CLAUDE.md` and this file before coding.
 
@@ -8,7 +8,7 @@ Future sessions must read both `CLAUDE.md` and this file before coding.
 
 The app is fully deployed and live in production. Backend is on Render, frontend is on Vercel. Supabase and Resend are configured with real credentials. The production database has migrations applied and the admin user seeded. A UI enhancement pass is next — design references will be placed in `ui-refs/` and the redesign will be done on the `app-enhancement` branch.
 
-Current branch: `app-enhancement` (branched from `main` on June 23, 2026).
+Current branch: `Job-filters` (branched from `app-enhancement`/`main` on June 26, 2026).
 
 ## Live URLs
 
@@ -447,6 +447,61 @@ Full suite covers: navbar height/accent/hover, no search bar, marquee visibility
 
 ```text
 POST   /api/admin/import/parse   Parse WhatsApp messages via Claude AI
+```
+
+### Job filters feature (June 26, 2026)
+
+All changes are on the `Job-filters` branch (branched from `app-enhancement`/`main`). Committed as `8b34110`.
+
+**Database:**
+- `gender` (default `"Any"`) and `nationality` (default `"Any Nationality"`) columns added to the `Job` model in `schema.prisma`.
+- Migration `20260626085337_add_gender_nationality_to_jobs` created — SQL: `ALTER TABLE "Job" ADD COLUMN "gender" TEXT DEFAULT 'Any', ADD COLUMN "nationality" TEXT DEFAULT 'Any Nationality'`.
+- Migration not yet applied to local Docker DB (Docker Desktop was offline during session) or production Supabase — must be run before the backend will start without errors.
+
+**Backend:**
+- `jobSchemas.js` — `listJobsSchema` rewritten to accept multi-value CSV params: `locations`, `industries`, `employmentTypes`, `experiences`, `genders`, `nationalities`, and date-range params `postedAfter`/`postedBefore`. Single-value `location`, `industry`, `experience`, `employmentType`, and `search` params removed.
+- `jobController.js` — `listJobs` rewritten to build an AND-condition array from all active filter params; supports OR expansion for experience (contains match) and gender (specific gender also surfaces "Any" jobs). New `getFilterOptions` function returns distinct `industries` and `nationalities` from active non-deleted jobs.
+- `jobRoutes.js` — `GET /api/jobs/filter-options` route added (before `/:id` to avoid param collision).
+- `adminSchemas.js` — `gender` and `nationality` added to `jobBody` Zod schema (both optional strings, max 50/100 chars).
+
+**Frontend:**
+- `frontend/src/api/jobs.js` — `filterOptions()` method added.
+- `frontend/src/api/admin.js` — `gender` and `nationality` added to `JOB_FIELDS` whitelist in `pickJobFields`.
+- `frontend/src/components/admin/JobForm.jsx` — gender (Any/Male/Female) and nationality (Any Nationality/Saudi/Non-Saudi) dropdown selects added to the job info section.
+- `frontend/src/components/jobs/FilterPanel.jsx` — new component. Collapsible `FilterCard` sections per filter group. Staged/apply pattern (changes only take effect on "Apply filters"). "Reset all" clears all filters at once. Sections: Sort, Location, Industry (dynamic), Employment type, Experience, Posted within, Gender, Nationality (dynamic). Industry and Nationality panels only render when `filterOptions` returns values for them. `olderTab` prop hides "Posted within" when on the Older tab.
+- `frontend/src/pages/public/Jobs.jsx` — fully rewritten. Sidebar layout (260px fixed sidebar on lg+, mobile drawer). "Recent" / "Older than 60 days" tab switcher. `filtersToParams` converts filter state to API query params. Active filter count badge on mobile toggle button. Fetches `filterOptions` on mount.
+- `frontend/src/pages/public/JobDetail.jsx` — gender and nationality shown as chips in the job header when not set to defaults ("Any" / "Any Nationality").
+
+**Bug fixes in same commit:**
+- `JobCard.jsx` — removed unused `Briefcase` import.
+- `ImportJobs.jsx` — removed unused `pendingJobs` variable.
+- `Landing.jsx` — escaped unescaped apostrophe (`you'd` → `you&apos;d`).
+
+**Pending action before this branch can be used:**
+```bash
+# Local (requires Docker Desktop running):
+npm run prisma:migrate --workspace backend
+
+# Production:
+npm run prisma:deploy --workspace backend
+```
+
+#### New API endpoint added
+```text
+GET    /api/jobs/filter-options   Returns distinct industries and nationalities from active jobs
+```
+
+#### Filter params added to GET /api/jobs
+```text
+locations        CSV of location values  (e.g. "Riyadh,Jeddah")
+industries       CSV of industry values
+employmentTypes  CSV of employment type values
+experiences      CSV of experience level values
+genders          CSV — "Any", "Male", "Female"
+nationalities    CSV of nationality values
+postedAfter      ISO date string — show jobs created on or after this date
+postedBefore     ISO date string — show jobs created before this date
+sort             "newest" (default) | "deadline"
 ```
 
 ## Partially Completed
