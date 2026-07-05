@@ -1,4 +1,13 @@
-export const isValidMobile = (value) => /^\+\d{7,15}$/.test(value);
+import { parsePhone } from "./countryCodes.js";
+
+// Valid if: format is +[7-15 digits] AND the local part (after the country code) is ≥ 6 digits.
+// Minimum 6 local digits covers the shortest real mobile numbers on Earth (some Pacific island networks).
+// This rules out numbers like +9661234 (+966 code + only 4 local digits) that pass a naive length check.
+export const isValidMobile = (value) => {
+  if (!value || !/^\+\d{7,15}$/.test(value)) return false;
+  const { digits } = parsePhone(value);
+  return digits.length >= 6;
+};
 
 export const isStrongPassword = (value) =>
   typeof value === "string" &&

@@ -205,7 +205,15 @@ export function PhoneInput({ label, required, error, id, value = "", onChange, d
         />
       </div>
 
+      {/* Submit-time error from parent */}
       {error && <span className="mt-1.5 block text-xs text-red-600">{error}</span>}
+
+      {/* Real-time hint: shown only while typing, before form is submitted */}
+      {!error && digits.length > 0 && digits.length < 6 && (
+        <span className="mt-1.5 block text-xs" style={{ color: "var(--gold-ink)" }}>
+          Enter at least 6 digits for your local number
+        </span>
+      )}
     </label>
   );
 }
