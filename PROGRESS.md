@@ -1,14 +1,16 @@
 # SaudiaCareers Project Progress
 
-Last updated: June 26, 2026 (employer features complete)
+Last updated: July 6, 2026 (candidate profile page complete)
 
 Future sessions must read both `CLAUDE.md` and this file before coding.
 
 ## Current Checkpoint
 
-The app is fully deployed and live in production. Backend is on Render, frontend is on Vercel. Supabase and Resend are configured with real credentials. The production database has migrations applied and the admin user seeded. A UI enhancement pass is next — design references will be placed in `ui-refs/` and the redesign will be done on the `app-enhancement` branch.
+Current branch: `candidateloginpage` (branched from `employer`). The candidate profile page is fully built and tested. Commit `4a81ebe` on local branch — **not yet pushed to GitHub**.
 
-Current branch: `employer` (branched from `Job-filters` on June 26, 2026). Employer features are complete and committed on this branch. 12/12 Playwright browser tests passing.
+The database has been wiped clean and reseeded with only the default admin account. All previous test users, jobs, and applications have been removed. Start fresh by registering new candidate accounts.
+
+Admin account: `admin@saudiacareers.com` / `Admin@1234` (must change password on first login).
 
 ## Live URLs
 
@@ -665,6 +667,83 @@ POST   /api/enquiries
 /contact
 ```
 
+---
+
+## Session: Candidate Profile Page (July 6, 2026)
+
+Branch: `candidateloginpage` (branched from `employer`). Committed locally as `4a81ebe`. **Not yet pushed to GitHub.**
+
+### What was built
+
+#### Two-field name system
+- `User.name` — the name entered at registration. Immutable after signup. Always shown in the navbar.
+- `CandidateProfile.displayName` — optional display name editable via the pencil icon on the profile page header. Shown in the profile page hero only.
+- `serializeProfile` returns three fields: `registeredName`, `displayName`, and `name` (resolved: `displayName || registeredName`).
+- Zod schema: `displayName` uses `optionalText(100)` helper which accepts `""` (coerced to null in controller, clearing the field).
+
+#### DB migrations
+Three new migrations applied to production schema:
+1. `add_profile_fields_and_entries` — added `EmploymentEntry`, `EducationEntry`, `CertificationEntry` models; added `location`, `designation`, `experience`, `skills`, `education`, `summary`, `alternateMobile`, `cvHeadline`, `linkedIn`, `website`, `github`, `desiredRole`, `desiredLocation`, `desiredSalary`, `openToWork` columns to `CandidateProfile`.
+2. `add_personal_detail_fields` — added `profilePhotoPath` column.
+3. `add_display_name` — added `displayName String?` to `CandidateProfile`.
+
+#### New backend endpoints
+```text
+GET    /api/profile/employment
+POST   /api/profile/employment
+PUT    /api/profile/employment/:id
+DELETE /api/profile/employment/:id
+
+GET    /api/profile/education
+POST   /api/profile/education
+PUT    /api/profile/education/:id
+DELETE /api/profile/education/:id
+
+GET    /api/profile/certifications
+POST   /api/profile/certifications
+PUT    /api/profile/certifications/:id
+DELETE /api/profile/certifications/:id
+
+POST   /api/profile/photo
+DELETE /api/profile/photo
+```
+
+#### Profile page sections
+All sections on `CandidateProfile` page built and working:
+- **Profile header** — profile photo (upload/delete), display name with pencil edit, profile completion percentage bar, `Open to work` toggle.
+- **CV / Resume** — upload (PDF/DOC/DOCX, max 5 MB), delete, filename + upload date shown.
+- **Personal Details** — name (read-only registered name), email (read-only), mobile, alternate mobile, location.
+- **Professional Summary** — CV headline + free-text summary.
+- **Key Skills** — tag-style input with comma-separated skills.
+- **IT Skills** — separate tag entry for technical skills.
+- **Employment Details** — list of work entries with add/edit/delete modals. Fields: company, role, location, start/end date, description.
+- **Education Details** — list with add/edit/delete modals. Fields: institution, degree, field of study, graduation year, grade.
+- **Accomplishments & Certifications** — list with add/edit/delete modals. Fields: title, issuer, issue date, URL.
+- **Online Profiles** — LinkedIn, website/portfolio, GitHub.
+- **Desired Job** — desired role, location, salary, open to work toggle.
+
+#### UX improvements
+- Pencil icon always visible (not hover-only).
+- Save button shows "Saving…" during async operations.
+- Trash icon shows "Deleting…" text during deletion.
+- Cancel buttons always rendered; `disabled` (not hidden) while saving.
+- Pencil/edit button `disabled` on the row being deleted (per-entry `deletingId` state pattern).
+- All three modal Cancel buttons disabled during save.
+
+#### `Input` component — `labelHint` prop
+Added optional `labelHint` prop to `Input` component. Renders inline next to the field label in small lowercase text. Applied `normal-case` Tailwind class to override inherited `text-transform: uppercase` from parent `.field-label` CSS.
+
+#### Mobile `+` enforcement
+The `+` prefix is non-deletable in all mobile/phone fields:
+- `Register.jsx` — candidate registration mobile field.
+- `Profile.jsx` — personal section mobile + alternate mobile fields.
+- `EmployerRegister.jsx` — employer phone field.
+All three show `labelHint="enter number with country code"` inline.
+
+#### Test results
+- 122 API tests, all passing.
+- Database wiped clean and reseeded with only the default admin account (`admin@saudiacareers.com` / `Admin@1234`, must change password on first login).
+
 ## Partially Completed
 
 ### End-to-end flow verification
@@ -729,6 +808,21 @@ DELETE /api/profile/resume
 GET    /api/profile/resume/download
 POST   /api/profile/photo
 DELETE /api/profile/photo
+
+GET    /api/profile/employment
+POST   /api/profile/employment
+PUT    /api/profile/employment/:id
+DELETE /api/profile/employment/:id
+
+GET    /api/profile/education
+POST   /api/profile/education
+PUT    /api/profile/education/:id
+DELETE /api/profile/education/:id
+
+GET    /api/profile/certifications
+POST   /api/profile/certifications
+PUT    /api/profile/certifications/:id
+DELETE /api/profile/certifications/:id
 ```
 
 ### Public jobs

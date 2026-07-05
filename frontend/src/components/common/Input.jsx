@@ -1,4 +1,10 @@
-export function Input({ label, labelHint, error, id, required, className = "", ...props }) {
+import { Eye, EyeOff } from "lucide-react";
+import { useState } from "react";
+
+export function Input({ label, labelHint, error, id, required, className = "", type, ...props }) {
+  const [showPwd, setShowPwd] = useState(false);
+  const isPassword = type === "password";
+
   return (
     <label className="block" htmlFor={id}>
       {label ? (
@@ -14,13 +20,28 @@ export function Input({ label, labelHint, error, id, required, className = "", .
           )}
         </span>
       ) : null}
-      <input
-        id={id}
-        required={required}
-        aria-invalid={Boolean(error)}
-        className={`field-box ${error ? "border-red-400" : ""} ${className}`}
-        {...props}
-      />
+      <div className={isPassword ? "relative" : undefined}>
+        <input
+          id={id}
+          type={isPassword ? (showPwd ? "text" : "password") : type}
+          required={required}
+          aria-invalid={Boolean(error)}
+          className={`field-box ${error ? "border-red-400" : ""} ${isPassword ? "pr-10" : ""} ${className}`}
+          {...props}
+        />
+        {isPassword && (
+          <button
+            type="button"
+            tabIndex={-1}
+            onClick={() => setShowPwd((v) => !v)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
+            style={{ color: "var(--text-tertiary)" }}
+            aria-label={showPwd ? "Hide password" : "Show password"}
+          >
+            {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+          </button>
+        )}
+      </div>
       {error ? <span className="mt-1.5 block text-xs text-red-600">{error}</span> : null}
     </label>
   );

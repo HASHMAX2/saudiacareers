@@ -5,6 +5,7 @@ import { AuthShell } from "../../components/auth/AuthShell.jsx";
 import { Alert } from "../../components/common/Alert.jsx";
 import { Button } from "../../components/common/Button.jsx";
 import { Input } from "../../components/common/Input.jsx";
+import { PhoneInput } from "../../components/common/PhoneInput.jsx";
 import { Toast } from "../../components/common/Toast.jsx";
 import { useAuthStore } from "../../store/authStore.js";
 import { isValidMobile, isStrongPassword } from "../../utils/validators.js";
@@ -15,7 +16,7 @@ function validateForm(form) {
   const errors = {};
   const name = form.name?.trim() ?? "";
   const email = form.email?.trim() ?? "";
-  const mobile = form.mobile?.trim() ?? "";
+  const mobile = form.mobile ?? "";
   const password = form.password ?? "";
 
   if (!name) errors.name = "Full name is required.";
@@ -25,8 +26,8 @@ function validateForm(form) {
   if (!email) errors.email = "Email address is required.";
   else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = "Enter a valid email address.";
 
-  if (!mobile || mobile === "+") errors.mobile = "Mobile number is required.";
-  else if (!isValidMobile(mobile)) errors.mobile = "Include your country code starting with + — for example, +966512345678 for Saudi or +91XXXXXXXXXX for India.";
+  if (!mobile) errors.mobile = "Mobile number is required.";
+  else if (!isValidMobile(mobile)) errors.mobile = "Enter your full phone number after selecting the country code.";
 
   if (!password) errors.password = "Password is required.";
   else if (!isStrongPassword(password)) errors.password = "Password must be at least 8 characters with one uppercase letter and one number.";
@@ -35,7 +36,7 @@ function validateForm(form) {
 }
 
 export function Register() {
-  const [form, setForm] = useState({ name: "", email: "", mobile: "+", password: "" });
+  const [form, setForm] = useState({ name: "", email: "", mobile: "", password: "" });
   const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -47,9 +48,7 @@ export function Register() {
   useEffect(() => () => clearTimeout(timerRef.current), []);
 
   const update = (key) => (event) => {
-    let val = event.target.value;
-    if (key === "mobile" && !val.startsWith("+")) val = "+";
-    setForm({ ...form, [key]: val });
+    setForm({ ...form, [key]: event.target.value });
     setFieldErrors((prev) => ({ ...prev, [key]: undefined }));
     setError("");
   };
@@ -93,7 +92,7 @@ export function Register() {
       <form className="space-y-4" onSubmit={submit}>
         <Input autoComplete="name" id="name" label="Full name" placeholder="Your full name" value={form.name} onChange={update("name")} required error={fieldErrors.name} />
         <Input autoComplete="email" id="email" label="Email address" placeholder="you@example.com" type="email" value={form.email} onChange={update("email")} required error={fieldErrors.email} />
-        <Input autoComplete="tel" id="mobile" label="Mobile" labelHint="enter number with country code" placeholder="+966512345678" value={form.mobile} onChange={update("mobile")} required error={fieldErrors.mobile} />
+        <PhoneInput id="mobile" label="Mobile" value={form.mobile} onChange={update("mobile")} required error={fieldErrors.mobile} />
         <div>
           <Input autoComplete="new-password" id="password" label="Password" placeholder="At least 8 characters" type="password" value={form.password} onChange={update("password")} required error={fieldErrors.password} />
           <p className="mt-1.5 font-mono text-xs" style={{ color: "var(--text-tertiary)" }}>Use at least 8 characters with one uppercase letter and one number.</p>
