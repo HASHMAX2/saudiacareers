@@ -10,7 +10,7 @@ import {
   REFRESH_COOKIE_NAME,
   createAccessToken,
   createRefreshToken,
-  findActiveRefreshToken,
+  consumeRefreshToken,
   getRefreshCookieClearOptions,
   getRefreshCookieOptions,
   hashToken,
@@ -141,11 +141,8 @@ export async function refreshToken(req, res) {
     throw new ApiError(401, "Refresh token is invalid or expired");
   }
 
-  const record = await findActiveRefreshToken(currentToken);
-  await prisma.refreshToken.update({
-    where: { id: record.id },
-    data: { revokedAt: new Date() },
-  });
+  // consumeRefreshToken revokes the old token and detects reuse attacks
+  const record = await consumeRefreshToken(currentToken);
 
   const accessToken = await establishSession(res, record.user);
   return sendSuccess(res, {

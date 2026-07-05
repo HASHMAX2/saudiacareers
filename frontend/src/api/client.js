@@ -66,7 +66,17 @@ api.interceptors.response.use(
 export async function restoreSession() {
   try {
     await refreshSession();
-  } catch {
+  } catch (err) {
+    if (!err.response) {
+      // Network error — backend not ready yet, retry once after a short delay
+      await new Promise((r) => setTimeout(r, 1500));
+      try {
+        await refreshSession();
+        return;
+      } catch {
+        // second attempt failed, fall through to clearSession
+      }
+    }
     useAuthStore.getState().clearSession();
   }
 }

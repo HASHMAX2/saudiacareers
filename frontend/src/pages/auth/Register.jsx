@@ -47,7 +47,9 @@ export function Register() {
   useEffect(() => () => clearTimeout(timerRef.current), []);
 
   const update = (key) => (event) => {
-    setForm({ ...form, [key]: event.target.value });
+    let val = event.target.value;
+    if (key === "mobile" && !val.startsWith("+")) val = "+";
+    setForm({ ...form, [key]: val });
     setFieldErrors((prev) => ({ ...prev, [key]: undefined }));
     setError("");
   };
@@ -91,10 +93,7 @@ export function Register() {
       <form className="space-y-4" onSubmit={submit}>
         <Input autoComplete="name" id="name" label="Full name" placeholder="Your full name" value={form.name} onChange={update("name")} required error={fieldErrors.name} />
         <Input autoComplete="email" id="email" label="Email address" placeholder="you@example.com" type="email" value={form.email} onChange={update("email")} required error={fieldErrors.email} />
-        <div>
-          <Input autoComplete="tel" id="mobile" label="Mobile" placeholder="+966512345678" value={form.mobile} onChange={update("mobile")} required error={fieldErrors.mobile} />
-          <p className="mt-1.5 font-mono text-xs" style={{ color: "var(--text-tertiary)" }}>Include your country code, e.g. +966 for Saudi Arabia.</p>
-        </div>
+        <Input autoComplete="tel" id="mobile" label="Mobile" labelHint="enter number with country code" placeholder="+966512345678" value={form.mobile} onChange={update("mobile")} required error={fieldErrors.mobile} />
         <div>
           <Input autoComplete="new-password" id="password" label="Password" placeholder="At least 8 characters" type="password" value={form.password} onChange={update("password")} required error={fieldErrors.password} />
           <p className="mt-1.5 font-mono text-xs" style={{ color: "var(--text-tertiary)" }}>Use at least 8 characters with one uppercase letter and one number.</p>

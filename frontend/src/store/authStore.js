@@ -13,5 +13,7 @@ export const useAuthStore = create((set) => ({
   clearSession: () =>
     set({ user: null, accessToken: null, isInitialized: true }),
   setInitialized: () => set({ isInitialized: true }),
+  updateUser: (fields) =>
+    set((state) => ({ user: state.user ? { ...state.user, ...fields } : state.user })),
 }));
 

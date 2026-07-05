@@ -1,5 +1,4 @@
 import { useEffect } from "react";
-import { Bookmark, FileText, LayoutDashboard, LockKeyhole, Search, UserRound } from "lucide-react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { restoreSession } from "./api/client.js";
 import { AppLayout } from "./components/layout/AppLayout.jsx";
@@ -40,14 +39,7 @@ import { Landing } from "./pages/public/Landing.jsx";
 import { NotFound } from "./pages/shared/NotFound.jsx";
 import { Unauthorized } from "./pages/shared/Unauthorized.jsx";
 
-const candidateLinks = [
-  { label: "Overview",         to: "/dashboard",                  end: true, icon: LayoutDashboard },
-  { label: "Profile",          to: "/dashboard/profile",                     icon: UserRound       },
-  { label: "Browse Jobs",      to: "/jobs",                                  icon: Search          },
-  { label: "Saved Jobs",       to: "/dashboard/saved-jobs",                  icon: Bookmark        },
-  { label: "Applications",     to: "/dashboard/applications",                icon: FileText        },
-  { label: "Change Password",  to: "/dashboard/change-password",             icon: LockKeyhole     },
-];
+const candidateLinks = [];
 
 const employerLinks = [
   { label: "Overview",  to: "/employer/dashboard",  end: true },
@@ -88,7 +80,7 @@ export default function App() {
         <Route path="reset-password/:token" element={<ResetPassword />} />
 
         <Route element={<PrivateRoute />}>
-          <Route element={<DashboardLayout links={candidateLinks} />}>
+          <Route element={<DashboardLayout links={candidateLinks} hideSidebar />}>
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="dashboard/profile" element={<Profile />} />
             <Route path="dashboard/saved-jobs" element={<SavedJobs />} />

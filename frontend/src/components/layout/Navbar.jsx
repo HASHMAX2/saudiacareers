@@ -1,5 +1,8 @@
-import { ChevronDown, Loader2, Menu, Sparkles, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import {
+  Bookmark, ChevronDown, FileText, LayoutDashboard, Loader2, LogOut,
+  Menu, Search, Settings, Sparkles, UserRound, X,
+} from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { authApi } from "../../api/auth.js";
 import { useAuthStore } from "../../store/authStore.js";
@@ -8,6 +11,15 @@ import { Button } from "../common/Button.jsx";
 import { Toast } from "../common/Toast.jsx";
 
 const LOGOUT_DELAY = 1500;
+
+const CANDIDATE_MENU = [
+  { label: "Overview",         to: "/dashboard",                  icon: LayoutDashboard },
+  { label: "My Profile",       to: "/dashboard/profile",          icon: UserRound       },
+  { label: "Browse Jobs",      to: "/jobs",                       icon: Search          },
+  { label: "My Applications",  to: "/dashboard/applications",     icon: FileText        },
+  { label: "Saved Jobs",       to: "/dashboard/saved-jobs",       icon: Bookmark        },
+  { label: "Settings",         to: "/dashboard/change-password",  icon: Settings        },
+];
 
 const navLinkClass = ({ isActive }) =>
   `text-[15px] font-medium transition-colors px-5 py-2 rounded-full border ${
@@ -25,14 +37,35 @@ export function Navbar() {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [empOpen, setEmpOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const timerRef = useRef(null);
+  const userMenuRef = useRef(null);
 
   useEffect(() => () => clearTimeout(timerRef.current), []);
 
+  const closeUserMenu = useCallback(() => setUserMenuOpen(false), []);
+
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    function onClickOutside(e) {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) closeUserMenu();
+    }
+    function onEscape(e) {
+      if (e.key === "Escape") closeUserMenu();
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    document.addEventListener("keydown", onEscape);
+    return () => {
+      document.removeEventListener("mousedown", onClickOutside);
+      document.removeEventListener("keydown", onEscape);
+    };
+  }, [userMenuOpen, closeUserMenu]);
+
   async function handleLogout() {
     setLoggingOut(true);
+    setUserMenuOpen(false);
     try {
       await authApi.logout();
     } catch {
@@ -48,6 +81,8 @@ export function Navbar() {
       setIsOpen(false);
     }, LOGOUT_DELAY);
   }
+
+  const isCandidate = user && user.role === "CANDIDATE";
 
   return (
     <>
@@ -104,19 +139,127 @@ export function Navbar() {
 
             {user ? (
               <>
-                <NavLink
-                  className={navLinkClass}
-                  style={navLinkStyle}
-                  onClick={() => setIsOpen(false)}
-                  to={user.role === "ADMIN" ? "/admin/dashboard" : user.role === "EMPLOYER" ? "/employer/dashboard" : "/dashboard"}
-                >
-                  Dashboard
-                </NavLink>
-                <Button className="w-full md:w-auto" variant="ghost" disabled={loggingOut} onClick={handleLogout}>
-                  {loggingOut
-                    ? <><Loader2 size={14} className="animate-spin" />Signing out…</>
-                    : "Log out"}
-                </Button>
+                {/* Non-candidate users: simple dashboard link */}
+                {!isCandidate && (
+                  <NavLink
+                    className={navLinkClass}
+                    style={navLinkStyle}
+                    onClick={() => setIsOpen(false)}
+                    to={user.role === "ADMIN" ? "/admin/dashboard" : "/employer/dashboard"}
+                  >
+                    Dashboard
+                  </NavLink>
+                )}
+
+                {/* Candidate: name with dropdown (desktop) */}
+                {isCandidate && (
+                  <div className="relative hidden md:block" ref={userMenuRef}>
+                    <button
+                      onClick={() => setUserMenuOpen((v) => !v)}
+                      className="flex items-center gap-2 px-4 py-2 rounded-full text-[15px] font-semibold transition-colors"
+                      style={{
+                        color: "var(--text-primary)",
+                        background: userMenuOpen ? "var(--accent-subtle)" : "transparent",
+                      }}
+                      type="button"
+                    >
+                      <span
+                        className="grid h-[30px] w-[30px] place-items-center rounded-full text-[12px] font-bold text-white shrink-0"
+                        style={{ background: "var(--accent)" }}
+                      >
+                        {(user.name || "U").charAt(0).toUpperCase()}
+                      </span>
+                      {user.name}
+                      <ChevronDown
+                        size={14}
+                        style={{ transition: "transform 200ms", transform: userMenuOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+                      />
+                    </button>
+
+                    <div
+                      className="absolute right-0 top-full w-56 rounded-2xl bg-white py-2"
+                      style={{
+                        border: "1px solid var(--border-default)",
+                        boxShadow: "var(--sh-3)",
+                        marginTop: "8px",
+                        opacity: userMenuOpen ? 1 : 0,
+                        transform: userMenuOpen ? "translateY(0)" : "translateY(-8px)",
+                        pointerEvents: userMenuOpen ? "auto" : "none",
+                        transition: "opacity 180ms ease, transform 180ms ease",
+                      }}
+                    >
+                      {CANDIDATE_MENU.map(({ label, to, icon: Icon }) => (
+                        <Link
+                          key={to}
+                          to={to}
+                          onClick={closeUserMenu}
+                          className="flex items-center gap-3 px-4 py-2.5 text-[14px] font-medium transition-colors hover:bg-[var(--bg-elev)]"
+                          style={{ color: "var(--text-primary)" }}
+                        >
+                          <Icon size={16} style={{ color: "var(--text-secondary)" }} />
+                          {label}
+                        </Link>
+                      ))}
+                      <div className="my-1.5 mx-3" style={{ borderTop: "1px solid var(--border-default)" }} />
+                      <button
+                        onClick={handleLogout}
+                        disabled={loggingOut}
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-[14px] font-medium transition-colors hover:bg-red-50 disabled:opacity-50"
+                        style={{ color: "var(--accent)" }}
+                      >
+                        {loggingOut ? (
+                          <Loader2 size={16} className="animate-spin" />
+                        ) : (
+                          <LogOut size={16} />
+                        )}
+                        {loggingOut ? "Signing out…" : "Logout"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Candidate: mobile menu items (inside hamburger) */}
+                {isCandidate && (
+                  <div className="md:hidden w-full">
+                    <p
+                      className="px-2 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-widest"
+                      style={{ color: "var(--text-tertiary)" }}
+                    >
+                      {user.name}
+                    </p>
+                    {CANDIDATE_MENU.map(({ label, to, icon: Icon }) => (
+                      <Link
+                        key={to}
+                        to={to}
+                        onClick={() => setIsOpen(false)}
+                        className="flex items-center gap-2.5 px-2 py-2 text-[15px] font-medium transition-colors hover:opacity-70"
+                        style={{ color: "var(--text-primary)" }}
+                      >
+                        <Icon size={15} style={{ color: "var(--text-secondary)" }} />
+                        {label}
+                      </Link>
+                    ))}
+                    <div className="my-1.5 mx-1" style={{ borderTop: "1px solid var(--border-default)" }} />
+                    <button
+                      onClick={handleLogout}
+                      disabled={loggingOut}
+                      className="flex items-center gap-2.5 w-full px-2 py-2 text-[15px] font-medium transition-colors hover:opacity-70 disabled:opacity-50"
+                      style={{ color: "var(--accent)" }}
+                    >
+                      {loggingOut ? <Loader2 size={15} className="animate-spin" /> : <LogOut size={15} />}
+                      {loggingOut ? "Signing out…" : "Logout"}
+                    </button>
+                  </div>
+                )}
+
+                {/* Non-candidate: simple logout button */}
+                {!isCandidate && (
+                  <Button className="w-full md:w-auto" variant="ghost" disabled={loggingOut} onClick={handleLogout}>
+                    {loggingOut
+                      ? <><Loader2 size={14} className="animate-spin" />Signing out…</>
+                      : "Log out"}
+                  </Button>
+                )}
               </>
             ) : (
               <>

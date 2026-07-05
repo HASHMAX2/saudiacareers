@@ -61,19 +61,31 @@ export function verifyRefreshToken(token) {
   return payload;
 }
 
-export async function findActiveRefreshToken(token) {
+export async function consumeRefreshToken(token) {
   const record = await prisma.refreshToken.findFirst({
-    where: {
-      tokenHash: hashToken(token),
-      revokedAt: null,
-      expiresAt: { gt: new Date() },
-    },
+    where: { tokenHash: hashToken(token) },
     include: { user: true },
   });
 
-  if (!record) {
+  // Token not in DB at all — invalid or tampered
+  if (!record || record.expiresAt < new Date()) {
     throw new ApiError(401, "Refresh token is invalid or expired");
   }
+
+  // Token is in DB but already revoked — reuse attack detected
+  if (record.revokedAt !== null) {
+    await revokeAllUserRefreshTokens(record.userId);
+    console.error(
+      `[SECURITY] Refresh token reuse detected for user ${record.userId} — all sessions revoked`
+    );
+    throw new ApiError(401, "Session compromised. Please log in again.");
+  }
+
+  // Revoke this token now as part of rotation
+  await prisma.refreshToken.update({
+    where: { id: record.id },
+    data: { revokedAt: new Date() },
+  });
 
   return record;
 }

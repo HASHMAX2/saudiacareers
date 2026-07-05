@@ -16,4 +16,22 @@ export const profileApi = {
     return api.post("/profile/photo", data);
   },
   deletePhoto: () => api.delete("/profile/photo"),
+
+  employment: {
+    add: (data) => api.post("/profile/employment", data),
+    update: (id, data) => api.put(`/profile/employment/${id}`, data),
+    remove: (id) => api.delete(`/profile/employment/${id}`),
+  },
+
+  education: {
+    add: (data) => api.post("/profile/education", data),
+    update: (id, data) => api.put(`/profile/education/${id}`, data),
+    remove: (id) => api.delete(`/profile/education/${id}`),
+  },
+
+  certifications: {
+    add: (data) => api.post("/profile/certifications", data),
+    update: (id, data) => api.put(`/profile/certifications/${id}`, data),
+    remove: (id) => api.delete(`/profile/certifications/${id}`),
+  },
 };

@@ -38,24 +38,104 @@ enum Role {
 }
 
 model CandidateProfile {
-  id               Int       @id @default(autoincrement())
-  userId           Int       @unique
-  user             User      @relation(fields: [userId], references: [id])
-  location         String?
-  designation      String?
-  experience       String?
-  skills           String?
-  education        String?
-  summary          String?
-  resumePath       String?
-  resumeFilename   String?
-  resumeUploadedAt DateTime?
-  profilePhotoPath String?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  id                 Int       @id @default(autoincrement())
+  userId             Int       @unique
+  user               User      @relation(fields: [userId], references: [id])
+  // Display name (editable by user; separate from registered name on User.name)
+  displayName        String?
+  // Personal
+  location           String?
+  gender             String?
+  nationality        String?
+  dateOfBirth        String?
+  maritalStatus      String?
+  drivingLicense     String?
+  languagesKnown     String?
+  visaStatus         String?
+  religion           String?
+  alternateEmail     String?
+  alternateMobile    String?
+  // Professional
+  designation        String?
+  experience         String?
+  industry           String?
+  functionalArea     String?
+  currentSalary      String?
+  cvHeadline         String?
+  skills             String?
+  itSkills           String?
+  education          String?
+  summary            String?
+  // Online profiles
+  linkedInUrl        String?
+  githubUrl          String?
+  portfolioUrl       String?
+  // Desired job
+  desiredJobTitle    String?
+  desiredLocation    String?
+  availabilityToJoin String?
+  // Files
+  resumePath         String?
+  resumeFilename     String?
+  resumeUploadedAt   DateTime?
+  profilePhotoPath   String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  employmentEntries  EmploymentEntry[]
+  educationEntries   EducationEntry[]
+  certifications     Certification[]
 
   @@index([location])
   @@index([experience])
+}
+
+model EmploymentEntry {
+  id                 Int              @id @default(autoincrement())
+  candidateProfileId Int
+  profile            CandidateProfile @relation(fields: [candidateProfileId], references: [id], onDelete: Cascade)
+  jobTitle           String
+  companyName        String
+  startMonth         Int?
+  startYear          Int
+  endMonth           Int?
+  endYear            Int?
+  isCurrent          Boolean          @default(false)
+  description        String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@index([candidateProfileId])
+}
+
+model EducationEntry {
+  id                 Int              @id @default(autoincrement())
+  candidateProfileId Int
+  profile            CandidateProfile @relation(fields: [candidateProfileId], references: [id], onDelete: Cascade)
+  degree             String
+  institution        String
+  fieldOfStudy       String?
+  startYear          Int?
+  endYear            Int?
+  isCurrent          Boolean          @default(false)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@index([candidateProfileId])
+}
+
+model Certification {
+  id                 Int              @id @default(autoincrement())
+  candidateProfileId Int
+  profile            CandidateProfile @relation(fields: [candidateProfileId], references: [id], onDelete: Cascade)
+  name               String
+  issuingOrg         String?
+  issueYear          Int?
+  credentialUrl      String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@index([candidateProfileId])
 }
 
 model Job {

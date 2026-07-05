@@ -1,5 +1,36 @@
 export const LOCATIONS = ["Riyadh", "Jeddah", "Dammam", "Other"];
 
+export const INDUSTRIES = [
+  "IT - Software Services",
+  "Finance & Banking",
+  "Healthcare & Pharmaceuticals",
+  "Retail & Consumer Goods",
+  "Oil, Gas & Energy",
+  "Construction & Real Estate",
+  "Education & Training",
+  "Media & Entertainment",
+  "Hospitality & Tourism",
+  "Telecommunications",
+  "Logistics & Supply Chain",
+  "Government & Public Sector",
+  "Manufacturing",
+  "Legal & Consulting",
+  "Other",
+];
+
+export const AVAILABILITY_OPTIONS = [
+  "Immediately",
+  "2 Weeks Notice",
+  "1 Month Notice",
+  "2 Months Notice",
+  "3 Months Notice",
+];
+
+export const MONTHS_LONG = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
 export const EMPTY_FILTERS = {
   locations:       [],
   industries:      [],
@@ -27,4 +58,3 @@ export const RESUME_MIME_TYPES = [
   "application/msword",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ];
-

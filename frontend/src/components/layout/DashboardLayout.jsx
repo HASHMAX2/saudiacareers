@@ -1,7 +1,11 @@
 import { Outlet } from "react-router-dom";
 import { Sidebar } from "./Sidebar.jsx";
 
-export function DashboardLayout({ links }) {
+export function DashboardLayout({ links, hideSidebar }) {
+  if (hideSidebar) {
+    return <Outlet />;
+  }
+
   return (
     <div className="flex flex-col gap-5 lg:flex-row lg:gap-7">
       <Sidebar links={links} />

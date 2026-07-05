@@ -58,7 +58,8 @@ export function EmployerRegister() {
   const [submitted, setDone]    = useState(false);
 
   const update = (key) => (e) => {
-    const val = e.target.type === "checkbox" ? e.target.checked : e.target.value;
+    let val = e.target.type === "checkbox" ? e.target.checked : e.target.value;
+    if (key === "phone" && typeof val === "string" && val !== "" && !val.startsWith("+")) val = "+";
     setForm((f) => ({ ...f, [key]: val }));
     setFE((p) => ({ ...p, [key]: undefined }));
   };
@@ -299,6 +300,7 @@ export function EmployerRegister() {
             <Input
               id="reg-phone"
               label="Phone number"
+              labelHint="enter number with country code"
               required
               placeholder="+966512345678"
               value={form.phone}
