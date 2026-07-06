@@ -120,8 +120,8 @@ export async function listJobs(req, res) {
 
   const orderBy =
     sort === "deadline"
-      ? [{ applicationDeadline: { sort: "asc", nulls: "last" } }]
-      : [{ createdAt: "desc" }];
+      ? [{ applicationDeadline: { sort: "asc", nulls: "last" } }, { id: "desc" }]
+      : [{ createdAt: "desc" }, { id: "desc" }];
 
   const [jobs, total] = await prisma.$transaction([
     prisma.job.findMany({

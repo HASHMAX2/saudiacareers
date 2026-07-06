@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, Briefcase, CheckSquare, Eye, Mail, Pen, Rocket, Search, Shield, Sparkles } from "lucide-react";
+import { Bell, Bookmark, CheckSquare, Eye, Mail, Pen, Rocket, Search, Shield, Sparkles } from "lucide-react";
+import { applicationsApi } from "../../api/applications.js";
 import { candidateApi } from "../../api/candidate.js";
+import { savedJobsApi } from "../../api/savedJobs.js";
 import { Carousel } from "../../components/dashboard/Carousel.jsx";
 import { EmptyState } from "../../components/dashboard/EmptyState.jsx";
 import { FAQCard } from "../../components/dashboard/FAQCard.jsx";
@@ -48,17 +50,45 @@ export function Dashboard() {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [tips, setTips] = useState([]);
-  const [activeTab, setActiveTab] = useState("profile");
+  const [activeTab, setActiveTab] = useState("applied");
   const [searchQuery, setSearchQuery] = useState("");
+  const [applications, setApplications] = useState(null);
+  const [savedJobs, setSavedJobs] = useState(null);
+  const [tabLoading, setTabLoading] = useState(false);
 
   useEffect(() => {
-    Promise.all([candidateApi.dashboard(), candidateApi.careerTips()]).then(
-      ([dashRes, tipsRes]) => {
-        setData(dashRes.data.data);
-        setTips(tipsRes.data.data);
-      },
-    );
+    Promise.all([
+      candidateApi.dashboard(),
+      candidateApi.careerTips(),
+      applicationsApi.mine(),
+    ]).then(([dashRes, tipsRes, appsRes]) => {
+      setData(dashRes.data.data);
+      setTips(tipsRes.data.data);
+      setApplications(appsRes.data.data ?? []);
+    });
   }, []);
+
+  async function switchTab(key) {
+    setActiveTab(key);
+    if (key === "applied" && applications === null) {
+      setTabLoading(true);
+      try {
+        const res = await applicationsApi.mine();
+        setApplications(res.data.data ?? []);
+      } finally {
+        setTabLoading(false);
+      }
+    }
+    if (key === "saved" && savedJobs === null) {
+      setTabLoading(true);
+      try {
+        const res = await savedJobsApi.getAll();
+        setSavedJobs(res.data.data ?? []);
+      } finally {
+        setTabLoading(false);
+      }
+    }
+  }
 
   function handleSearch(e) {
     e?.preventDefault();
@@ -75,7 +105,7 @@ export function Dashboard() {
     );
   }
 
-  const { profile, stats, recentApplications, recommendedJobs } = data;
+  const { profile, stats } = data;
 
   return (
     <div>
@@ -162,13 +192,13 @@ export function Dashboard() {
             <SectionShell title="Jobs based on your profile" viewAllTo="/jobs">
               <div className="flex gap-1.5 p-1.5 rounded-xl mb-5" style={{ background: "var(--bg-elev)" }}>
                 {[
-                  { key: "applies", label: "Applies", count: stats.appliedCount },
-                  { key: "profile", label: "Profile", count: recommendedJobs.length },
-                  { key: "alerts", label: "Alerts", count: 0 },
+                  { key: "applied", label: "Applied", count: applications?.length ?? stats.appliedCount },
+                  { key: "saved",   label: "Saved",   count: savedJobs?.length ?? 0 },
+                  { key: "alerts",  label: "Alerts",  count: 0 },
                 ].map((tab) => (
                   <button
                     key={tab.key}
-                    onClick={() => setActiveTab(tab.key)}
+                    onClick={() => switchTab(tab.key)}
                     className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-[9px] text-[14px] font-semibold transition-all"
                     style={{
                       fontFamily: "var(--font-display)",
@@ -193,28 +223,16 @@ export function Dashboard() {
                 ))}
               </div>
 
-              {activeTab === "profile" && (
-                recommendedJobs.length > 0 ? (
-                  <Carousel>
-                    {recommendedJobs.map((job, i) => (
-                      <JobRailCard key={job.id} job={job} index={i} />
-                    ))}
-                  </Carousel>
-                ) : (
-                  <EmptyState
-                    icon={Briefcase}
-                    title="Complete your profile"
-                    description="Add your skills and experience to see roles matched to you."
-                    linkText="Update profile"
-                    linkTo="/dashboard/profile"
-                  />
-                )
+              {tabLoading && (
+                <div className="grid min-h-40 place-items-center">
+                  <Spinner label="Loading" />
+                </div>
               )}
 
-              {activeTab === "applies" && (
-                recentApplications.length > 0 ? (
+              {!tabLoading && activeTab === "applied" && (
+                applications && applications.length > 0 ? (
                   <Carousel>
-                    {recentApplications.map((app, i) => (
+                    {applications.map((app, i) => (
                       <JobRailCard key={app.id} job={app.job} index={i} />
                     ))}
                   </Carousel>
@@ -229,14 +247,35 @@ export function Dashboard() {
                 )
               )}
 
-              {activeTab === "alerts" && (
-                <EmptyState
-                  icon={Bell}
-                  title="No job alerts yet"
-                  description="Create an alert and we'll send matching roles straight to your inbox."
-                  linkText="Create your first alert"
-                  linkTo="/jobs"
-                />
+              {!tabLoading && activeTab === "saved" && (
+                savedJobs && savedJobs.length > 0 ? (
+                  <Carousel>
+                    {savedJobs.map((job, i) => (
+                      <JobRailCard key={job.id} job={job} index={i} />
+                    ))}
+                  </Carousel>
+                ) : (
+                  <EmptyState
+                    icon={Bookmark}
+                    title="No saved jobs yet"
+                    description="Bookmark roles you're interested in and find them here."
+                    linkText="Browse open roles"
+                    linkTo="/jobs"
+                  />
+                )
+              )}
+
+              {!tabLoading && activeTab === "alerts" && (
+                <>
+                  <EmptyState
+                    icon={Bell}
+                    title="No job alerts yet"
+                    description="Create an alert and we'll send matching roles straight to your inbox."
+                  />
+                  <p className="text-center text-[13px] font-medium pb-4" style={{ color: "var(--text-tertiary)" }}>
+                    Coming soon…
+                  </p>
+                </>
               )}
             </SectionShell>
 
@@ -244,7 +283,7 @@ export function Dashboard() {
             <div className="grid gap-5 sm:grid-cols-3">
               <StatCard icon={Bell} sublabel="Looking for a specific job?" label="Create job alert" fgClass="accent" bgClass="accent-subtle" />
               <StatCard icon={Mail} label="Messages" sublabel="from employers" value={stats.messagesCount} bgClass="gold-bg" fgClass="gold-ink" />
-              <StatCard icon={CheckSquare} label="Applied" sublabel="jobs so far" value={stats.appliedCount} bgClass="green-bg" fgClass="green" />
+              <StatCard icon={CheckSquare} label="Applied" sublabel="jobs so far" value={applications?.length ?? stats.appliedCount} bgClass="green-bg" fgClass="green" />
             </div>
 
             {/* Top employers */}

@@ -21,8 +21,9 @@ async function deliverApplication(applicationId) {
       candidate: application.user,
       profile: application.user.profile,
     });
+    const hrEmail = process.env.TEST_HR_EMAIL ?? application.job.hrEmail;
     await sendEmail({
-      to: application.job.hrEmail,
+      to: hrEmail,
       ...template,
       attachments: [
         {
@@ -101,6 +102,17 @@ export async function mine(req, res) {
   return sendSuccess(res, {
     message: "Applications retrieved",
     data: applications,
+  });
+}
+
+export async function mineIds(req, res) {
+  const applications = await prisma.application.findMany({
+    where: { userId: req.user.id },
+    select: { jobId: true },
+  });
+  return sendSuccess(res, {
+    message: "Applied job IDs retrieved",
+    data: applications.map((a) => a.jobId),
   });
 }
 

@@ -10,6 +10,7 @@ import { Button } from "../../components/common/Button.jsx";
 import { Spinner } from "../../components/common/Spinner.jsx";
 import { Toast } from "../../components/common/Toast.jsx";
 import { useAuthStore } from "../../store/authStore.js";
+import { useAppliedJobsStore } from "../../store/appliedJobsStore.js";
 import { useSavedJobsStore } from "../../store/savedJobsStore.js";
 import { formatDate } from "../../utils/formatDate.js";
 
@@ -20,10 +21,11 @@ export function JobDetail() {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const { isSaved, toggle: toggleSave, fetchIds } = useSavedJobsStore();
+  const { isApplied, fetchIds: fetchAppliedIds, markApplied } = useAppliedJobsStore();
   const isCandidate = user?.role === "CANDIDATE";
+  const alreadyApplied = isCandidate && isApplied(Number(id));
   const [job, setJob] = useState(null);
   const [message, setMessage] = useState("");
-  const [alreadyApplied, setAlreadyApplied] = useState(false);
   const [applying, setApplying] = useState(false);
   const [toast, setToast] = useState({ show: false, text: "", tone: "error" });
   const timerRef = useRef(null);
@@ -42,9 +44,7 @@ export function JobDetail() {
     jobsApi.get(id).then(({ data }) => setJob(data.data));
     if (user?.role === "CANDIDATE") {
       fetchIds();
-      applicationsApi.mine().then(({ data }) =>
-        setAlreadyApplied(data.data.some((application) => application.jobId === Number(id))),
-      );
+      fetchAppliedIds();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, user]);
@@ -68,8 +68,8 @@ export function JobDetail() {
         return;
       }
       await applicationsApi.apply(job.id);
-      setAlreadyApplied(true);
-      showRedirectToast("Application submitted successfully! Taking you to your dashboard…", "/dashboard", "success");
+      markApplied(job.id);
+      showRedirectToast("Application submitted! Browse more open roles.", "/jobs", "success");
     } catch (error) {
       const text = error.response?.data?.message ?? "Application failed";
       setMessage(text);

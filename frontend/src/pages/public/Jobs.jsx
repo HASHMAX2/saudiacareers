@@ -7,6 +7,7 @@ import { Spinner } from "../../components/common/Spinner.jsx";
 import { JobCard } from "../../components/jobs/JobCard.jsx";
 import { FilterPanel } from "../../components/jobs/FilterPanel.jsx";
 import { useAuthStore } from "../../store/authStore.js";
+import { useAppliedJobsStore } from "../../store/appliedJobsStore.js";
 import { useSavedJobsStore } from "../../store/savedJobsStore.js";
 import { EMPTY_FILTERS } from "../../utils/constants.js";
 
@@ -43,8 +44,9 @@ function countActive(filters) {
 const EMPTY_RESULT = { jobs: [], pagination: { page: 1, totalPages: 1, total: 0 } };
 
 export function Jobs() {
-  const user          = useAuthStore((state) => state.user);
-  const fetchSavedIds = useSavedJobsStore((state) => state.fetchIds);
+  const user             = useAuthStore((state) => state.user);
+  const fetchSavedIds    = useSavedJobsStore((state) => state.fetchIds);
+  const fetchAppliedIds  = useAppliedJobsStore((state) => state.fetchIds);
   const [searchParams, setSearchParams] = useSearchParams();
 
   const initialQ = searchParams.get("q") ?? "";
@@ -81,7 +83,10 @@ export function Jobs() {
   }, []);
 
   useEffect(() => {
-    if (user?.role === "CANDIDATE") fetchSavedIds();
+    if (user?.role === "CANDIDATE") {
+      fetchSavedIds();
+      fetchAppliedIds();
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 

@@ -1,14 +1,17 @@
-import { Banknote, Bookmark, MapPin } from "lucide-react";
+import { Banknote, Bookmark, Check, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore.js";
+import { useAppliedJobsStore } from "../../store/appliedJobsStore.js";
 import { useSavedJobsStore } from "../../store/savedJobsStore.js";
 import { formatDate } from "../../utils/formatDate.js";
 
 export function JobCard({ job }) {
   const user = useAuthStore((state) => state.user);
   const { isSaved, toggle } = useSavedJobsStore();
+  const isApplied = useAppliedJobsStore((state) => state.isApplied);
   const isCandidate = user?.role === "CANDIDATE";
   const saved = isCandidate && isSaved(job.id);
+  const applied = isCandidate && isApplied(job.id);
 
   const skills = job.requiredSkills
     ? job.requiredSkills.split(",").map((s) => s.trim()).filter(Boolean).slice(0, 4)
@@ -39,6 +42,15 @@ export function JobCard({ job }) {
           </span>
         </div>
         <div className="flex shrink-0 items-center gap-2">
+          {applied && (
+            <span
+              title="You applied for this role"
+              className="grid h-[26px] w-[26px] shrink-0 place-items-center rounded-full"
+              style={{ background: "#16a34a" }}
+            >
+              <Check size={13} strokeWidth={3} color="#fff" />
+            </span>
+          )}
           {isCandidate && (
             <button
               type="button"
