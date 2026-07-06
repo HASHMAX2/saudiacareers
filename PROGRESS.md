@@ -1,12 +1,14 @@
 # SaudiaCareers Project Progress
 
-Last updated: July 6, 2026 (dashboard & job search polish + 15/15 Playwright tests passing)
+Last updated: July 6, 2026 (applied-job indicator + dashboard tab fix + deterministic job sort)
 
 Future sessions must read both `CLAUDE.md` and this file before coding.
 
 ## Current Checkpoint
 
-Current branch: `candidateloginpage` (branched from `employer`). The candidate profile page is fully built and tested. Commit `4a81ebe` on local branch — **not yet pushed to GitHub**.
+Current branch: `candidateloginpage` (branched from `employer`). **Pushed to GitHub** — latest commit `2629732`.
+
+All session changes are committed and pushed. Safe to continue from here.
 
 The database has been wiped clean and reseeded with only the default admin account. All previous test users, jobs, and applications have been removed. Start fresh by registering new candidate accounts.
 
@@ -804,6 +806,54 @@ New test file: `tests/session-jul6.spec.js`. Covers:
 
 ---
 
+## Session: Applied-Job Indicator, Dashboard Tab Fix, Deterministic Sort (July 6, 2026)
+
+Branch: `candidateloginpage`. Committed as `2629732`. **Pushed to GitHub.**
+
+### Applied-job indicator on Browse Jobs
+
+- `GET /api/applications/mine/ids` — new lightweight endpoint returns an array of `jobId` numbers the logged-in candidate has applied to (no joins, no full application objects).
+- `frontend/src/store/appliedJobsStore.js` — new Zustand store mirroring `savedJobsStore`: `fetchIds` (idempotent, skips if already initialized), `isApplied(jobId)`, `markApplied(jobId)` (called immediately on successful apply), `reset` (called on logout).
+- `frontend/src/components/jobs/JobCard.jsx` — for candidates, shows a small green circle with a white tick (`#16a34a`) to the left of the "View role" button when `isApplied(job.id)` is true. Title tooltip: "You applied for this role".
+- `frontend/src/pages/public/Jobs.jsx` — calls `fetchAppliedIds()` on mount alongside `fetchSavedIds()` when user is a candidate.
+- `frontend/src/components/layout/Navbar.jsx` — `resetApplied()` called on logout alongside `resetSaved()`.
+
+### JobDetail apply button — instant applied state (no async gap)
+
+- **Before:** `alreadyApplied` started as `false` and waited for `applicationsApi.mine()` to resolve before changing the button. Brief window where "Apply now" was clickable for an already-applied job.
+- **After:** `alreadyApplied` is derived directly from `useAppliedJobsStore` — `isCandidate && isApplied(Number(id))`. If the store is already populated (user came from Browse Jobs), the button renders as "Applied" from the very first paint.
+- `fetchAppliedIds()` still called on mount as fallback for users navigating directly to a job URL.
+- Heavy `applicationsApi.mine()` call removed from JobDetail (replaced by the lightweight store).
+- On successful apply: `markApplied(job.id)` updates the store reactively — no need to set local state.
+
+### Post-apply redirect changed to /jobs
+
+- After a successful application the user is now redirected to `/jobs` (Browse Jobs) instead of `/dashboard`, so they can continue applying to other roles.
+- Toast message updated to: "Application submitted! Browse more open roles."
+
+### Dashboard Applied tab was always empty — fixed
+
+- **Root cause:** `applicationsApi.mine()` returns `{ data: [...] }` (array directly at `.data.data`). The Dashboard was reading `.data.data.applications` which is `undefined`, falling back to `[]` on every mount.
+- Fixed in both places: the mount `useEffect` and the `switchTab` lazy-fetch both now use `res.data.data ?? []`.
+
+### Deterministic job sort order
+
+- **Problem:** All 52 seeded jobs share the exact same `createdAt` timestamp (seeded in one batch). With only `ORDER BY createdAt DESC`, Postgres returns rows in arbitrary internal order — a job can appear on a different page on each request.
+- **Fix:** Added `{ id: "desc" }` as a tiebreaker to both sort variants in `jobController.js`:
+  ```js
+  sort === "deadline"
+    ? [{ applicationDeadline: { sort: "asc", nulls: "last" } }, { id: "desc" }]
+    : [{ createdAt: "desc" }, { id: "desc" }]
+  ```
+- Since `id` is always unique and monotonically increasing, ordering is now fully deterministic. This also handles future bulk-import scenarios where many jobs are created at the same timestamp.
+
+### TEST_HR_EMAIL override
+
+- `backend/.env` — `TEST_HR_EMAIL=ali.hashmi0@gmail.com` added.
+- `applicationController.js` — `deliverApplication` reads `process.env.TEST_HR_EMAIL` and uses it instead of `job.hrEmail` when set. Remove this env var before production deployment to restore per-job HR routing.
+
+---
+
 ## Partially Completed
 
 ### End-to-end flow verification
@@ -897,6 +947,7 @@ GET    /api/jobs/:id
 ```text
 POST   /api/applications
 GET    /api/applications/mine
+GET    /api/applications/mine/ids
 ```
 
 ### Saved jobs
