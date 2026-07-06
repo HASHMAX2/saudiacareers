@@ -84,7 +84,8 @@ function CheckboxList({ options, selected, onToggle }) {
   return (
     <div className="space-y-2 pt-3">
       {options.map((opt) => {
-        const val     = typeof opt === "string" ? opt : opt.label;
+        const val   = typeof opt === "string" ? opt : (opt.name ?? opt.label);
+        const count = typeof opt === "object" ? opt.count : undefined;
         const checked = selected.includes(val);
         return (
           <label key={val} className="flex cursor-pointer items-center gap-2.5">
@@ -95,7 +96,17 @@ function CheckboxList({ options, selected, onToggle }) {
               checked={checked}
               onChange={() => onToggle(val)}
             />
-            <span className="text-[13px] leading-tight" style={{ color: "var(--text-secondary)" }}>{val}</span>
+            <span className="flex flex-1 items-center justify-between gap-2 min-w-0">
+              <span className="text-[13px] leading-tight truncate" style={{ color: "var(--text-secondary)" }}>{val}</span>
+              {count !== undefined && (
+                <span
+                  className="shrink-0 text-[11px] font-semibold tabular-nums rounded-full px-1.5 py-0.5 leading-none"
+                  style={{ background: "var(--bg-elev)", color: "var(--text-tertiary)" }}
+                >
+                  {count}
+                </span>
+              )}
+            </span>
           </label>
         );
       })}

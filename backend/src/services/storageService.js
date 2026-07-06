@@ -37,6 +37,14 @@ export async function createSignedDownloadUrl(path, expiresInSeconds = 3600) {
   return data.signedUrl;
 }
 
+export async function createSignedViewUrl(path, expiresInSeconds = 3600) {
+  const { data, error } = await getClient()
+    .storage.from(env.SUPABASE_STORAGE_BUCKET)
+    .createSignedUrl(path, expiresInSeconds);
+  if (error) throw error;
+  return data.signedUrl;
+}
+
 export async function downloadPrivateFile(path) {
   const { data, error } = await getClient()
     .storage.from(env.SUPABASE_STORAGE_BUCKET)

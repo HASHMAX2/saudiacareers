@@ -14,6 +14,7 @@ export const listJobsSchema = z.object({
   query: z.object({
     page: z.coerce.number().int().positive().default(1),
     limit: z.coerce.number().int().min(1).max(50).default(10),
+    q: z.string().trim().max(200).optional(),
     locations: csvString,
     industries: csvString,
     employmentTypes: csvString,

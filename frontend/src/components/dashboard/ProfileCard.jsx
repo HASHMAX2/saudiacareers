@@ -13,17 +13,26 @@ export function ProfileCard({ profile }) {
         className="flex flex-col items-center text-center px-5 pt-5 pb-4"
         style={{ background: "linear-gradient(180deg, var(--accent-subtle), #fff)" }}
       >
-        <div
-          className="grid h-[72px] w-[72px] place-items-center rounded-full text-[26px] font-extrabold text-white"
-          style={{
-            fontFamily: "var(--font-display)",
-            background: `linear-gradient(135deg, var(--accent), var(--accent-hover))`,
-            boxShadow: "0 6px 16px rgba(244,67,54,0.3)",
-            border: "3px solid #fff",
-          }}
-        >
-          {initial}
-        </div>
+        {profile.profilePhotoUrl ? (
+          <img
+            src={profile.profilePhotoUrl}
+            alt={profile.name}
+            className="h-[72px] w-[72px] rounded-full object-cover"
+            style={{ border: "3px solid #fff", boxShadow: "0 6px 16px rgba(244,67,54,0.3)" }}
+          />
+        ) : (
+          <div
+            className="grid h-[72px] w-[72px] place-items-center rounded-full text-[26px] font-extrabold text-white"
+            style={{
+              fontFamily: "var(--font-display)",
+              background: `linear-gradient(135deg, var(--accent), var(--accent-hover))`,
+              boxShadow: "0 6px 16px rgba(244,67,54,0.3)",
+              border: "3px solid #fff",
+            }}
+          >
+            {initial}
+          </div>
+        )}
         <div className="mt-3 text-[17px] font-bold" style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)" }}>
           {profile.name}
         </div>
@@ -76,13 +85,6 @@ export function ProfileCard({ profile }) {
                     ADDS {item.boost}%
                   </small>
                 </span>
-                <Link
-                  to="/dashboard/profile"
-                  className="text-[12.5px] font-semibold shrink-0"
-                  style={{ color: "var(--accent)" }}
-                >
-                  {item.field === "photo" ? "Upload" : "Add"}
-                </Link>
               </div>
             ))}
           </div>

@@ -1,6 +1,6 @@
 # SaudiaCareers Project Progress
 
-Last updated: July 6, 2026 (candidate profile page complete)
+Last updated: July 6, 2026 (dashboard & job search polish + 15/15 Playwright tests passing)
 
 Future sessions must read both `CLAUDE.md` and this file before coding.
 
@@ -743,6 +743,66 @@ All three show `labelHint="enter number with country code"` inline.
 #### Test results
 - 122 API tests, all passing.
 - Database wiped clean and reseeded with only the default admin account (`admin@saudiacareers.com` / `Admin@1234`, must change password on first login).
+
+---
+
+## Session: Dashboard & Job Search Polish (July 6, 2026)
+
+Branch: `employer` (same branch as previous session). Local only — not yet pushed to GitHub.
+
+### Changes made
+
+#### ProfileCard — removed Upload/Add action buttons
+- `frontend/src/components/dashboard/ProfileCard.jsx` — the "missing fields" rows no longer render inline Upload/Add `<Link>` buttons.  Candidates can update their profile from `/dashboard/profile` directly.
+
+#### Dashboard profile completion mismatch fixed
+- `backend/src/controllers/candidateDashboardController.js` — replaced the old 8-field flat formula with a 12-field weighted formula that exactly mirrors `COMPLETION_ITEMS` in `Profile.jsx`:
+  - name 5%, mobile 5%, location 5%, designation 10%, experience 10%, skills 10%, cvHeadline 5%, summary 5%, profilePhoto 5%, resume 20%, employmentEntries 10%, educationEntries 10%.
+- Prisma query updated: `profile: { include: { _count: { select: { employmentEntries: true, educationEntries: true } } } }` to support the entry-count fields.
+- `missingFields` boost values updated to match new weights (resume 10→20, education uses entry count).
+
+#### Dashboard profile photo now shown
+- `backend/src/services/storageService.js` — new `createSignedViewUrl(path, expiresInSeconds)` function (no `download: true`, suitable for `<img src>` display).
+- `candidateDashboardController.js` — imports `createSignedViewUrl`; generates `profilePhotoUrl` non-fatally and returns it in the dashboard response (replacing the old `hasPhoto: Boolean`).
+- `frontend/src/components/dashboard/ProfileCard.jsx` — renders `<img src={profile.profilePhotoUrl}>` when the field is present, falls back to the initials circle.
+
+#### 50 test jobs seeded
+- `backend/prisma/addTestJobs.js` — one-off script that inserted 50 diverse jobs covering Technology, Finance, Healthcare, Oil & Gas, Construction, Hospitality, Education, Logistics, Retail, Telecom, Real Estate, Mining, Automotive, Media, Tourism, and more. All have future deadlines.  Database now has 60+ active open jobs.
+
+#### Job search bar fixed end-to-end
+- `backend/src/validation/jobSchemas.js` — `q: z.string().trim().max(200).optional()` added to `listJobsSchema` query envelope.
+- `backend/src/controllers/jobController.js` — `listJobs` destructures `q` and adds a Prisma `OR` condition across `title`, `companyName`, `requiredSkills`, and `industry` (case-insensitive contains) when `q` is present.
+- `frontend/src/pages/public/Jobs.jsx` — full rewrite to add search bar: `useSearchParams` syncs `?q=` to/from URL; 400ms debounce; two-fetch pattern (primary with `q` + secondary without `q` only when query active); merged combined list with `Set`-based ID deduplication so all jobs appear in one seamless list (matched first, then remaining newest-first); `Results for "…"` label + inline Clear button.
+
+#### Industry job counts in filter panel
+- `backend/src/controllers/jobController.js` — `getFilterOptions` changed from `findMany+distinct` to `groupBy+_count`, including the deadline filter in `baseWhere`. Now returns `industries` as `[{ name, count }]` objects.
+- `frontend/src/components/jobs/FilterPanel.jsx` — `CheckboxList` updated to handle both string arrays and `{ name, count }` objects; renders a count pill `<span>` next to each industry name when `count` is present.
+
+### Playwright tests — 15/15 passing
+
+New test file: `tests/session-jul6.spec.js`. Covers:
+
+| Test | Status |
+|---|---|
+| `listJobsSchema` accepts `q` param | ✓ |
+| `listJobsSchema` rejects `q` > 200 chars | ✓ |
+| `GET /api/jobs?q=civil` returns civil engineer jobs | ✓ |
+| `GET /api/jobs?q=react` returns React developer jobs | ✓ |
+| `GET /api/jobs?q=nonexistentxyzabc` returns 0 jobs | ✓ |
+| `GET /api/jobs?limit=50` returns ≥ 50 total jobs | ✓ |
+| `GET /api/jobs/filter-options` returns `[{name, count}]` industries | ✓ |
+| Jobs page has visible search bar | ✓ |
+| Searching "Civil Engineer" shows civil engineer jobs | ✓ |
+| No "Browse all open roles" divider (no search) | ✓ |
+| No "Browse all open roles" divider (search active) | ✓ |
+| Industry filter items show count badges | ✓ |
+| Dashboard ProfileCard has no Add/Upload buttons | ✓ |
+| Search shows "Results for" label + Clear button | ✓ |
+| Clearing search removes "Results for" label | ✓ |
+
+`@playwright/test` installed as a dev dependency in the root workspace.
+
+---
 
 ## Partially Completed
 

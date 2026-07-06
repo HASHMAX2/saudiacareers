@@ -15,12 +15,18 @@ function parseList(csv) {
 }
 
 export async function getFilterOptions(req, res) {
-  const baseWhere = { status: JobStatus.ACTIVE, isDeleted: false };
-  const [industries, nationalities] = await Promise.all([
-    prisma.job.findMany({
+  const now = new Date();
+  const baseWhere = {
+    status: JobStatus.ACTIVE,
+    isDeleted: false,
+    OR: [{ applicationDeadline: null }, { applicationDeadline: { gt: now } }],
+  };
+
+  const [industryGroups, nationalities] = await Promise.all([
+    prisma.job.groupBy({
+      by: ["industry"],
       where: baseWhere,
-      select: { industry: true },
-      distinct: ["industry"],
+      _count: { id: true },
       orderBy: { industry: "asc" },
     }),
     prisma.job.findMany({
@@ -30,10 +36,14 @@ export async function getFilterOptions(req, res) {
       orderBy: { nationality: "asc" },
     }),
   ]);
+
   return sendSuccess(res, {
     message: "Filter options retrieved",
     data: {
-      industries: industries.map((j) => j.industry).filter(Boolean).sort(),
+      industries: industryGroups
+        .filter((g) => g.industry)
+        .sort((a, b) => a.industry.localeCompare(b.industry))
+        .map((g) => ({ name: g.industry, count: g._count.id })),
       nationalities: nationalities
         .map((j) => j.nationality)
         .filter((v) => v && v !== "Any Nationality" && v !== "Any")
@@ -43,7 +53,7 @@ export async function getFilterOptions(req, res) {
 }
 
 export async function listJobs(req, res) {
-  const { page, limit, locations, industries, employmentTypes, experiences, salaries, genders, nationalities, postedAfter, postedBefore, sort } = req.validated.query;
+  const { page, limit, q, locations, industries, employmentTypes, experiences, salaries, genders, nationalities, postedAfter, postedBefore, sort } = req.validated.query;
   const now = new Date();
 
   const locationsList       = parseList(locations);
@@ -59,6 +69,17 @@ export async function listJobs(req, res) {
     { isDeleted: false },
     { OR: [{ applicationDeadline: null }, { applicationDeadline: { gt: now } }] },
   ];
+
+  if (q) {
+    conditions.push({
+      OR: [
+        { title:          { contains: q, mode: "insensitive" } },
+        { companyName:    { contains: q, mode: "insensitive" } },
+        { requiredSkills: { contains: q, mode: "insensitive" } },
+        { industry:       { contains: q, mode: "insensitive" } },
+      ],
+    });
+  }
 
   if (locationsList.length)       conditions.push({ location: { in: locationsList } });
   if (industriesList.length)      conditions.push({ industry: { in: industriesList } });

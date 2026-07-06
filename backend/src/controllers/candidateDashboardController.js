@@ -1,4 +1,5 @@
 import { prisma } from "../config/prisma.js";
+import { createSignedViewUrl } from "../services/storageService.js";
 import { sendSuccess } from "../utils/ApiResponse.js";
 
 export async function getDashboardStats(req, res) {
@@ -8,7 +9,13 @@ export async function getDashboardStats(req, res) {
     await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },
-        include: { profile: true },
+        include: {
+          profile: {
+            include: {
+              _count: { select: { employmentEntries: true, educationEntries: true } },
+            },
+          },
+        },
       }),
       prisma.application.count({ where: { userId } }),
       prisma.application.findMany({
@@ -49,35 +56,44 @@ export async function getDashboardStats(req, res) {
     ]);
 
   const profile = user.profile;
-  const requiredFields = [
-    user.name,
-    user.mobile,
-    profile?.location,
-    profile?.designation,
-    profile?.experience,
-    profile?.skills,
-    profile?.education,
-    profile?.resumePath,
+
+  // Weighted formula — must mirror COMPLETION_ITEMS in Profile.jsx
+  const completionWeights = [
+    { pct: 5,  filled: !!user.name },
+    { pct: 5,  filled: !!user.mobile },
+    { pct: 5,  filled: !!profile?.location },
+    { pct: 10, filled: !!profile?.designation },
+    { pct: 10, filled: !!profile?.experience },
+    { pct: 10, filled: !!profile?.skills },
+    { pct: 5,  filled: !!profile?.cvHeadline },
+    { pct: 5,  filled: !!profile?.summary },
+    { pct: 5,  filled: !!profile?.profilePhotoPath },
+    { pct: 20, filled: !!profile?.resumePath },
+    { pct: 10, filled: (profile?._count?.employmentEntries ?? 0) > 0 },
+    { pct: 10, filled: (profile?._count?.educationEntries ?? 0) > 0 },
   ];
-  const profileCompletion = Math.round(
-    (requiredFields.filter(Boolean).length / requiredFields.length) * 100,
-  );
+  const profileCompletion = completionWeights.reduce((acc, { pct, filled }) => acc + (filled ? pct : 0), 0);
 
   const missingFields = [];
   if (!profile?.profilePhotoPath)
     missingFields.push({ field: "photo", label: "Profile photo", boost: 5 });
   if (!profile?.resumePath)
-    missingFields.push({ field: "resume", label: "Resume", boost: 10 });
+    missingFields.push({ field: "resume", label: "Resume", boost: 20 });
   if (!profile?.skills)
-    missingFields.push({ field: "skills", label: "Key skills", boost: 8 });
-  if (!profile?.education)
-    missingFields.push({ field: "education", label: "Education", boost: 5 });
+    missingFields.push({ field: "skills", label: "Key skills", boost: 10 });
+  if ((profile?._count?.educationEntries ?? 0) === 0)
+    missingFields.push({ field: "education", label: "Education details", boost: 10 });
   if (!profile?.summary)
-    missingFields.push({
-      field: "summary",
-      label: "Professional summary",
-      boost: 4,
-    });
+    missingFields.push({ field: "summary", label: "Professional summary", boost: 5 });
+
+  let profilePhotoUrl = null;
+  if (profile?.profilePhotoPath) {
+    try {
+      profilePhotoUrl = await createSignedViewUrl(profile.profilePhotoPath, 3600);
+    } catch {
+      // non-fatal — dashboard still loads without photo
+    }
+  }
 
   return sendSuccess(res, {
     message: "Dashboard stats",
@@ -88,7 +104,7 @@ export async function getDashboardStats(req, res) {
         designation: profile?.designation ?? null,
         experience: profile?.experience ?? null,
         profileCompletion,
-        hasPhoto: Boolean(profile?.profilePhotoPath),
+        profilePhotoUrl,
         missingFields,
       },
       stats: {
