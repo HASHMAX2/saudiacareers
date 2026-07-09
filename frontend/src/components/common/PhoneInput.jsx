@@ -36,7 +36,7 @@ export function PhoneInput({ label, required, error, id, value = "", onChange, d
   }, [open]);
 
   const emit = (newCode, newDigits) =>
-    onChange?.({ target: { value: newDigits === "" ? "" : newCode + newDigits } });
+    onChange?.({ target: { value: newCode + newDigits } });
 
   // Match dial code prefix (with or without leading +) OR country name substring
   const q = query.trim().toLowerCase();
@@ -205,15 +205,17 @@ export function PhoneInput({ label, required, error, id, value = "", onChange, d
         />
       </div>
 
-      {/* Submit-time error from parent */}
-      {error && <span className="mt-1.5 block text-xs text-red-600">{error}</span>}
+      {/* Reserved-height area so the hint/error appearing and disappearing never shifts layout below */}
+      <div className="mt-1.5 min-h-[1rem]">
+        {error && <span className="block text-xs text-red-600">{error}</span>}
 
-      {/* Real-time hint: shown only while typing, before form is submitted */}
-      {!error && digits.length > 0 && digits.length < 6 && (
-        <span className="mt-1.5 block text-xs" style={{ color: "var(--gold-ink)" }}>
-          Enter at least 6 digits for your local number
-        </span>
-      )}
+        {/* Real-time hint: shown only while typing, before form is submitted */}
+        {!error && digits.length > 0 && digits.length < 6 && (
+          <span className="block text-xs" style={{ color: "var(--gold-ink)" }}>
+            Enter at least 6 digits for your local number
+          </span>
+        )}
+      </div>
     </label>
   );
 }

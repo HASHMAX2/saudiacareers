@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { restoreSession } from "./api/client.js";
+import { useAuthStore } from "./store/authStore.js";
+import { Spinner } from "./components/common/Spinner.jsx";
 import { AppLayout } from "./components/layout/AppLayout.jsx";
 import { DashboardLayout } from "./components/layout/DashboardLayout.jsx";
 import { AdminRoute } from "./routes/AdminRoute.jsx";
@@ -55,9 +57,19 @@ const adminLinks = [
 ];
 
 export default function App() {
+  const isInitialized = useAuthStore((state) => state.isInitialized);
+
   useEffect(() => {
     restoreSession();
   }, []);
+
+  if (!isInitialized) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Spinner label="Loading…" />
+      </div>
+    );
+  }
 
   return (
     <Routes>
