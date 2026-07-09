@@ -1,6 +1,6 @@
 # SaudiaCareers Project Progress
 
-Last updated: July 9, 2026 (employer portal visual rebuild + billing/credits/verification system + bug fixes)
+Last updated: July 9, 2026 (job legitimacy flagging + employer billing controls + full admin console rebuild)
 
 Future sessions must read both `CLAUDE.md` and this file before coding.
 
@@ -10,9 +10,9 @@ Current branch: `employer-v2` (branched from `candidateloginpage` tip `474cfd4`,
 
 - `candidateloginpage` is pushed to GitHub, up to date, and has two extra local-history commits beyond `2629732`: `042d4d1` (session-restore flash fix + phone country-code picker fix) and `8caf52b` (employer dropdown click-to-open, dashboard coming-soon labels, landing tagline tweak) — both pushed.
 - A checkpoint tag `stable-2026-07-09-candidateloginpage` and backup branch `candidateloginpage-stable-backup` were created at commit `474cfd4` in case future work needs to roll back.
-- `employer-v2` branch and its two commits are **pushed to GitHub**.
-- The current session's employer billing/credits/verification work, **plus a full visual rebuild of the employer portal** (see below), is **implemented and manually verified end-to-end (backend via HTTP requests, frontend via Playwright + screenshots), but not yet committed** — still sitting as uncommitted changes on `employer-v2`.
-- Two small uncommitted fixes from the prior session are also still pending a commit: `JobDetail.jsx` (job description word-wrap) and `Dashboard.jsx` (hidden placeholder sections, saved-jobs count fix).
+- `employer-v2` branch is **pushed to GitHub and up to date**, four commits ahead of `candidateloginpage`: `5ecd83e` (employer portal visual rebuild + billing/credits/verification system), `29fcc6c` (employer job-editing fix, form null-value fix, applicants-page loading flash fix), and `92fde0d` (job legitimacy flagging, employer billing controls, full admin console rebuild — see new session section at the bottom of this file for details).
+- All work described below is **implemented, manually verified end-to-end (backend via direct HTTP/Prisma checks, frontend via Playwright), and committed/pushed** — no uncommitted work outstanding on this branch.
+- Left over in the database from testing (harmless, not cleaned up): test admin `jobreviewtest-admin@example.com` / `TestAdmin1`, test employers `buttontest+jobs1@testco-example.com`, `nowebsite+test@example.com`, `suspendtest@example.com`, and test candidate `zock131+admintest@gmail.com` (all password `Testpass1`).
 
 The database has been wiped clean and reseeded with only the default admin account. Admin account: `admin@saudiacareers.com` / `Admin@1234` (must change password on first login — `mustChangePassword` is still `true`).
 
@@ -1171,3 +1171,134 @@ npm run prisma:studio --workspace backend
 ## TODO
 
 - (completed) Fix frontend form validation — see Completed section.
+
+---
+
+## Session: Job Legitimacy Flagging, Employer Billing Controls, and Admin Console Rebuild (July 9–10, 2026)
+
+Branch: `employer-v2`. Committed as `92fde0d` and pushed to GitHub. Three new migrations applied to production Supabase: `20260709193727_add_job_flagging_and_pending_review`, `20260709205216_add_admin_console_features`, `20260709210649_add_employer_linkedin_url`.
+
+### Real Applicants page (root-caused, not just patched)
+
+A previous fix only patched the sidebar highlight for the "Applicants" nav item (which shared the `/employer/jobs` route with "Jobs" since no aggregate-applications endpoint existed). The user reported the underlying issue again — clicking "Applicants" still showed "Jobs" content. Root cause: there was no real Applicants page, just a shared route with a highlight workaround.
+
+- **Backend:** `GET /employer/applications` (`listAllApplications` in `employerController.js`) — all applications across every job the employer owns, joined with job title, with pagination/search/status filter. New `employerAllApplicationsQuerySchema`.
+- **Frontend:** new `frontend/src/pages/employer/EmployerApplicants.jsx` — genuine all-jobs applicant card grid (mirrors the per-job `EmployerApplications.jsx` UI), each card links back to its job.
+- `EmployerShell.jsx` simplified — "Applicants" is now a real `NavLink` to `/employer/applicants`; the entire `jobsNavFocus` workaround state was deleted since there's no longer a shared route to disambiguate.
+
+### Job legitimacy flagging (rule-based, admin-gated)
+
+New `backend/src/services/jobLegitimacyService.js` — runs automatically inside `createEmployerJob` and the publish-transition path of `updateEmployerJobStatus`, right before a job would otherwise go `ACTIVE`. Any flagged job is forced to a new `PENDING_REVIEW` status instead, with reasons stored, and does **not** get published until an admin explicitly approves it — the employer is never blocked from posting, just queued for review.
+
+Rules implemented:
+1. **HR/apply email is free webmail** (gmail/yahoo/hotmail/outlook/icloud/live/aol/mail/protonmail/yandex) — applies regardless of whether the employer has a website on file, since a legitimate company email is mandatory either way.
+2. **HR/apply email domain mismatch** vs. the employer's own verified website domain — only applies when a website is on file (nothing to compare against otherwise).
+3. **External apply-URL points to an unrecognized domain** (not the employer's own site, not an allowlisted ATS like LinkedIn/Indeed/Bayt/Greenhouse/Lever/Workday/etc.).
+4. **Payment/fee language** in the description or screening question (processing fee, refundable deposit, wire transfer, OTP, etc.).
+5. **Off-platform contact pressure** (pushes candidates to WhatsApp/Telegram).
+6. **Too-good-to-be-true compensation** claims paired with a salary range.
+7. **Suspicious content inside the salary field itself** (a URL, messaging link, or long digit run).
+8. **Rapid duplicate postings** — same employer, same title+description, 3+ times in 24 hours.
+
+Schema additions: `Job.flagReasons String[]`, `Job.reviewNote String?`, `JobStatus.PENDING_REVIEW`.
+
+New endpoints: `PATCH /admin/jobs/:id/approve` (re-runs the verification/credit gate, consumes a credit, publishes), `PATCH /admin/jobs/:id/reject` (requires a note, sets `INACTIVE`). New admin page `frontend/src/pages/admin/JobReviews.jsx` — queue of flagged jobs with human-readable reason badges and Approve/Reject actions. Employer-facing `EmployerJobs.jsx` shows a "Pending review" badge and disables the Publish toggle for those rows instead of the normal Publish/Unpublish button.
+
+### Employer Billing page — Cancel/Resume Subscription + Download Invoices
+
+Two new top-right buttons on `EmployerBilling.jsx`, replacing the old inline "Cancel renewal" button:
+- **Cancel Subscription** — only shown for an active paid plan that isn't already scheduled to cancel. Opens a confirmation modal explaining the plan stays active until the period ends, then reverts to Free. On confirm, schedules `EmployerSubscription.cancelAtPeriodEnd = true` (no immediate downgrade) and shows: *"Subscription cancellation scheduled. Your [Plan] Plan remains active until [date]. After this date, your account will move to the Free Plan."* Button swaps to **Resume Subscription** afterward (new `POST /employer/subscription/resume` endpoint) to undo the cancellation before the period ends.
+- A lazy check inside `getOrCreateSubscription` (mirrors the existing monthly free-job-reset pattern) auto-downgrades `planTier` to `FREE` once `renewsAt` actually passes for a `cancelAtPeriodEnd` subscription — there's no payment gateway/cron in this app to drive that transition otherwise.
+- **Download Invoices** — modal listing invoice history (Invoice #, plan/type, amount, date, status) with a real **Download PDF** button per invoice. New `pdfkit` dependency; `GET /employer/invoices/:id/pdf` streams a generated receipt.
+- Fixed a real bug caught during testing: the page blanked to a full-page spinner on every post-action refetch, which could hide the success message behind it (same class of issue as an earlier Applicants-page loading flash) — fixed with an `initialLoading` guard so only the very first load shows the full-page spinner.
+
+### Admin console rebuild
+
+Built using a supplied "TalentDesk" HTML mockup as a structural reference, restyled with the project's own theme (not the mockup's indigo/dark-console palette). All pre-existing admin features (`ManageJobs`, `CreateJob`, `EditJob`, `ImportJobs`, `Applications`, `ApplicationDetail`, `Invoices`, `ChangePassword`) were preserved and folded into the new nav structure — nothing deleted. Audit log and Settings tabs from the mockup were explicitly excluded per instruction.
+
+- **`frontend/src/components/admin/AdminShell.jsx`** — new dedicated shell mirroring the `EmployerShell` pattern: grouped sidebar nav (Core / Jobs / Applications / Billing) with live badge counts, premium logout dropdown, search box wired to the Employers directory.
+- **`AdminDashboard.jsx` restyled** — action-first layout: KPI row + a real employer-approval-queue widget (top 3 pending, SLA badges) + a critical-operations widget (flagged jobs, refund requests).
+- **Enhanced `EmployerVerifications.jsx`** — SLA badges (24h default, computed from `verificationSubmittedAt`), a verification-signal checklist (email-domain match, website, LinkedIn, document), chip filters (Breached / Due < 4h / Missing docs / Domain issue), and a new **Request info** action (distinct from reject — keeps status `PENDING`, stores a note the employer sees on their own verification page) alongside Approve/Reject, all via proper modals instead of `window.prompt`.
+- **New `EmployerReviewDetail.jsx`** — single-employer page (`/admin/verifications/:id`) with full identity/signal detail, a first-job-draft preview, and the same three decision actions.
+- **New Employers directory** (`Employers.jsx`) — table of every employer with status/plan/job-count, search + status/plan filters, and a real **Suspend/Unsuspend** action. Suspension is enforced at the API level, not just cosmetic: suspended employers get a 403 on login and are blocked from publishing/creating jobs (verified: 403 while suspended, 200 immediately after unsuspend).
+- **Candidate job-reporting** — new "Report" button/modal on `JobDetail.jsx` (reason enum + optional note) → `POST /jobs/:id/report` → new admin **Flagged Jobs** page (`JobsFlagged.jsx`) grouping reports per job with Remove (soft-deletes the job) / Dismiss (clears the reports) actions.
+- **New Scraped Jobs tracker** (`ScrapedJobs.jsx`) — a real `ScrapedJob` model + admin CRUD, KPI row (live/broken/duplicate-suspect counts), and a genuine **Recrawl** action that performs a live `HEAD` request against the stored apply URL to detect broken links (no fake status toggle — verified against a real URL). Manual "Add scraped job" form since the mockup shows no import flow; deliberately does **not** include a live web-scraping crawler (out of scope — no target sites were specified, and building a generic scraper raises its own concerns).
+- **DB-backed Plans** — pricing/credits/features migrated from a hardcoded `backend/src/config/plans.js` object into a real `Plan` table, with a new admin editor page (`AdminPlans.jsx`) to change price/credits/features per tier. Verified a live price edit round-trips correctly to the employer-facing Billing page.
+- **New Billing overview** (`AdminBilling.jsx`) and **Refunds** (`Refunds.jsx`) pages — Billing overview lists every employer's subscription/plan/status/credits/renewal date; Refunds splits open refund requests + a recent-refunds table out of the existing `Invoices.jsx` (which is kept, unchanged, as the general invoice ledger). Added a missing **reject-refund** endpoint (only "mark refunded" existed before).
+- **Admin login redesigned** (`AdminLogin.jsx`) — replaced the shared generic `<Login admin />` with a dedicated page matching the candidate/employer split-image auth pattern (form left, image right, 50/50, mobile-responsive, hidden below `lg`). Uses an already-verified Unsplash photo (corporate skyscrapers) reused from elsewhere in the codebase — no new external URLs were guessed.
+
+### New database models/fields (this session)
+
+```prisma
+model JobReport { id, jobId, userId, reason, note, createdAt }        // candidate reports on a Job
+model ScrapedJob { id, title, companyName, location, source, applyUrl, status, isDuplicateSuspect, lastCheckedAt }
+model Plan { id, tier, name, priceSar, paidCreditsGranted, features }  // replaces hardcoded plans.js config
+
+Job.flagReasons String[]
+Job.reviewNote String?
+JobStatus.PENDING_REVIEW (new enum value)
+ScrapedJobStatus { LIVE, BROKEN, HIDDEN }
+
+EmployerProfile.linkedinUrl String?
+EmployerProfile.verificationSubmittedAt DateTime?
+EmployerProfile.isSuspended Boolean @default(false)
+EmployerProfile.suspendedReason String?
+EmployerProfile.suspendedAt DateTime?
+```
+
+### New backend endpoints (this session)
+
+```text
+GET    /api/employer/applications                    All applications across every job the employer owns
+GET    /api/employer/jobs/:id                         Fetch one job regardless of status (fixes the edit-page bug below)
+POST   /api/employer/subscription/resume              Undo a scheduled cancellation
+GET    /api/employer/invoices/:id/pdf                  Stream a generated invoice PDF
+POST   /api/jobs/:id/report                            Candidate reports a job (auth required)
+
+PATCH  /api/admin/jobs/:id/approve                     Approve a PENDING_REVIEW job (consumes a credit, publishes)
+PATCH  /api/admin/jobs/:id/reject                      Reject a PENDING_REVIEW job (requires a note)
+GET    /api/admin/jobs-flagged                         Jobs with open candidate reports
+PATCH  /api/admin/jobs/:id/dismiss-reports              Clear reports on a job without removing it
+
+GET    /api/admin/employers                            Employer directory (search/status/plan filters)
+PATCH  /api/admin/employers/:id/suspend                Suspend (reason required)
+PATCH  /api/admin/employers/:id/unsuspend              Unsuspend
+
+GET    /api/admin/employer-verifications/:id           Single-employer verification detail (SLA + signals + first job)
+PATCH  /api/admin/employer-verifications/:id/request-info   Request more info (status stays PENDING)
+
+GET    /api/admin/scraped-jobs                          List + KPIs
+POST   /api/admin/scraped-jobs                          Add one
+PATCH  /api/admin/scraped-jobs/:id/recrawl              Real HTTP link-health check
+PATCH  /api/admin/scraped-jobs/:id/mark-reviewed        Clear duplicate-suspect flag
+
+GET    /api/admin/plans                                 List plans (DB-backed)
+PATCH  /api/admin/plans/:id                             Edit a plan's price/credits/features
+
+GET    /api/admin/billing-overview                       Every employer's subscription/plan/status
+PATCH  /api/admin/invoices/:id/reject-refund            Reject a refund request (requires a reason)
+```
+
+### New frontend routes (this session)
+
+```text
+/employer/applicants              Real all-jobs Applicants page
+
+/admin/login                      Redesigned split-image admin login
+/admin/employers                  Employers directory
+/admin/verifications/:id          Employer review detail
+/admin/jobs-flagged               Flagged-by-candidates queue
+/admin/scraped-jobs               Scraped jobs tracker
+/admin/billing                    Billing overview across all employers
+/admin/plans                      Plan editor
+/admin/refunds                    Refunds workflow
+```
+
+### Two real bugs found and fixed while testing (unrelated to the features above)
+
+- **Edit button silently failed on any non-`ACTIVE` job** (draft, unpublished, expired) — `EmployerEditJob.jsx` was fetching via the *public* candidate-facing `GET /api/jobs/:id` endpoint, which only returns `ACTIVE` jobs; the 404 was silently swallowed and the page redirected back to the jobs list with no error. Fixed by adding a real employer-scoped `GET /employer/jobs/:id` that returns the job regardless of status.
+- **`JobForm.jsx` "value prop should not be null" React warning** on the edit page — any job with a `null` optional field (department, screening question, etc.) turned that input into an uncontrolled field. Fixed by merging `initialValue` over the form defaults field-by-field, skipping `null`/`undefined` instead of overwriting the default.
+
+### Verification
+
+All of the above was manually verified end-to-end this session via direct backend HTTP/Prisma checks and Playwright browser automation (not just code review): job legitimacy flagging (Gmail HR email → `PENDING_REVIEW` → admin approve/reject → public visibility correctly gated both ways), no-website employer still correctly flagged for free-webmail-but-not-domain-mismatch, Cancel/Resume Subscription full round trip with exact message wording, invoice PDF download (real file, correct filename), every new/enhanced admin page loads with real data, employer suspend/unsuspend enforced at login (403 → 200), Plans editor price-edit round trip, candidate job-report → Flagged Jobs queue → Dismiss (confirmed via direct DB check after a false-negative timing read in the test script), Scraped Jobs add + Recrawl against a real URL (correctly detected `example.com` as `LIVE`).
