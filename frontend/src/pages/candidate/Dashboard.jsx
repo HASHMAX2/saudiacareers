@@ -281,8 +281,8 @@ export function Dashboard() {
 
             {/* Action cards */}
             <div className="grid gap-5 sm:grid-cols-3">
-              <StatCard icon={Bell} sublabel="Looking for a specific job?" label="Create job alert" fgClass="accent" bgClass="accent-subtle" />
-              <StatCard icon={Mail} label="Messages" sublabel="from employers" value={stats.messagesCount} bgClass="gold-bg" fgClass="gold-ink" />
+              <StatCard icon={Bell} sublabel="Looking for a specific job?" label="Create job alert , (coming soon)" fgClass="accent" bgClass="accent-subtle" />
+              <StatCard icon={Mail} label="Messages" sublabel="from employers , (coming soon)" value={stats.messagesCount} bgClass="gold-bg" fgClass="gold-ink" />
               <StatCard icon={CheckSquare} label="Applied" sublabel="jobs so far" value={applications?.length ?? stats.appliedCount} bgClass="green-bg" fgClass="green" />
             </div>
 

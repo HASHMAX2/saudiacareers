@@ -50,7 +50,7 @@ export function Landing() {
                 style={{ borderColor: "var(--border-default)", background: "var(--bg-white)", color: "var(--text-secondary)" }}
               >
                 <span className="h-2 w-2 rounded-full" style={{ background: "var(--accent)" }} />
-                Curated · No Spam · Saudi-focused
+                Curated · Premium · Saudi-focused
               </span>
 
               <h1

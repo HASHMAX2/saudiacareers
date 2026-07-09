@@ -44,10 +44,12 @@ export function Navbar() {
   const [showToast, setShowToast] = useState(false);
   const timerRef = useRef(null);
   const userMenuRef = useRef(null);
+  const empMenuRef = useRef(null);
 
   useEffect(() => () => clearTimeout(timerRef.current), []);
 
   const closeUserMenu = useCallback(() => setUserMenuOpen(false), []);
+  const closeEmpMenu = useCallback(() => setEmpOpen(false), []);
 
   useEffect(() => {
     if (!userMenuOpen) return;
@@ -64,6 +66,22 @@ export function Navbar() {
       document.removeEventListener("keydown", onEscape);
     };
   }, [userMenuOpen, closeUserMenu]);
+
+  useEffect(() => {
+    if (!empOpen) return;
+    function onClickOutside(e) {
+      if (empMenuRef.current && !empMenuRef.current.contains(e.target)) closeEmpMenu();
+    }
+    function onEscape(e) {
+      if (e.key === "Escape") closeEmpMenu();
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    document.addEventListener("keydown", onEscape);
+    return () => {
+      document.removeEventListener("mousedown", onClickOutside);
+      document.removeEventListener("keydown", onEscape);
+    };
+  }, [empOpen, closeEmpMenu]);
 
   async function handleLogout() {
     setLoggingOut(true);
@@ -278,12 +296,14 @@ export function Navbar() {
                 {/* Desktop employer dropdown */}
                 <div
                   className="relative hidden md:block"
-                  onMouseEnter={() => setEmpOpen(true)}
-                  onMouseLeave={() => setEmpOpen(false)}
+                  ref={empMenuRef}
                 >
                   <button
                     className="flex items-center gap-1 px-2 text-[15px] font-medium transition-colors hover:opacity-70"
                     style={{ color: "var(--text-secondary)" }}
+                    onClick={() => setEmpOpen((v) => !v)}
+                    aria-haspopup="menu"
+                    aria-expanded={empOpen}
                     type="button"
                   >
                     Employers
