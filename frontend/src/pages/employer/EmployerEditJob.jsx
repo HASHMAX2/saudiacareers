@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { jobsApi } from "../../api/jobs.js";
 import { employerApi } from "../../api/employer.js";
 import { JobForm } from "../../components/admin/JobForm.jsx";
 import { Spinner } from "../../components/common/Spinner.jsx";
@@ -13,7 +12,7 @@ export function EmployerEditJob() {
   const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
-    jobsApi.get(id).then(({ data }) => setJob(data.data)).catch(() => navigate("/employer/jobs"));
+    employerApi.getJob(id).then(({ data }) => setJob(data.data)).catch(() => navigate("/employer/jobs"));
   }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleSubmit(form) {

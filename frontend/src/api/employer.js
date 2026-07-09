@@ -6,6 +6,7 @@ export const employerApi = {
   updateProfile:         (data)         => api.put("/employer/profile", data),
   getDashboard:          ()             => api.get("/employer/dashboard"),
   listJobs:              (params)       => api.get("/employer/jobs", { params }),
+  getJob:                (id)           => api.get(`/employer/jobs/${id}`),
   createJob:             (data)         => api.post("/employer/jobs", data),
   updateJob:             (id, data)     => api.put(`/employer/jobs/${id}`, data),
   updateJobStatus:       (id, data)     => api.patch(`/employer/jobs/${id}/status`, data),

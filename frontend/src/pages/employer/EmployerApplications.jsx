@@ -86,36 +86,63 @@ export function EmployerApplications() {
     load(1, search, statusFilter);
   }
 
+  const initialLoading = loading && !job;
+
   return (
     <div>
       <Link to="/employer/jobs" className="mb-4 inline-flex items-center gap-1.5 text-sm hover:underline" style={{ color: "var(--text-secondary)" }}>
         <ArrowLeft size={14} />Back to listings
       </Link>
-      <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl" style={{ color: "var(--text-primary)" }}>{job?.title ?? "Applicants"}</h1>
-      <p className="mt-1 mb-6 text-base" style={{ color: "var(--text-secondary)" }}>
-        {total} applicant{total !== 1 ? "s" : ""}
-      </p>
+      {initialLoading ? (
+        <>
+          <div className="h-9 w-72 max-w-full animate-pulse rounded-lg" style={{ background: "rgba(0,0,0,0.08)" }} />
+          <div className="mt-2 mb-6 h-4 w-24 animate-pulse rounded" style={{ background: "rgba(0,0,0,0.08)" }} />
+        </>
+      ) : (
+        <>
+          <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl" style={{ color: "var(--text-primary)" }}>{job?.title ?? "Job not found"}</h1>
+          <p className="mt-1 mb-6 text-base" style={{ color: "var(--text-secondary)" }}>
+            {total} applicant{total !== 1 ? "s" : ""}
+          </p>
+        </>
+      )}
 
-      <form onSubmit={handleSearch} className="mb-5 flex flex-wrap gap-2">
-        <input
-          className="min-w-40 flex-1 rounded-full px-4 py-2.5 text-sm outline-none"
-          style={{ border: "1px solid var(--border-default)", background: "var(--bg-white)" }}
-          placeholder="Search candidate…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <Select
-          className="w-44"
-          pill
-          icon={SlidersHorizontal}
-          value={statusFilter}
-          onChange={(e) => { setStatus(e.target.value); setPage(1); load(1, search, e.target.value); }}
-          options={[{ value: "", label: "All stages" }, ...STATUS_OPTIONS.map((s) => ({ value: s, label: STATUS_META[s]?.label ?? s }))]}
-        />
-        <Button type="submit" variant="secondary">Search</Button>
-      </form>
+      {!initialLoading && (
+        <form onSubmit={handleSearch} className="mb-5 flex flex-wrap gap-2">
+          <input
+            className="min-w-40 flex-1 rounded-full px-4 py-2.5 text-sm outline-none"
+            style={{ border: "1px solid var(--border-default)", background: "var(--bg-white)" }}
+            placeholder="Search candidate…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <Select
+            className="w-44"
+            pill
+            icon={SlidersHorizontal}
+            value={statusFilter}
+            onChange={(e) => { setStatus(e.target.value); setPage(1); load(1, search, e.target.value); }}
+            options={[{ value: "", label: "All stages" }, ...STATUS_OPTIONS.map((s) => ({ value: s, label: STATUS_META[s]?.label ?? s }))]}
+          />
+          <Button type="submit" variant="secondary">Search</Button>
+        </form>
+      )}
 
-      {loading ? (
+      {initialLoading ? (
+        <div className="grid gap-4 md:grid-cols-2">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="rounded-2xl p-5" style={{ border: "1px solid var(--border-default)", background: "var(--bg-white)" }}>
+              <div className="flex items-center gap-3">
+                <div className="h-11 w-11 shrink-0 animate-pulse rounded-2xl" style={{ background: "var(--bg-elev)" }} />
+                <div className="flex-1">
+                  <div className="h-4 w-32 animate-pulse rounded" style={{ background: "var(--bg-elev)" }} />
+                  <div className="mt-2 h-3 w-24 animate-pulse rounded" style={{ background: "var(--bg-elev)" }} />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : loading ? (
         <div className="grid min-h-64 place-items-center"><Spinner label="Loading applications" /></div>
       ) : !applications.length ? (
         <div className="rounded-2xl p-8 text-center" style={{ border: "1px solid var(--border-default)", background: "var(--bg-white)" }}>

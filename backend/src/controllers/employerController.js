@@ -124,6 +124,15 @@ export async function listEmployerJobs(req, res) {
   });
 }
 
+export async function getEmployerJob(req, res) {
+  const { id } = req.validated.params;
+  const job = await prisma.job.findFirst({
+    where: { id, createdBy: req.user.id, isDeleted: false },
+  });
+  if (!job) throw new ApiError(404, "Job not found");
+  return sendSuccess(res, { message: "Job retrieved", data: job });
+}
+
 export async function createEmployerJob(req, res) {
   const { status: _ignored, saveAsDraft, ...jobData } = req.validated.body;
 

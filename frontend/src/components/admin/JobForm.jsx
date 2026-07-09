@@ -81,8 +81,18 @@ function validateJob(form) {
   return errors;
 }
 
+function mergeWithDefaults(initialValue) {
+  const merged = { ...emptyJob };
+  for (const key of Object.keys(emptyJob)) {
+    if (initialValue?.[key] !== undefined && initialValue[key] !== null) {
+      merged[key] = initialValue[key];
+    }
+  }
+  return merged;
+}
+
 export function JobForm({ initialValue, onSubmit, submitLabel, allowDraft }) {
-  const [form, setForm] = useState({ ...emptyJob, ...initialValue });
+  const [form, setForm] = useState(() => mergeWithDefaults(initialValue));
   const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
