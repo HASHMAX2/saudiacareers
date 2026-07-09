@@ -36,6 +36,7 @@ export const employerProfileSchema = bodyOnly(
     industry: z.string().trim().max(100).optional(),
     location: z.string().trim().max(100).optional(),
     website: z.string().trim().url("Enter a valid URL").max(255).optional().or(z.literal("")),
+    linkedinUrl: z.string().trim().url("Enter a valid URL").max(255).optional().or(z.literal("")),
     phone: z
       .string()
       .regex(/^\+\d{7,15}$/, "Include country code e.g. +966512345678")
@@ -56,6 +57,18 @@ export const employerJobQuerySchema = envelope(
     limit: z.coerce.number().int().min(1).max(100).default(20),
     search: z.string().trim().max(100).optional(),
     status: z.nativeEnum(JobStatus).optional(),
+  }),
+);
+
+export const employerAllApplicationsQuerySchema = envelope(
+  z.object({}).passthrough(),
+  z.object({}).passthrough(),
+  z.object({
+    page: z.coerce.number().int().positive().default(1),
+    limit: z.coerce.number().int().min(1).max(100).default(20),
+    search: z.string().trim().max(100).optional(),
+    jobId: z.coerce.number().int().positive().optional(),
+    status: z.enum(["APPLIED", "SHORTLISTED", "ON_HOLD", "REJECTED"]).optional(),
   }),
 );
 

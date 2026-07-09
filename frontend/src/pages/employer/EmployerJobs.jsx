@@ -12,8 +12,8 @@ import { formatDate } from "../../utils/formatDate.js";
 
 const EMP = "var(--accent)";
 
-const STATUS_LABELS = { ACTIVE: "Active", INACTIVE: "Inactive", DRAFT: "Draft", EXPIRED: "Expired" };
-const STATUS_TONES = { ACTIVE: "green", INACTIVE: "amber", DRAFT: "neutral", EXPIRED: "red" };
+const STATUS_LABELS = { ACTIVE: "Active", INACTIVE: "Inactive", DRAFT: "Draft", EXPIRED: "Expired", PENDING_REVIEW: "Pending review" };
+const STATUS_TONES = { ACTIVE: "green", INACTIVE: "amber", DRAFT: "neutral", EXPIRED: "red", PENDING_REVIEW: "blue" };
 const CREDIT_LABELS = { FREE: "Free monthly job", PAID: "Paid credit" };
 
 function StatusBadge({ status }) {
@@ -173,16 +173,22 @@ export function EmployerJobs() {
                         <Button size="sm" variant="secondary" className="w-[104px] justify-center" onClick={() => navigate(`/employer/jobs/${job.id}/edit`)} disabled={!!busyId}>
                           <Edit2 size={13} />Edit
                         </Button>
-                        <Button size="sm" variant="secondary" className="w-[104px] justify-center" disabled={!!busyId} onClick={() => handleToggle(job)}>
-                          {busyId === job.id ? (
-                            <Loader2 size={13} className="animate-spin" />
-                          ) : job.status === "ACTIVE" ? (
-                            <Ban size={13} />
-                          ) : (
-                            <CheckCircle2 size={13} />
-                          )}
-                          {job.status === "ACTIVE" ? "Unpublish" : "Publish"}
-                        </Button>
+                        {job.status === "PENDING_REVIEW" ? (
+                          <Button size="sm" variant="secondary" className="w-[104px] justify-center" disabled title="Awaiting admin review before this job can go live">
+                            Awaiting review
+                          </Button>
+                        ) : (
+                          <Button size="sm" variant="secondary" className="w-[104px] justify-center" disabled={!!busyId} onClick={() => handleToggle(job)}>
+                            {busyId === job.id ? (
+                              <Loader2 size={13} className="animate-spin" />
+                            ) : job.status === "ACTIVE" ? (
+                              <Ban size={13} />
+                            ) : (
+                              <CheckCircle2 size={13} />
+                            )}
+                            {job.status === "ACTIVE" ? "Unpublish" : "Publish"}
+                          </Button>
+                        )}
                         <Link to={`/employer/jobs/${job.id}/applications`}>
                           <Button size="sm" variant="secondary" className="w-[104px] justify-center" disabled={!!busyId}><Eye size={13} />View</Button>
                         </Link>

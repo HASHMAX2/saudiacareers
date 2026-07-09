@@ -1,31 +1,61 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
-  Briefcase, Building2, ChevronDown, LayoutDashboard, Loader2, LogOut,
-  Menu, PlusCircle, Search, Users, Wallet, X,
+  Briefcase, Building2, ChevronDown, ClipboardList, CreditCard, FileWarning,
+  Import, Layers, LayoutDashboard, Loader2, LogOut, Menu, Receipt, RotateCcw,
+  Search, ShieldCheck, Wallet, X,
 } from "lucide-react";
+import { adminApi } from "../../api/admin.js";
 import { authApi } from "../../api/auth.js";
-import { employerApi } from "../../api/employer.js";
 import { useAuthStore } from "../../store/authStore.js";
 import { Toast } from "../common/Toast.jsx";
 
-const EMP = "var(--accent)";
-const EMP_SUBTLE = "var(--accent-subtle)";
+const ACCENT = "var(--accent)";
+const ACCENT_SUBTLE = "var(--accent-subtle)";
 const LOGOUT_DELAY = 1500;
 
-const VERIFICATION_META = {
-  PENDING:  { label: "Verification pending", color: "#8A5D10", bg: "var(--gold-bg)" },
-  APPROVED: { label: "Verified",              color: "var(--green)", bg: "var(--green-bg)" },
-  REJECTED: { label: "Verification rejected", color: "#B91C1C", bg: "#FEF2F2" },
-};
+const NAV_GROUPS = [
+  {
+    label: "Core",
+    items: [
+      { label: "Dashboard", to: "/admin/dashboard", icon: LayoutDashboard, end: true },
+      { label: "Employer approvals", icon: ShieldCheck, to: "/admin/verifications", countKey: "pendingApprovals" },
+      { label: "Employers", to: "/admin/employers", icon: Building2 },
+    ],
+  },
+  {
+    label: "Jobs",
+    items: [
+      { label: "Posted jobs", to: "/admin/jobs", icon: Briefcase, end: true },
+      { label: "Job reviews", to: "/admin/job-reviews", icon: ClipboardList, countKey: "jobReviews" },
+      { label: "Flagged jobs", to: "/admin/jobs-flagged", icon: FileWarning, countKey: "flaggedJobs" },
+      { label: "Scraped jobs", to: "/admin/scraped-jobs", icon: Layers },
+      { label: "Import jobs", to: "/admin/jobs/import", icon: Import },
+    ],
+  },
+  {
+    label: "Applications",
+    items: [
+      { label: "Applications", to: "/admin/applications", icon: FileWarning, end: true },
+    ],
+  },
+  {
+    label: "Billing",
+    items: [
+      { label: "Billing", to: "/admin/billing", icon: Wallet },
+      { label: "Plans", to: "/admin/plans", icon: CreditCard },
+      { label: "Invoices", to: "/admin/invoices", icon: Receipt },
+      { label: "Refunds", to: "/admin/refunds", icon: RotateCcw, countKey: "refunds" },
+    ],
+  },
+];
 
-export function EmployerShell() {
+export function AdminShell() {
   const user = useAuthStore((state) => state.user);
   const clearSession = useAuthStore((state) => state.clearSession);
   const navigate = useNavigate();
 
-  const [profile, setProfile] = useState(null);
-  const [metrics, setMetrics] = useState(null);
+  const [counts, setCounts] = useState({});
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -37,8 +67,19 @@ export function EmployerShell() {
   useEffect(() => () => clearTimeout(timerRef.current), []);
 
   useEffect(() => {
-    employerApi.getProfile().then(({ data }) => setProfile(data.data)).catch(() => setProfile({}));
-    employerApi.getDashboard().then(({ data }) => setMetrics(data.data)).catch(() => {});
+    Promise.all([
+      adminApi.pendingVerifications({ page: 1, limit: 1 }),
+      adminApi.jobs({ status: "PENDING_REVIEW", page: 1, limit: 1 }),
+      adminApi.flaggedJobs(),
+      adminApi.invoices({ status: "REFUND_REQUESTED", page: 1, limit: 1 }),
+    ]).then(([verRes, reviewRes, flaggedRes, refundRes]) => {
+      setCounts({
+        pendingApprovals: verRes.data.data.pagination.total,
+        jobReviews: reviewRes.data.data.pagination.total,
+        flaggedJobs: flaggedRes.data.data.length,
+        refunds: refundRes.data.data.pagination.total,
+      });
+    }).catch(() => {});
   }, []);
 
   const closeMenu = useCallback(() => setMenuOpen(false), []);
@@ -69,7 +110,7 @@ export function EmployerShell() {
     setShowToast(true);
     timerRef.current = setTimeout(() => {
       setShowToast(false);
-      navigate("/employer/login");
+      navigate("/admin/login");
       clearSession();
       setLoggingOut(false);
     }, LOGOUT_DELAY);
@@ -78,21 +119,11 @@ export function EmployerShell() {
   function handleSearch(e) {
     e.preventDefault();
     const q = search.trim();
-    navigate(q ? `/employer/jobs?search=${encodeURIComponent(q)}` : "/employer/jobs");
+    navigate(q ? `/admin/employers?search=${encodeURIComponent(q)}` : "/admin/employers");
     setSidebarOpen(false);
   }
 
-  const verMeta = VERIFICATION_META[profile?.verificationStatus] ?? VERIFICATION_META.PENDING;
-  const initials = (user?.name ?? "E").split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
-
-  const navItems = [
-    { label: "Overview", to: "/employer/dashboard", icon: LayoutDashboard, end: true },
-    { label: "Jobs", to: "/employer/jobs", icon: Briefcase, badge: metrics?.totalJobs, end: true },
-    { label: "Post a Job", to: "/employer/jobs/create", icon: PlusCircle },
-    { label: "Applicants", to: "/employer/applicants", icon: Users, badge: metrics?.totalApplications },
-    { label: "Billing", to: "/employer/billing", icon: Wallet },
-    { label: "Company Profile", to: "/employer/verification", icon: Building2 },
-  ];
+  const initials = (user?.name ?? "A").split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
 
   return (
     <div className="flex min-h-screen" style={{ background: "var(--bg-elev)" }}>
@@ -107,70 +138,60 @@ export function EmployerShell() {
 
       {/* Sidebar */}
       <aside
-        className={`fixed z-40 flex h-screen w-[275px] shrink-0 flex-col gap-5 overflow-y-auto p-4 transition-transform duration-200 md:sticky md:top-0 md:translate-x-0 ${
+        className={`fixed z-40 flex h-screen w-[270px] shrink-0 flex-col gap-4 overflow-y-auto p-4 transition-transform duration-200 md:sticky md:top-0 md:translate-x-0 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
         style={{ background: "var(--bg-white)", borderRight: "1px solid var(--border-default)" }}
       >
         <div className="flex items-center gap-3 border-b pb-4" style={{ borderColor: "var(--border-default)" }}>
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-sm font-extrabold text-white" style={{ background: EMP }}>S</span>
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-sm font-extrabold text-white" style={{ background: ACCENT }}>S</span>
           <div>
             <p className="text-[15px] font-extrabold leading-tight" style={{ color: "var(--text-primary)" }}>SaudiaCareers</p>
-            <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>Employer Portal</p>
+            <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>Admin console</p>
           </div>
           <button className="ml-auto rounded-lg p-1.5 md:hidden" onClick={() => setSidebarOpen(false)} aria-label="Close menu">
             <X size={18} style={{ color: "var(--text-tertiary)" }} />
           </button>
         </div>
 
-        <div className="rounded-2xl p-3" style={{ border: "1px solid var(--border-default)", background: "var(--bg-elev)" }}>
-          <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--text-tertiary)" }}>Workspace</p>
-          <p className="mt-1 truncate text-sm font-bold" style={{ color: "var(--text-primary)" }}>{profile?.companyName || "Your company"}</p>
-          <p className="mt-1 text-xs font-semibold" style={{ color: verMeta.color }}>{verMeta.label}</p>
+        <div className="flex items-center gap-2 rounded-xl px-3 py-2" style={{ background: "var(--green-bg)" }}>
+          <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: "var(--green)" }} />
+          <span className="text-xs font-semibold" style={{ color: "var(--green)" }}>Production · admin-only</span>
         </div>
 
-        <nav className="flex flex-col gap-1">
-          <p className="px-2 pb-1 text-[11px] font-bold uppercase tracking-wider" style={{ color: "var(--text-tertiary)" }}>Employer</p>
-          {navItems.map(({ label, to, icon: Icon, end, badge }) => {
-            const badgePill = typeof badge === "number" && (
-              <span className="rounded-full px-2 py-0.5 text-xs font-bold" style={{ background: EMP_SUBTLE, color: EMP }}>
-                {badge}
-              </span>
-            );
-
-            return (
-              <NavLink
-                key={to}
-                to={to}
-                end={end}
-                onClick={() => setSidebarOpen(false)}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${isActive ? "text-white" : "hover:bg-[var(--bg-elev)]"}`
-                }
-                style={({ isActive }) => ({ background: isActive ? EMP : "transparent", color: isActive ? "#fff" : "var(--text-secondary)" })}
-              >
-                <Icon size={17} className="shrink-0" />
-                <span className="flex-1">{label}</span>
-                {badgePill}
-              </NavLink>
-            );
-          })}
+        <nav className="flex flex-1 flex-col gap-4 overflow-y-auto">
+          {NAV_GROUPS.map((group) => (
+            <div key={group.label}>
+              <p className="px-2 pb-1 text-[11px] font-bold uppercase tracking-wider" style={{ color: "var(--text-tertiary)" }}>{group.label}</p>
+              <div className="flex flex-col gap-1">
+                {group.items.map(({ label, to, icon: Icon, end, countKey }) => {
+                  const count = countKey ? counts[countKey] : undefined;
+                  const badgePill = typeof count === "number" && count > 0 && (
+                    <span className="rounded-full px-2 py-0.5 text-xs font-bold" style={{ background: ACCENT_SUBTLE, color: ACCENT }}>
+                      {count}
+                    </span>
+                  );
+                  return (
+                    <NavLink
+                      key={to}
+                      to={to}
+                      end={end}
+                      onClick={() => setSidebarOpen(false)}
+                      className={({ isActive }) =>
+                        `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${isActive ? "text-white" : "hover:bg-[var(--bg-elev)]"}`
+                      }
+                      style={({ isActive }) => ({ background: isActive ? ACCENT : "transparent", color: isActive ? "#fff" : "var(--text-secondary)" })}
+                    >
+                      <Icon size={17} className="shrink-0" />
+                      <span className="flex-1">{label}</span>
+                      {badgePill}
+                    </NavLink>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
-
-        <div className="mt-auto rounded-2xl p-4" style={{ border: "1px solid rgba(244,67,54,0.25)", background: `linear-gradient(180deg, ${EMP_SUBTLE}, #fff)` }}>
-          <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Need more job credits?</p>
-          <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-            Upgrade your plan or buy extra credits to keep publishing.
-          </p>
-          <NavLink
-            to="/employer/billing"
-            onClick={() => setSidebarOpen(false)}
-            className="mt-3 inline-flex w-full items-center justify-center rounded-xl py-2 text-sm font-bold text-white"
-            style={{ background: EMP }}
-          >
-            View billing
-          </NavLink>
-        </div>
       </aside>
 
       {/* Main column */}
@@ -188,7 +209,7 @@ export function EmployerShell() {
             <input
               className="w-full rounded-full py-2 pl-10 pr-4 text-sm outline-none"
               style={{ border: "1px solid var(--border-default)", background: "var(--bg-elev)" }}
-              placeholder="Search your jobs…"
+              placeholder="Search employers, domains…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -200,14 +221,14 @@ export function EmployerShell() {
               className="flex items-center gap-2 rounded-full py-1 pl-1 pr-3 text-[15px] font-semibold transition-colors"
               style={{
                 border: "1px solid var(--border-default)",
-                background: menuOpen ? EMP_SUBTLE : "transparent",
+                background: menuOpen ? ACCENT_SUBTLE : "transparent",
                 color: "var(--text-primary)",
               }}
               type="button"
               aria-haspopup="menu"
               aria-expanded={menuOpen}
             >
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-xs font-extrabold text-white" style={{ background: EMP }}>
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-xs font-extrabold text-white" style={{ background: ACCENT }}>
                 {initials}
               </span>
               <span className="hidden sm:inline">{user?.name}</span>
@@ -235,7 +256,7 @@ export function EmployerShell() {
                 onClick={handleLogout}
                 disabled={loggingOut}
                 className="flex w-full items-center gap-3 px-4 py-2.5 text-[14px] font-medium transition-colors hover:bg-red-50 disabled:opacity-50"
-                style={{ color: EMP }}
+                style={{ color: ACCENT }}
               >
                 {loggingOut ? <Loader2 size={16} className="animate-spin" /> : <LogOut size={16} />}
                 {loggingOut ? "Signing out…" : "Logout"}

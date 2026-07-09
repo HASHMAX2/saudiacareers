@@ -7,6 +7,7 @@ import {
   getEmployerJob,
   getEmployerProfile,
   getVerification,
+  listAllApplications,
   listEmployerJobs,
   listJobApplications,
   submitVerificationDocument,
@@ -18,11 +19,13 @@ import {
 import { verificationDocUpload } from "../middleware/upload.js";
 import {
   cancelSubscription,
+  downloadInvoicePdf,
   getSubscription,
   listInvoices,
   requestCreditPurchase,
   requestPlanChange,
   requestRefund,
+  resumeSubscription,
 } from "../controllers/employerBillingController.js";
 import { authenticate } from "../middleware/authenticate.js";
 import { authorizeEmployer } from "../middleware/authorizeAdmin.js";
@@ -30,6 +33,7 @@ import { validate } from "../middleware/validate.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { createJobSchema, adminIdSchema, jobStatusSchema, updateJobSchema } from "../validation/adminSchemas.js";
 import {
+  employerAllApplicationsQuerySchema,
   employerApplicationStatusSchema,
   employerJobApplicationsQuerySchema,
   employerJobQuerySchema,
@@ -37,6 +41,7 @@ import {
 } from "../validation/employerSchemas.js";
 import {
   creditPurchaseSchema,
+  invoiceIdParamSchema,
   invoicesQuerySchema,
   planChangeSchema,
   refundRequestSchema,
@@ -62,6 +67,7 @@ employerRouter.get(
   asyncHandler(listJobApplications),
 );
 
+employerRouter.get("/applications", validate(employerAllApplicationsQuerySchema), asyncHandler(listAllApplications));
 employerRouter.get("/applications/:id", validate(adminIdSchema), asyncHandler(getApplicationDetail));
 employerRouter.patch(
   "/applications/:id/status",
@@ -78,7 +84,9 @@ employerRouter.post(
 
 employerRouter.get("/subscription", asyncHandler(getSubscription));
 employerRouter.get("/invoices", validate(invoicesQuerySchema), asyncHandler(listInvoices));
+employerRouter.get("/invoices/:id/pdf", validate(invoiceIdParamSchema), asyncHandler(downloadInvoicePdf));
 employerRouter.post("/invoices/credit-purchase", validate(creditPurchaseSchema), asyncHandler(requestCreditPurchase));
 employerRouter.post("/invoices/plan-change", validate(planChangeSchema), asyncHandler(requestPlanChange));
 employerRouter.post("/invoices/:id/refund-request", validate(refundRequestSchema), asyncHandler(requestRefund));
 employerRouter.post("/subscription/cancel", asyncHandler(cancelSubscription));
+employerRouter.post("/subscription/resume", asyncHandler(resumeSubscription));

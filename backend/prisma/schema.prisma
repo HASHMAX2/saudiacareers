@@ -24,6 +24,7 @@ model User {
   applications       Application[]
   jobs               Job[]
   savedJobs          SavedJob[]
+  jobReports         JobReport[]
   refreshTokens      RefreshToken[]
   passwordResets     PasswordResetToken[]
 
@@ -164,12 +165,15 @@ model Job {
   expiresAt           DateTime?
   creditSource        String?
   featured            Boolean       @default(false)
+  flagReasons         String[]      @default([])
+  reviewNote          String?
   createdBy           Int
   creator             User          @relation(fields: [createdBy], references: [id])
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
   applications        Application[]
   savedBy             SavedJob[]
+  reports             JobReport[]
 
   @@index([status, isDeleted])
   @@index([location])
@@ -185,12 +189,27 @@ enum JobStatus {
   INACTIVE
   DRAFT
   EXPIRED
+  PENDING_REVIEW
 }
 
 enum ApplyMethod {
   PLATFORM
   EXTERNAL_URL
   EMAIL
+}
+
+model JobReport {
+  id        Int      @id @default(autoincrement())
+  jobId     Int
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  reason    String
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@index([jobId])
+  @@index([userId])
 }
 
 model Application {
@@ -265,6 +284,7 @@ model EmployerProfile {
   industry              String?
   location              String?
   website               String?
+  linkedinUrl           String?
   phone                 String?
   description           String?
   logoPath              String?
@@ -273,10 +293,14 @@ model EmployerProfile {
   verificationStatus    VerificationStatus @default(PENDING)
   verificationDocPath   String?
   verificationNote      String?
+  verificationSubmittedAt DateTime?
   verifiedAt            DateTime?
   taxRegistrationNumber String?
   billingAddress        String?
   billingEmail          String?
+  isSuspended           Boolean            @default(false)
+  suspendedReason       String?
+  suspendedAt           DateTime?
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt
 
@@ -309,6 +333,17 @@ enum PlanTier {
   FREE
   STARTER
   GROWTH
+}
+
+model Plan {
+  id                 Int      @id @default(autoincrement())
+  tier               PlanTier @unique
+  name               String
+  priceSar           Int
+  paidCreditsGranted Int
+  features           String[]
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 }
 
 model Invoice {
@@ -363,4 +398,27 @@ model SavedJob {
   @@unique([userId, jobId])
   @@index([userId])
   @@index([jobId])
+}
+
+model ScrapedJob {
+  id                 Int              @id @default(autoincrement())
+  title              String
+  companyName        String
+  location           String?
+  source             String
+  applyUrl           String
+  status             ScrapedJobStatus @default(LIVE)
+  isDuplicateSuspect Boolean          @default(false)
+  lastCheckedAt      DateTime         @default(now())
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@index([status])
+  @@index([companyName])
+}
+
+enum ScrapedJobStatus {
+  LIVE
+  BROKEN
+  HIDDEN
 }

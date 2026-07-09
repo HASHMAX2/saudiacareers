@@ -14,6 +14,19 @@ function parseList(csv) {
   return csv ? csv.split("|").map((v) => v.trim()).filter(Boolean) : [];
 }
 
+export async function reportJob(req, res) {
+  const { id } = req.validated.params;
+  const { reason, note } = req.validated.body;
+
+  const job = await prisma.job.findFirst({ where: { id, isDeleted: false } });
+  if (!job) throw new ApiError(404, "Job not found");
+
+  const report = await prisma.jobReport.create({
+    data: { jobId: id, userId: req.user.id, reason, note },
+  });
+  return sendSuccess(res, { statusCode: 201, message: "Report submitted — our team will review this listing", data: report });
+}
+
 export async function getFilterOptions(req, res) {
   const now = new Date();
   const baseWhere = {

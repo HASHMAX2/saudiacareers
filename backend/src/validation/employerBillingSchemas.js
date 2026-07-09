@@ -31,3 +31,8 @@ export const refundRequestSchema = envelope(
   z.object({ reason: z.string().trim().max(500).optional() }).strict(),
   z.object({ id: z.coerce.number().int().positive() }),
 );
+
+export const invoiceIdParamSchema = envelope(
+  z.object({}).passthrough(),
+  z.object({ id: z.coerce.number().int().positive() }),
+);

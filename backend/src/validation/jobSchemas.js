@@ -28,6 +28,15 @@ export const listJobsSchema = z.object({
   }),
 });
 
+export const jobReportSchema = z.object({
+  body: z.object({
+    reason: z.enum(["MISLEADING_SALARY", "SUSPICIOUS_CONTACT", "DUPLICATE_LISTING", "SCAM_OR_FRAUD", "OTHER"]),
+    note: z.string().trim().max(500).optional(),
+  }).strict(),
+  params: z.object({ id: z.coerce.number().int().positive() }),
+  query: z.object({}).passthrough(),
+});
+
 export const filterOptionsSchema = z.object({
   body: z.object({}).passthrough(),
   params: z.object({}).passthrough(),

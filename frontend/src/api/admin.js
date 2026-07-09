@@ -14,6 +14,8 @@ export const adminApi = {
   updateJob: (id, payload) => api.put(`/admin/jobs/${id}`, pickJobFields(payload)),
   deleteJob: (id) => api.delete(`/admin/jobs/${id}`),
   updateJobStatus: (id, status) => api.patch(`/admin/jobs/${id}/status`, { status }),
+  approveJobReview: (id, note) => api.patch(`/admin/jobs/${id}/approve`, { note }),
+  rejectJobReview: (id, note) => api.patch(`/admin/jobs/${id}/reject`, { note }),
   applications: (params) => api.get("/admin/applications", { params }),
   application: (id) => api.get(`/admin/applications/${id}`),
   updateApplicationStatus: (id, status) =>
@@ -23,10 +25,29 @@ export const adminApi = {
   parseImport: (text) => api.post("/admin/import/parse", { text }),
 
   pendingVerifications: (params) => api.get("/admin/employer-verifications", { params }),
+  verificationDetail: (id) => api.get(`/admin/employer-verifications/${id}`),
   approveVerification: (id, note) => api.patch(`/admin/employer-verifications/${id}/approve`, { note }),
+  requestMoreInfo: (id, note) => api.patch(`/admin/employer-verifications/${id}/request-info`, { note }),
   rejectVerification: (id, note) => api.patch(`/admin/employer-verifications/${id}/reject`, { note }),
 
+  billingOverview: (params) => api.get("/admin/billing-overview", { params }),
   invoices: (params) => api.get("/admin/invoices", { params }),
   markInvoicePaid: (id) => api.patch(`/admin/invoices/${id}/mark-paid`),
   markInvoiceRefunded: (id) => api.patch(`/admin/invoices/${id}/mark-refunded`),
+  rejectInvoiceRefund: (id, reason) => api.patch(`/admin/invoices/${id}/reject-refund`, { reason }),
+
+  employers: (params) => api.get("/admin/employers", { params }),
+  suspendEmployer: (id, reason) => api.patch(`/admin/employers/${id}/suspend`, { reason }),
+  unsuspendEmployer: (id) => api.patch(`/admin/employers/${id}/unsuspend`),
+
+  flaggedJobs: () => api.get("/admin/jobs-flagged"),
+  dismissJobReports: (id) => api.patch(`/admin/jobs/${id}/dismiss-reports`),
+
+  scrapedJobs: (params) => api.get("/admin/scraped-jobs", { params }),
+  createScrapedJob: (payload) => api.post("/admin/scraped-jobs", payload),
+  recrawlScrapedJob: (id) => api.patch(`/admin/scraped-jobs/${id}/recrawl`),
+  markScrapedJobReviewed: (id) => api.patch(`/admin/scraped-jobs/${id}/mark-reviewed`),
+
+  plans: () => api.get("/admin/plans"),
+  updatePlan: (id, payload) => api.patch(`/admin/plans/${id}`, payload),
 };

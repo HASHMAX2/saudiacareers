@@ -12,6 +12,7 @@ export const employerApi = {
   updateJobStatus:       (id, data)     => api.patch(`/employer/jobs/${id}/status`, data),
   deleteJob:             (id)           => api.delete(`/employer/jobs/${id}`),
   getJobApplications:    (jobId, params) => api.get(`/employer/jobs/${jobId}/applications`, { params }),
+  getAllApplications:    (params)       => api.get("/employer/applications", { params }),
   getApplication:        (id)           => api.get(`/employer/applications/${id}`),
   updateAppStatus:       (id, data)     => api.patch(`/employer/applications/${id}/status`, data),
 
@@ -28,6 +29,8 @@ export const employerApi = {
   requestPlanChange:     (planTier)     => api.post("/employer/invoices/plan-change", { planTier }),
   requestRefund:         (invoiceId, reason) => api.post(`/employer/invoices/${invoiceId}/refund-request`, { reason }),
   cancelSubscription:    ()             => api.post("/employer/subscription/cancel"),
+  resumeSubscription:    ()             => api.post("/employer/subscription/resume"),
+  downloadInvoicePdf:    (id)           => api.get(`/employer/invoices/${id}/pdf`, { responseType: "blob" }),
 };
 
 export const enquiryApi = {

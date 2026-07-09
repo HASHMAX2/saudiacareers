@@ -3,8 +3,19 @@ import { ApiError } from "../utils/ApiError.js";
 
 export async function getOrCreateSubscription(employerProfileId) {
   const existing = await prisma.employerSubscription.findUnique({ where: { employerProfileId } });
-  if (existing) return existing;
-  return prisma.employerSubscription.create({ data: { employerProfileId } });
+  if (!existing) return prisma.employerSubscription.create({ data: { employerProfileId } });
+
+  // Lazily apply the scheduled cancellation once the paid period has actually
+  // ended — mirrors the same "check on read" pattern used for the monthly
+  // free-job reset, since there's no real payment gateway/cron to drive this.
+  if (existing.cancelAtPeriodEnd && existing.renewsAt && existing.renewsAt < new Date()) {
+    return prisma.employerSubscription.update({
+      where: { id: existing.id },
+      data: { planTier: "FREE", cancelAtPeriodEnd: false, renewsAt: null },
+    });
+  }
+
+  return existing;
 }
 
 function isSameCalendarMonth(a, b) {

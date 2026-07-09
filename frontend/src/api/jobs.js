@@ -4,5 +4,6 @@ export const jobsApi = {
   list: (params) => api.get("/jobs", { params }),
   get: (id) => api.get(`/jobs/${id}`),
   filterOptions: () => api.get("/jobs/filter-options"),
+  report: (id, data) => api.post(`/jobs/${id}/report`, data),
 };
 

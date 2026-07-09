@@ -1,4 +1,4 @@
-import { ApplicationStatus, ApplyMethod, InvoiceStatus, JobStatus } from "@prisma/client";
+import { ApplicationStatus, ApplyMethod, InvoiceStatus, JobStatus, PlanTier, VerificationStatus } from "@prisma/client";
 import { z } from "zod";
 
 const jobBody = z.object({
@@ -55,6 +55,33 @@ export const adminJobsQuerySchema = envelope(
     status: z.nativeEnum(JobStatus).optional(),
   }),
 );
+export const adminEmployersQuerySchema = envelope(
+  z.object({}).passthrough(),
+  z.object({}).passthrough(),
+  z.object({
+    page: z.coerce.number().int().positive().default(1),
+    limit: z.coerce.number().int().min(1).max(100).default(20),
+    search: z.string().trim().max(100).optional(),
+    status: z.union([z.nativeEnum(VerificationStatus), z.literal("SUSPENDED")]).optional(),
+    planTier: z.nativeEnum(PlanTier).optional(),
+  }),
+);
+
+export const suspendEmployerSchema = envelope(
+  z.object({ reason: z.string().trim().min(3).max(500) }).strict(),
+  z.object({ id: z.coerce.number().int().positive() }),
+);
+
+export const updatePlanSchema = envelope(
+  z.object({
+    name: z.string().trim().min(2).max(100).optional(),
+    priceSar: z.coerce.number().int().min(0).optional(),
+    paidCreditsGranted: z.coerce.number().int().min(0).optional(),
+    features: z.array(z.string().trim().min(1).max(200)).min(1).optional(),
+  }).strict().refine((body) => Object.keys(body).length > 0),
+  z.object({ id: z.coerce.number().int().positive() }),
+);
+
 export const pendingVerificationsQuerySchema = envelope(
   z.object({}).passthrough(),
   z.object({}).passthrough(),
@@ -64,12 +91,32 @@ export const pendingVerificationsQuerySchema = envelope(
   }),
 );
 
+export const billingOverviewQuerySchema = envelope(
+  z.object({}).passthrough(),
+  z.object({}).passthrough(),
+  z.object({
+    page: z.coerce.number().int().positive().default(1),
+    limit: z.coerce.number().int().min(1).max(100).default(20),
+    search: z.string().trim().max(100).optional(),
+  }),
+);
+
 export const verificationDecisionSchema = envelope(
   z.object({ note: z.string().trim().max(500).optional() }).strict(),
   z.object({ id: z.coerce.number().int().positive() }),
 );
 
 export const rejectVerificationSchema = envelope(
+  z.object({ note: z.string().trim().min(3).max(500) }).strict(),
+  z.object({ id: z.coerce.number().int().positive() }),
+);
+
+export const jobApprovalSchema = envelope(
+  z.object({ note: z.string().trim().max(500).optional() }).strict(),
+  z.object({ id: z.coerce.number().int().positive() }),
+);
+
+export const jobRejectionSchema = envelope(
   z.object({ note: z.string().trim().min(3).max(500) }).strict(),
   z.object({ id: z.coerce.number().int().positive() }),
 );
@@ -86,6 +133,11 @@ export const adminInvoicesQuerySchema = envelope(
 
 export const invoiceIdSchema = envelope(
   z.object({}).passthrough(),
+  z.object({ id: z.coerce.number().int().positive() }),
+);
+
+export const rejectRefundSchema = envelope(
+  z.object({ reason: z.string().trim().min(3).max(500) }).strict(),
   z.object({ id: z.coerce.number().int().positive() }),
 );
 

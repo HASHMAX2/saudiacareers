@@ -33,6 +33,7 @@ export function EmployerVerification() {
     setForm({
       companyName: profRes.data.data.companyName ?? "",
       website: profRes.data.data.website ?? "",
+      linkedinUrl: profRes.data.data.linkedinUrl ?? "",
       industry: profRes.data.data.industry ?? "",
       description: profRes.data.data.description ?? "",
       taxRegistrationNumber: profRes.data.data.taxRegistrationNumber ?? "",
@@ -105,6 +106,7 @@ export function EmployerVerification() {
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 <Input id="ver-companyName" label="Company name" required value={form.companyName} onChange={update("companyName")} />
                 <Input id="ver-website" label="Website" value={form.website} onChange={update("website")} placeholder="https://" />
+                <Input id="ver-linkedin" label="LinkedIn company page" value={form.linkedinUrl} onChange={update("linkedinUrl")} placeholder="https://linkedin.com/company/..." />
                 <Input id="ver-industry" label="Industry" value={form.industry} onChange={update("industry")} />
                 <Input id="ver-tax" label="Tax / CR registration number" value={form.taxRegistrationNumber} onChange={update("taxRegistrationNumber")} />
                 <div className="md:col-span-2">
@@ -152,9 +154,9 @@ export function EmployerVerification() {
             </div>
           </div>
 
-          {status.verificationStatus === "REJECTED" && status.verificationNote && (
+          {status.verificationStatus !== "APPROVED" && status.verificationNote && (
             <p className="mt-4 text-sm" style={{ color: "var(--text-secondary)" }}>
-              <strong>Reviewer note:</strong> {status.verificationNote}
+              <strong>{status.verificationStatus === "PENDING" ? "Admin requested:" : "Reviewer note:"}</strong> {status.verificationNote}
             </p>
           )}
 

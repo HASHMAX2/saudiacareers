@@ -2,6 +2,7 @@ import { prisma } from "../config/prisma.js";
 import { sendEmail } from "../services/emailService.js";
 import { applicationStatusEmailTemplate } from "../services/emailTemplates/applicationStatus.js";
 import { createSignedDownloadUrl } from "../services/storageService.js";
+import { consumeJobCredit, getOrCreateSubscription } from "../services/employerBillingService.js";
 import { ApiError } from "../utils/ApiError.js";
 import { sendSuccess } from "../utils/ApiResponse.js";
 
@@ -112,6 +113,60 @@ export async function updateJobStatus(req, res) {
   });
   if (!result.count) throw new ApiError(404, "Job not found");
   return sendSuccess(res, { message: "Job status updated" });
+}
+
+export async function approveJobReview(req, res) {
+  const { id } = req.validated.params;
+  const job = await prisma.job.findFirst({ where: { id, isDeleted: false } });
+  if (!job) throw new ApiError(404, "Job not found");
+  if (job.status !== "PENDING_REVIEW") throw new ApiError(400, "Only jobs pending review can be approved");
+
+  const employerProfile = await prisma.employerProfile.findUnique({ where: { userId: job.createdBy } });
+  if (!employerProfile) throw new ApiError(404, "Employer profile not found");
+  if (employerProfile.verificationStatus !== "APPROVED") {
+    throw new ApiError(403, "Cannot approve — the employer's company verification is not approved");
+  }
+
+  const subscription = await getOrCreateSubscription(employerProfile.id);
+  const creditSource = await consumeJobCredit(subscription);
+  const expiresAt = new Date(Date.now() + job.listingDurationDays * 24 * 60 * 60 * 1000);
+
+  const updated = await prisma.job.update({
+    where: { id },
+    data: { status: "ACTIVE", creditSource, expiresAt, reviewNote: req.validated.body.note || null },
+  });
+  return sendSuccess(res, { message: "Job approved and published", data: updated });
+}
+
+export async function rejectJobReview(req, res) {
+  const { id } = req.validated.params;
+  const result = await prisma.job.updateMany({
+    where: { id, isDeleted: false, status: "PENDING_REVIEW" },
+    data: { status: "INACTIVE", reviewNote: req.validated.body.note },
+  });
+  if (!result.count) throw new ApiError(404, "Job not found or not pending review");
+  return sendSuccess(res, { message: "Job rejected" });
+}
+
+export async function listFlaggedJobs(req, res) {
+  const jobs = await prisma.job.findMany({
+    where: { isDeleted: false, reports: { some: {} } },
+    include: {
+      reports: { orderBy: { createdAt: "desc" }, take: 10 },
+      _count: { select: { reports: true } },
+    },
+    orderBy: { reports: { _count: "desc" } },
+  });
+  return sendSuccess(res, { message: "Flagged jobs retrieved", data: jobs });
+}
+
+export async function dismissJobReports(req, res) {
+  const { id } = req.validated.params;
+  const job = await prisma.job.findFirst({ where: { id, isDeleted: false } });
+  if (!job) throw new ApiError(404, "Job not found");
+
+  await prisma.jobReport.deleteMany({ where: { jobId: id } });
+  return sendSuccess(res, { message: "Reports dismissed — no action taken on this job" });
 }
 
 export async function listApplications(req, res) {

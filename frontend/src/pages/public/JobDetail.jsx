@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Banknote, Bookmark, BriefcaseBusiness, CalendarDays, Check, Clock3, MapPin, Share2, Users } from "lucide-react";
+import { Banknote, Bookmark, BriefcaseBusiness, CalendarDays, Check, Clock3, Flag, MapPin, Share2, Users } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { applicationsApi } from "../../api/applications.js";
 import { jobsApi } from "../../api/jobs.js";
@@ -7,6 +7,8 @@ import { profileApi } from "../../api/profile.js";
 import { Alert } from "../../components/common/Alert.jsx";
 import { Badge } from "../../components/common/Badge.jsx";
 import { Button } from "../../components/common/Button.jsx";
+import { Modal } from "../../components/common/Modal.jsx";
+import { Select } from "../../components/common/Select.jsx";
 import { Spinner } from "../../components/common/Spinner.jsx";
 import { Toast } from "../../components/common/Toast.jsx";
 import { useAuthStore } from "../../store/authStore.js";
@@ -15,6 +17,14 @@ import { useSavedJobsStore } from "../../store/savedJobsStore.js";
 import { formatDate } from "../../utils/formatDate.js";
 
 const REDIRECT_DELAY = 3500;
+
+const REPORT_REASONS = [
+  { value: "MISLEADING_SALARY", label: "Misleading salary" },
+  { value: "SUSPICIOUS_CONTACT", label: "Suspicious contact info" },
+  { value: "DUPLICATE_LISTING", label: "Duplicate listing" },
+  { value: "SCAM_OR_FRAUD", label: "Scam or fraud" },
+  { value: "OTHER", label: "Other" },
+];
 
 export function JobDetail() {
   const { id } = useParams();
@@ -28,6 +38,11 @@ export function JobDetail() {
   const [message, setMessage] = useState("");
   const [applying, setApplying] = useState(false);
   const [toast, setToast] = useState({ show: false, text: "", tone: "error" });
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportReason, setReportReason] = useState("MISLEADING_SALARY");
+  const [reportNote, setReportNote] = useState("");
+  const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [reportError, setReportError] = useState("");
   const timerRef = useRef(null);
 
   function showRedirectToast(text, path, tone = "error") {
@@ -81,6 +96,22 @@ export function JobDetail() {
     }
   }
 
+  async function submitReport() {
+    setReportSubmitting(true);
+    setReportError("");
+    try {
+      await jobsApi.report(id, { reason: reportReason, note: reportNote.trim() || undefined });
+      setShowReportModal(false);
+      setReportNote("");
+      setToast({ show: true, text: "Report submitted — our team will review this listing.", tone: "success" });
+      timerRef.current = setTimeout(() => setToast((prev) => ({ ...prev, show: false })), REDIRECT_DELAY);
+    } catch (error) {
+      setReportError(error.response?.data?.message ?? "Unable to submit report");
+    } finally {
+      setReportSubmitting(false);
+    }
+  }
+
   const skills = job.requiredSkills.split(",").map((skill) => skill.trim()).filter(Boolean);
 
   return (
@@ -119,6 +150,11 @@ export function JobDetail() {
               <Button variant="secondary" onClick={() => navigator.clipboard.writeText(window.location.href)}>
                 <Share2 size={16} />Share
               </Button>
+              {isCandidate && (
+                <Button variant="ghost" onClick={() => setShowReportModal(true)} style={{ color: "var(--text-tertiary)" }} aria-label="Report this job">
+                  <Flag size={16} />Report
+                </Button>
+              )}
             </div>
           </div>
           <div className="mt-6 flex flex-wrap gap-3 pt-6" style={{ borderTop: "1px solid var(--border-default)" }}>
@@ -173,6 +209,26 @@ export function JobDetail() {
         </div>
       </aside>
     </div>
+
+    <Modal isOpen={showReportModal} title="Report this job" onClose={() => setShowReportModal(false)}>
+      <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+        Let us know what&apos;s wrong with this listing. Our team reviews every report.
+      </p>
+      <div className="mt-3">
+        <Select label="Reason" value={reportReason} onChange={(e) => setReportReason(e.target.value)} options={REPORT_REASONS} />
+      </div>
+      <label className="mt-3 block">
+        <span className="field-label">Additional details (optional)</span>
+        <textarea className="field-box min-h-24 resize-y" value={reportNote} onChange={(e) => setReportNote(e.target.value)} placeholder="Anything that helps us review this faster…" />
+      </label>
+      {reportError && <div className="mt-3"><Alert>{reportError}</Alert></div>}
+      <div className="mt-4 flex justify-end gap-2">
+        <Button variant="secondary" onClick={() => setShowReportModal(false)}>Cancel</Button>
+        <Button variant="danger" disabled={reportSubmitting} onClick={submitReport}>
+          {reportSubmitting ? "Submitting…" : "Submit report"}
+        </Button>
+      </div>
+    </Modal>
     </>
   );
 }

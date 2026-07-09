@@ -5,6 +5,7 @@ import { sendEmail } from "../services/emailService.js";
 import { applicationStatusEmailTemplate } from "../services/emailTemplates/applicationStatus.js";
 import { createSignedDownloadUrl, uploadPrivateFile } from "../services/storageService.js";
 import { consumeJobCredit, getOrCreateSubscription } from "../services/employerBillingService.js";
+import { checkJobLegitimacy } from "../services/jobLegitimacyService.js";
 import { ApiError } from "../utils/ApiError.js";
 import { sendSuccess } from "../utils/ApiResponse.js";
 
@@ -55,6 +56,7 @@ export async function submitVerificationDocument(req, res) {
       verificationDocPath: docPath,
       verificationStatus: "PENDING",
       verificationNote: null,
+      verificationSubmittedAt: new Date(),
       verifiedAt: null,
     },
   });
@@ -138,6 +140,7 @@ export async function createEmployerJob(req, res) {
 
   const employerProfile = await prisma.employerProfile.findUnique({ where: { userId: req.user.id } });
   if (!employerProfile) throw new ApiError(404, "Employer profile not found");
+  if (employerProfile.isSuspended) throw new ApiError(403, "This account is suspended and cannot post jobs");
 
   if (saveAsDraft) {
     const job = await prisma.job.create({
@@ -153,6 +156,18 @@ export async function createEmployerJob(req, res) {
     return sendSuccess(res, {
       statusCode: 201,
       message: "Job saved as a draft — publishing unlocks once company verification is approved",
+      data: job,
+    });
+  }
+
+  const legitimacy = await checkJobLegitimacy(jobData, employerProfile, req.user.id);
+  if (legitimacy.flagged) {
+    const job = await prisma.job.create({
+      data: { ...jobData, createdBy: req.user.id, status: "PENDING_REVIEW", flagReasons: legitimacy.reasons },
+    });
+    return sendSuccess(res, {
+      statusCode: 201,
+      message: "Job submitted for admin review before it can go live",
       data: job,
     });
   }
@@ -192,8 +207,18 @@ export async function updateEmployerJobStatus(req, res) {
   if (nextStatus === "ACTIVE" && job.status !== "ACTIVE") {
     const employerProfile = await prisma.employerProfile.findUnique({ where: { userId: req.user.id } });
     if (!employerProfile) throw new ApiError(404, "Employer profile not found");
+    if (employerProfile.isSuspended) throw new ApiError(403, "This account is suspended and cannot publish jobs");
     if (employerProfile.verificationStatus !== "APPROVED") {
       throw new ApiError(403, "Publishing is locked until company verification is approved");
+    }
+
+    const legitimacy = await checkJobLegitimacy(job, employerProfile, req.user.id);
+    if (legitimacy.flagged) {
+      await prisma.job.update({
+        where: { id },
+        data: { status: "PENDING_REVIEW", flagReasons: legitimacy.reasons },
+      });
+      return sendSuccess(res, { message: "Job submitted for admin review before it can go live" });
     }
 
     const subscription = await getOrCreateSubscription(employerProfile.id);
@@ -222,6 +247,42 @@ export async function deleteEmployerJob(req, res) {
 }
 
 // ── Applications ──────────────────────────────────────────────────────────────
+
+export async function listAllApplications(req, res) {
+  const userId = req.user.id;
+  const { page, limit, search, status, jobId } = req.validated.query;
+
+  const where = {
+    job: { createdBy: userId },
+    ...(jobId ? { jobId } : {}),
+    ...(status ? { status } : {}),
+    ...(search
+      ? {
+          OR: [
+            { user: { name: { contains: search, mode: "insensitive" } } },
+            { user: { email: { contains: search, mode: "insensitive" } } },
+            { job: { title: { contains: search, mode: "insensitive" } } },
+          ],
+        }
+      : {}),
+  };
+
+  const [applications, total] = await prisma.$transaction([
+    prisma.application.findMany({
+      where,
+      include: { user: { include: { profile: true } }, job: { select: { id: true, title: true } } },
+      orderBy: { appliedAt: "desc" },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    prisma.application.count({ where }),
+  ]);
+
+  return sendSuccess(res, {
+    message: "Applications retrieved",
+    data: { applications, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } },
+  });
+}
 
 export async function listJobApplications(req, res) {
   const { jobId } = req.validated.params;

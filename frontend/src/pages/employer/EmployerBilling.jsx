@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { CheckCircle2, Download, Loader2 } from "lucide-react";
 import { employerApi } from "../../api/employer.js";
 import { Alert } from "../../components/common/Alert.jsx";
 import { Badge } from "../../components/common/Badge.jsx";
 import { Button } from "../../components/common/Button.jsx";
+import { Modal } from "../../components/common/Modal.jsx";
 import { Spinner } from "../../components/common/Spinner.jsx";
 import { formatDate } from "../../utils/formatDate.js";
 
@@ -24,6 +25,9 @@ export function EmployerBilling() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showInvoicesModal, setShowInvoicesModal] = useState(false);
+  const [downloadingInvoiceId, setDownloadingInvoiceId] = useState(null);
 
   async function load() {
     setLoading(true);
@@ -58,20 +62,75 @@ export function EmployerBilling() {
     }
   }
 
-  if (loading) {
+  async function handleConfirmCancel() {
+    setBusy(true);
+    setError("");
+    try {
+      const { data } = await employerApi.cancelSubscription();
+      const planName = plans.find((p) => p.tier === subscription.planTier)?.name ?? subscription.planTier;
+      const dateStr = data.data?.renewsAt ? formatDate(data.data.renewsAt) : "the end of this period";
+      setShowCancelModal(false);
+      setNotice(`Subscription cancellation scheduled. Your ${planName} Plan remains active until ${dateStr}. After this date, your account will move to the Free Plan.`);
+      await load();
+    } catch (requestError) {
+      setError(requestError.response?.data?.message ?? "Unable to cancel subscription");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDownloadPdf(invoiceId) {
+    setDownloadingInvoiceId(invoiceId);
+    try {
+      const { data } = await employerApi.downloadInvoicePdf(invoiceId);
+      const url = URL.createObjectURL(data);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `invoice-${invoiceId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } finally {
+      setDownloadingInvoiceId(null);
+    }
+  }
+
+  if (loading && !subscription) {
     return <div className="grid min-h-64 place-items-center"><Spinner label="Loading billing" /></div>;
   }
 
   const currentPlan = plans.find((p) => p.tier === subscription.planTier);
   const creditCap = PLAN_CREDIT_CAP[subscription.planTier] ?? 1;
   const creditUsedPct = Math.min(100, Math.round((subscription.paidCreditsRemaining / Math.max(creditCap, 1)) * 100));
+  const canCancel = subscription.planTier !== "FREE" && !subscription.cancelAtPeriodEnd;
+  const canResume = subscription.planTier !== "FREE" && subscription.cancelAtPeriodEnd;
 
   return (
     <div>
-      <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl" style={{ color: "var(--text-primary)" }}>Billing</h1>
-      <p className="mt-2 mb-6 text-base" style={{ color: "var(--text-secondary)" }}>
-        Manage your plan, job credits, and invoices. Payments are confirmed manually by our team — no card details are collected here yet.
-      </p>
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl" style={{ color: "var(--text-primary)" }}>Billing</h1>
+          <p className="mt-2 text-base" style={{ color: "var(--text-secondary)" }}>
+            Manage your plan, job credits, and invoices. Payments are confirmed manually by our team — no card details are collected here yet.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {canCancel && (
+            <Button variant="secondary" disabled={busy} onClick={() => setShowCancelModal(true)} style={{ color: "var(--text-tertiary)" }}>
+              Cancel Subscription
+            </Button>
+          )}
+          {canResume && (
+            <Button variant="secondary" disabled={busy} onClick={() => run(() => employerApi.resumeSubscription())}>
+              {busy ? <Loader2 size={14} className="animate-spin" /> : null}Resume Subscription
+            </Button>
+          )}
+          <Button style={{ background: EMP, borderColor: EMP }} onClick={() => setShowInvoicesModal(true)}>
+            <Download size={15} />Download Invoices
+          </Button>
+        </div>
+      </div>
 
       {notice && <Alert tone="success">{notice}</Alert>}
       {error && <Alert>{error}</Alert>}
@@ -108,11 +167,6 @@ export function EmployerBilling() {
             {subscription.planTier !== "GROWTH" && (
               <Button variant="secondary" disabled={busy} onClick={() => run(() => employerApi.requestPlanChange(subscription.planTier === "FREE" ? "STARTER" : "GROWTH"))}>
                 Upgrade plan
-              </Button>
-            )}
-            {subscription.planTier !== "FREE" && !subscription.cancelAtPeriodEnd && (
-              <Button variant="ghost" disabled={busy} onClick={() => run(() => employerApi.cancelSubscription())} style={{ color: "var(--text-tertiary)" }}>
-                Cancel renewal
               </Button>
             )}
           </div>
@@ -211,6 +265,58 @@ export function EmployerBilling() {
           </table>
         </div>
       )}
+
+      <Modal isOpen={showCancelModal} title="Cancel subscription?" onClose={() => setShowCancelModal(false)}>
+        <p className="text-sm leading-6" style={{ color: "var(--text-secondary)" }}>
+          Your <strong style={{ color: "var(--text-primary)" }}>{currentPlan?.name ?? subscription.planTier}</strong> plan will remain active until{" "}
+          <strong style={{ color: "var(--text-primary)" }}>{subscription.renewsAt ? formatDate(subscription.renewsAt) : "the end of this period"}</strong>.
+          After this date, your account will move to the Free Plan. Your existing jobs, applications, and candidate data are not affected — you&apos;ll keep paid-plan
+          access until then, and Free Plan limits (like the monthly free job cap) only apply once the switch happens.
+        </p>
+        {error && <div className="mt-3"><Alert>{error}</Alert></div>}
+        <div className="mt-5 flex justify-end gap-2">
+          <Button variant="secondary" disabled={busy} onClick={() => setShowCancelModal(false)}>Keep my plan</Button>
+          <Button variant="danger" disabled={busy} onClick={handleConfirmCancel}>
+            {busy ? <Loader2 size={14} className="animate-spin" /> : null}Confirm cancellation
+          </Button>
+        </div>
+      </Modal>
+
+      <Modal isOpen={showInvoicesModal} title="Billing Invoices" onClose={() => setShowInvoicesModal(false)}>
+        {!invoices.length ? (
+          <p className="text-sm" style={{ color: "var(--text-secondary)" }}>No invoices yet.</p>
+        ) : (
+          <div className="max-h-[60vh] space-y-3 overflow-y-auto">
+            {invoices.map((inv) => (
+              <div key={inv.id} className="rounded-2xl p-4" style={{ border: "1px solid var(--border-default)" }}>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-bold" style={{ color: "var(--text-primary)" }}>Invoice #{inv.id}</p>
+                    <p className="mt-0.5 text-sm" style={{ color: "var(--text-secondary)" }}>{INVOICE_TYPE_LABELS[inv.type] ?? inv.type}</p>
+                  </div>
+                  <Badge tone={INVOICE_STATUS_TONES[inv.status]}>{INVOICE_STATUS_LABELS[inv.status]}</Badge>
+                </div>
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+                    <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{inv.amountSar} SAR</span>
+                    <span className="mx-2">·</span>
+                    {formatDate(inv.issuedAt)}
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    disabled={downloadingInvoiceId === inv.id}
+                    onClick={() => handleDownloadPdf(inv.id)}
+                  >
+                    {downloadingInvoiceId === inv.id ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
+                    Download PDF
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

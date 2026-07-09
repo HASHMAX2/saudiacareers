@@ -21,7 +21,12 @@ export function EmployerCreateJob() {
 
   async function handleSubmit(form) {
     const { data } = await employerApi.createJob(form);
-    setToastMessage(data.data.status === "DRAFT" ? "Job saved as a draft…" : "Job published! Taking you to your listings…");
+    const message = data.data.status === "DRAFT"
+      ? "Job saved as a draft…"
+      : data.data.status === "PENDING_REVIEW"
+        ? "Job submitted for admin review — it will go live once approved…"
+        : "Job published! Taking you to your listings…";
+    setToastMessage(message);
     setShowToast(true);
     setTimeout(() => {
       setShowToast(false);

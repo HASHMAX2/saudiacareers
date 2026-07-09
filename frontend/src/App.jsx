@@ -9,14 +9,23 @@ import { AdminRoute } from "./routes/AdminRoute.jsx";
 import { EmployerRoute } from "./routes/EmployerRoute.jsx";
 import { PrivateRoute } from "./routes/PrivateRoute.jsx";
 import { PublicOnlyRoute } from "./routes/PublicOnlyRoute.jsx";
+import { AdminShell } from "./components/admin/AdminShell.jsx";
+import { AdminBilling } from "./pages/admin/AdminBilling.jsx";
 import { AdminDashboard } from "./pages/admin/AdminDashboard.jsx";
+import { AdminLogin } from "./pages/admin/AdminLogin.jsx";
+import { AdminPlans } from "./pages/admin/AdminPlans.jsx";
 import { ApplicationDetail } from "./pages/admin/ApplicationDetail.jsx";
 import { Applications } from "./pages/admin/Applications.jsx";
 import { ChangePassword } from "./pages/admin/ChangePassword.jsx";
 import { CreateJob } from "./pages/admin/CreateJob.jsx";
 import { EditJob } from "./pages/admin/EditJob.jsx";
+import { EmployerReviewDetail } from "./pages/admin/EmployerReviewDetail.jsx";
+import { Employers } from "./pages/admin/Employers.jsx";
 import { ImportJobs } from "./pages/admin/ImportJobs.jsx";
+import { JobsFlagged } from "./pages/admin/JobsFlagged.jsx";
 import { ManageJobs } from "./pages/admin/ManageJobs.jsx";
+import { Refunds } from "./pages/admin/Refunds.jsx";
+import { ScrapedJobs } from "./pages/admin/ScrapedJobs.jsx";
 import { ForgotPassword } from "./pages/auth/ForgotPassword.jsx";
 import { Login } from "./pages/auth/Login.jsx";
 import { Register } from "./pages/auth/Register.jsx";
@@ -35,9 +44,11 @@ import { EmployerJobs } from "./pages/employer/EmployerJobs.jsx";
 import { EmployerCreateJob } from "./pages/employer/EmployerCreateJob.jsx";
 import { EmployerEditJob } from "./pages/employer/EmployerEditJob.jsx";
 import { EmployerApplications } from "./pages/employer/EmployerApplications.jsx";
+import { EmployerApplicants } from "./pages/employer/EmployerApplicants.jsx";
 import { EmployerBilling } from "./pages/employer/EmployerBilling.jsx";
 import { EmployerVerification } from "./pages/employer/EmployerVerification.jsx";
 import { EmployerVerifications } from "./pages/admin/EmployerVerifications.jsx";
+import { JobReviews } from "./pages/admin/JobReviews.jsx";
 import { Invoices } from "./pages/admin/Invoices.jsx";
 import { Contact } from "./pages/public/Contact.jsx";
 import { JobDetail } from "./pages/public/JobDetail.jsx";
@@ -49,15 +60,6 @@ import { NotFound } from "./pages/shared/NotFound.jsx";
 import { Unauthorized } from "./pages/shared/Unauthorized.jsx";
 
 const candidateLinks = [];
-
-const adminLinks = [
-  { label: "Overview", to: "/admin/dashboard", end: true },
-  { label: "Jobs", to: "/admin/jobs", end: true },
-  { label: "Import Jobs", to: "/admin/jobs/import" },
-  { label: "Applications", to: "/admin/applications" },
-  { label: "Verifications", to: "/admin/verifications" },
-  { label: "Invoices", to: "/admin/invoices" },
-];
 
 export default function App() {
   const isInitialized = useAuthStore((state) => state.isInitialized);
@@ -91,7 +93,7 @@ export default function App() {
           <Route path="register" element={<Register />} />
           <Route path="employer/login" element={<EmployerLogin />} />
           <Route path="employer/register" element={<EmployerRegister />} />
-          <Route path="admin/login" element={<Login admin />} />
+          <Route path="admin/login" element={<AdminLogin />} />
         </Route>
         <Route path="forgot-password" element={<ForgotPassword />} />
         <Route path="reset-password/:token" element={<ResetPassword />} />
@@ -103,21 +105,6 @@ export default function App() {
             <Route path="dashboard/saved-jobs" element={<SavedJobs />} />
             <Route path="dashboard/applications" element={<MyApplications />} />
             <Route path="dashboard/change-password" element={<CandidateChangePassword />} />
-          </Route>
-        </Route>
-
-        <Route element={<AdminRoute />}>
-          <Route path="admin/change-password" element={<ChangePassword />} />
-          <Route element={<DashboardLayout links={adminLinks} />}>
-            <Route path="admin/dashboard" element={<AdminDashboard />} />
-            <Route path="admin/jobs" element={<ManageJobs />} />
-            <Route path="admin/jobs/create" element={<CreateJob />} />
-            <Route path="admin/jobs/import" element={<ImportJobs />} />
-            <Route path="admin/jobs/:id/edit" element={<EditJob />} />
-            <Route path="admin/applications" element={<Applications />} />
-            <Route path="admin/applications/:id" element={<ApplicationDetail />} />
-            <Route path="admin/verifications" element={<EmployerVerifications />} />
-            <Route path="admin/invoices" element={<Invoices />} />
           </Route>
         </Route>
 
@@ -133,8 +120,32 @@ export default function App() {
           <Route path="employer/jobs/create" element={<EmployerCreateJob />} />
           <Route path="employer/jobs/:id/edit" element={<EmployerEditJob />} />
           <Route path="employer/jobs/:id/applications" element={<EmployerApplications />} />
+          <Route path="employer/applicants" element={<EmployerApplicants />} />
           <Route path="employer/billing" element={<EmployerBilling />} />
           <Route path="employer/verification" element={<EmployerVerification />} />
+        </Route>
+      </Route>
+
+      <Route element={<AdminRoute />}>
+        <Route path="admin/change-password" element={<ChangePassword />} />
+        <Route element={<AdminShell />}>
+          <Route path="admin/dashboard" element={<AdminDashboard />} />
+          <Route path="admin/employers" element={<Employers />} />
+          <Route path="admin/verifications" element={<EmployerVerifications />} />
+          <Route path="admin/verifications/:id" element={<EmployerReviewDetail />} />
+          <Route path="admin/jobs" element={<ManageJobs />} />
+          <Route path="admin/jobs/create" element={<CreateJob />} />
+          <Route path="admin/jobs/import" element={<ImportJobs />} />
+          <Route path="admin/jobs/:id/edit" element={<EditJob />} />
+          <Route path="admin/job-reviews" element={<JobReviews />} />
+          <Route path="admin/jobs-flagged" element={<JobsFlagged />} />
+          <Route path="admin/scraped-jobs" element={<ScrapedJobs />} />
+          <Route path="admin/applications" element={<Applications />} />
+          <Route path="admin/applications/:id" element={<ApplicationDetail />} />
+          <Route path="admin/billing" element={<AdminBilling />} />
+          <Route path="admin/plans" element={<AdminPlans />} />
+          <Route path="admin/invoices" element={<Invoices />} />
+          <Route path="admin/refunds" element={<Refunds />} />
         </Route>
       </Route>
     </Routes>
