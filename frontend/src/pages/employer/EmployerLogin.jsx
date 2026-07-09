@@ -7,7 +7,7 @@ import { Button } from "../../components/common/Button.jsx";
 import { useAuthStore } from "../../store/authStore.js";
 import { isCompanyEmail } from "../../utils/validators.js";
 
-const EMP = "#0F6E56";
+const EMP = "var(--accent)";
 const REMEMBER_KEY = "emp_remember_email";
 
 function validate(form) {
@@ -66,54 +66,15 @@ export function EmployerLogin() {
 
   return (
     <div
-      className="mx-auto grid max-w-5xl overflow-hidden rounded-3xl lg:grid-cols-[1fr_1.25fr]"
+      className="mx-auto grid max-w-6xl overflow-hidden rounded-3xl lg:min-h-[680px] lg:grid-cols-2"
       style={{ border: "1px solid var(--border-default)", background: "var(--bg-white)" }}
     >
-      {/* Left brand panel */}
-      <div
-        className="hidden flex-col justify-between p-10 text-white lg:flex"
-        style={{ background: EMP }}
-      >
-        <Link className="flex items-center gap-2.5 text-white" to="/">
-          <span className="grid h-10 w-10 place-items-center rounded-full bg-white/20 text-sm font-bold">S</span>
-          <span className="text-[20px] font-bold">SaudiaCareers</span>
-        </Link>
-
-        <div>
-          <span className="grid h-12 w-12 place-items-center rounded-2xl bg-white/15">
-            <Briefcase size={23} />
-          </span>
-          <h2 className="mt-5 text-2xl font-bold leading-snug">
-            Post jobs. Find the right talent.
-          </h2>
-          <p className="mt-3 text-[15px] leading-6" style={{ color: "rgba(255,255,255,0.70)" }}>
-            Reach thousands of qualified candidates across Saudi Arabia. Manage applications all in one place.
-          </p>
-          <ul className="mt-6 space-y-2.5">
-            {[
-              "Reach thousands of qualified candidates",
-              "Manage all applicants in one place",
-              "Post your first job in minutes",
-            ].map((item) => (
-              <li key={item} className="flex items-center gap-2.5 text-[14px]" style={{ color: "rgba(255,255,255,0.85)" }}>
-                <CheckCircle2 size={16} className="shrink-0" style={{ color: "rgba(255,255,255,0.6)" }} />
-                {item}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <p className="text-[13px]" style={{ color: "rgba(255,255,255,0.45)" }}>
-          © {new Date().getFullYear()} SaudiaCareers
-        </p>
-      </div>
-
-      {/* Right form panel */}
-      <div className="p-6 sm:p-8 lg:p-10">
+      {/* Left: form */}
+      <div className="p-6 sm:p-8 lg:p-12">
         <div className="mb-7">
           <span
             className="mb-3 inline-flex rounded-full px-3 py-1 text-[12px] font-semibold uppercase tracking-[0.08em]"
-            style={{ background: "#E8F5F1", color: EMP }}
+            style={{ background: "var(--accent-subtle)", color: EMP }}
           >
             Employer portal
           </span>
@@ -222,12 +183,42 @@ export function EmployerLogin() {
               Register here
             </Link>
           </p>
-          <p>
-            {"Are you a job seeker? "}
-            <Link className="font-semibold hover:underline" style={{ color: "var(--accent)" }} to="/login">
-              Login here
-            </Link>
+        </div>
+      </div>
+
+      {/* Right: premium image panel, hidden below lg */}
+      <div className="relative hidden lg:block">
+        <img
+          src="https://images.unsplash.com/photo-1543269865-cbf427effbad?w=900&q=80"
+          alt=""
+          className="h-full w-full object-cover"
+        />
+        <div
+          className="absolute inset-0"
+          style={{ background: "linear-gradient(180deg, rgba(20,20,20,0) 35%, rgba(20,20,20,0.82) 100%)" }}
+        />
+        <div className="absolute bottom-9 left-9 right-9 text-white">
+          <span className="grid h-11 w-11 place-items-center rounded-2xl" style={{ background: "rgba(255,255,255,0.15)" }}>
+            <Briefcase size={20} />
+          </span>
+          <h2 className="mt-4 text-2xl font-bold leading-snug">
+            Post jobs. Find the right talent.
+          </h2>
+          <p className="mt-2 max-w-sm text-[14px] leading-6" style={{ color: "rgba(255,255,255,0.75)" }}>
+            Reach thousands of qualified candidates across Saudi Arabia. Manage applications all in one place.
           </p>
+          <ul className="mt-5 space-y-2">
+            {[
+              "Reach thousands of qualified candidates",
+              "Manage all applicants in one place",
+              "Post your first job in minutes",
+            ].map((item) => (
+              <li key={item} className="flex items-center gap-2.5 text-[13.5px]" style={{ color: "rgba(255,255,255,0.85)" }}>
+                <CheckCircle2 size={15} className="shrink-0" style={{ color: "rgba(255,255,255,0.65)" }} />
+                {item}
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </div>

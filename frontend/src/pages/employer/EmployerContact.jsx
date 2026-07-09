@@ -5,9 +5,10 @@ import { enquiryApi } from "../../api/employer.js";
 import { Alert } from "../../components/common/Alert.jsx";
 import { Button } from "../../components/common/Button.jsx";
 import { Input } from "../../components/common/Input.jsx";
+import { Select } from "../../components/common/Select.jsx";
 import { isCompanyEmail, isValidMobile } from "../../utils/validators.js";
 
-const EMP = "#0F6E56";
+const EMP = "var(--accent)";
 
 const SUBJECTS = [
   "Post a Job",
@@ -57,7 +58,7 @@ function CTACard({ icon: Icon, title, description, to, label }) {
     >
       <span
         className="grid h-10 w-10 place-items-center rounded-xl"
-        style={{ background: "#E8F5F1", color: EMP }}
+        style={{ background: "var(--accent-subtle)", color: EMP }}
       >
         <Icon size={19} />
       </span>
@@ -195,23 +196,16 @@ export function EmployerContact() {
               </div>
 
               <div>
-                <label className="block" htmlFor="ec-subject">
-                  <span className="field-label">
-                    Subject <span className="ml-0.5 text-red-500" aria-hidden="true">*</span>
-                  </span>
-                </label>
-                <select
+                <Select
                   id="ec-subject"
-                  className={`field-box ${fieldErrors.subject ? "border-red-400" : ""}`}
+                  label="Subject"
+                  required
                   value={form.subject}
                   onChange={update("subject")}
-                >
-                  <option value="">Select a subject…</option>
-                  {SUBJECTS.map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
-                {fieldErrors.subject && (
-                  <span className="mt-1.5 block text-xs text-red-600">{fieldErrors.subject}</span>
-                )}
+                  options={SUBJECTS}
+                  placeholder="Select a subject…"
+                  error={fieldErrors.subject}
+                />
               </div>
 
               <div>

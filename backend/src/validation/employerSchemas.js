@@ -1,3 +1,4 @@
+import { JobStatus } from "@prisma/client";
 import { z } from "zod";
 
 const password = z
@@ -41,6 +42,9 @@ export const employerProfileSchema = bodyOnly(
       .optional()
       .or(z.literal("")),
     description: z.string().trim().max(2000).optional(),
+    taxRegistrationNumber: z.string().trim().max(50).optional().or(z.literal("")),
+    billingAddress: z.string().trim().max(500).optional().or(z.literal("")),
+    billingEmail: z.string().trim().email().optional().or(z.literal("")),
   }).strict(),
 );
 
@@ -51,7 +55,7 @@ export const employerJobQuerySchema = envelope(
     page: z.coerce.number().int().positive().default(1),
     limit: z.coerce.number().int().min(1).max(100).default(20),
     search: z.string().trim().max(100).optional(),
-    status: z.enum(["ACTIVE", "INACTIVE"]).optional(),
+    status: z.nativeEnum(JobStatus).optional(),
   }),
 );
 

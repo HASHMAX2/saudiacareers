@@ -5,13 +5,24 @@ import {
   getApplicationDetail,
   getEmployerDashboard,
   getEmployerProfile,
+  getVerification,
   listEmployerJobs,
   listJobApplications,
+  submitVerificationDocument,
   updateApplicationStatus,
   updateEmployerJob,
   updateEmployerJobStatus,
   updateEmployerProfile,
 } from "../controllers/employerController.js";
+import { verificationDocUpload } from "../middleware/upload.js";
+import {
+  cancelSubscription,
+  getSubscription,
+  listInvoices,
+  requestCreditPurchase,
+  requestPlanChange,
+  requestRefund,
+} from "../controllers/employerBillingController.js";
 import { authenticate } from "../middleware/authenticate.js";
 import { authorizeEmployer } from "../middleware/authorizeAdmin.js";
 import { validate } from "../middleware/validate.js";
@@ -23,6 +34,12 @@ import {
   employerJobQuerySchema,
   employerProfileSchema,
 } from "../validation/employerSchemas.js";
+import {
+  creditPurchaseSchema,
+  invoicesQuerySchema,
+  planChangeSchema,
+  refundRequestSchema,
+} from "../validation/employerBillingSchemas.js";
 
 export const employerRouter = Router();
 employerRouter.use(authenticate, authorizeEmployer);
@@ -49,3 +66,17 @@ employerRouter.patch(
   validate(employerApplicationStatusSchema),
   asyncHandler(updateApplicationStatus),
 );
+
+employerRouter.get("/verification", asyncHandler(getVerification));
+employerRouter.post(
+  "/verification/document",
+  verificationDocUpload.single("document"),
+  asyncHandler(submitVerificationDocument),
+);
+
+employerRouter.get("/subscription", asyncHandler(getSubscription));
+employerRouter.get("/invoices", validate(invoicesQuerySchema), asyncHandler(listInvoices));
+employerRouter.post("/invoices/credit-purchase", validate(creditPurchaseSchema), asyncHandler(requestCreditPurchase));
+employerRouter.post("/invoices/plan-change", validate(planChangeSchema), asyncHandler(requestPlanChange));
+employerRouter.post("/invoices/:id/refund-request", validate(refundRequestSchema), asyncHandler(requestRefund));
+employerRouter.post("/subscription/cancel", asyncHandler(cancelSubscription));

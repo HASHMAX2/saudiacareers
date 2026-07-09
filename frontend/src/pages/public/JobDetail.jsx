@@ -133,7 +133,7 @@ export function JobDetail() {
 
         <section className="card-soft p-6 sm:p-8">
           <h2 className="text-xl font-semibold" style={{ color: "var(--text-primary)" }}>Job description</h2>
-          <div className="mt-4 whitespace-pre-wrap text-sm leading-7" style={{ color: "var(--text-secondary)" }}>{job.description}</div>
+          <div className="mt-4 whitespace-pre-wrap break-words text-sm leading-7" style={{ color: "var(--text-secondary)" }}>{job.description}</div>
         </section>
 
         <section className="card-soft p-6 sm:p-8">

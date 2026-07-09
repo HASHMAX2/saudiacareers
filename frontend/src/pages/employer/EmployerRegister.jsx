@@ -1,16 +1,18 @@
-import { CheckCircle2 } from "lucide-react";
+import { Briefcase, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { employerApi } from "../../api/employer.js";
 import { Alert } from "../../components/common/Alert.jsx";
 import { Button } from "../../components/common/Button.jsx";
 import { Input } from "../../components/common/Input.jsx";
+import { PhoneInput } from "../../components/common/PhoneInput.jsx";
+import { Select } from "../../components/common/Select.jsx";
 import { isCompanyEmail, isStrongPassword, isValidMobile } from "../../utils/validators.js";
+import { INDUSTRIES } from "../../utils/constants.js";
 
-const EMP = "#0F6E56";
+const EMP = "var(--accent)";
 
-const INDUSTRIES = ["Technology","Finance","Healthcare","Education","Manufacturing","Retail","Hospitality","Other"];
-const SIZES       = ["1–10","11–50","51–200","201–500","500+"];
+const SIZES = ["1–10","11–50","51–200","201–500","500+"];
 
 function validateStep1(form) {
   const errors = {};
@@ -57,11 +59,15 @@ export function EmployerRegister() {
   const [submitting, setSub]    = useState(false);
   const [submitted, setDone]    = useState(false);
 
+  function setField(key, val) {
+    setForm((f) => ({ ...f, [key]: val }));
+    setFE((p) => ({ ...p, [key]: undefined }));
+  }
+
   const update = (key) => (e) => {
     let val = e.target.type === "checkbox" ? e.target.checked : e.target.value;
     if (key === "phone" && typeof val === "string" && val !== "" && !val.startsWith("+")) val = "+";
-    setForm((f) => ({ ...f, [key]: val }));
-    setFE((p) => ({ ...p, [key]: undefined }));
+    setField(key, val);
   };
 
   function goNext(e) {
@@ -102,46 +108,87 @@ export function EmployerRegister() {
     }
   }
 
+  const imagePanel = (
+    <div className="relative hidden lg:block">
+      <img
+        src="https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=900&q=80"
+        alt=""
+        className="h-full w-full object-cover"
+      />
+      <div
+        className="absolute inset-0"
+        style={{ background: "linear-gradient(180deg, rgba(20,20,20,0) 35%, rgba(20,20,20,0.82) 100%)" }}
+      />
+      <div className="absolute bottom-9 left-9 right-9 text-white">
+        <span className="grid h-11 w-11 place-items-center rounded-2xl" style={{ background: "rgba(255,255,255,0.15)" }}>
+          <Briefcase size={20} />
+        </span>
+        <h2 className="mt-4 text-2xl font-bold leading-snug">
+          Grow your team with SaudiaCareers.
+        </h2>
+        <p className="mt-2 max-w-sm text-[14px] leading-6" style={{ color: "rgba(255,255,255,0.75)" }}>
+          Create a free employer account and start reaching qualified candidates across Saudi Arabia.
+        </p>
+        <ul className="mt-5 space-y-2">
+          {[
+            "Post jobs in minutes",
+            "Review applicants in one place",
+            "Verified by our team for trust",
+          ].map((item) => (
+            <li key={item} className="flex items-center gap-2.5 text-[13.5px]" style={{ color: "rgba(255,255,255,0.85)" }}>
+              <CheckCircle2 size={15} className="shrink-0" style={{ color: "rgba(255,255,255,0.65)" }} />
+              {item}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+
   if (submitted) {
     return (
       <div
-        className="mx-auto max-w-xl rounded-3xl p-10 text-center"
+        className="mx-auto grid max-w-6xl overflow-hidden rounded-3xl lg:min-h-[680px] lg:grid-cols-2"
         style={{ border: "1px solid var(--border-default)", background: "var(--bg-white)" }}
       >
-        <span className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-full" style={{ background: "#E8F5F1" }}>
-          <CheckCircle2 size={32} style={{ color: EMP }} />
-        </span>
-        <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>Registration successful!</h1>
-        <p className="mt-3 text-[16px] leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-          Our team will verify your account and reach out within 24 hours. Once approved, you can log in and start posting jobs.
-        </p>
-        <Link
-          to="/employer/login"
-          className="mt-6 inline-flex items-center justify-center rounded-full px-6 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-          style={{ background: EMP }}
-        >
-          Go to login
-        </Link>
-        <p className="mt-4 text-sm" style={{ color: "var(--text-tertiary)" }}>
-          Questions? Email us at{" "}
-          <a className="hover:underline" href="mailto:employers@saudiacareers.com" style={{ color: EMP }}>
-            employers@saudiacareers.com
-          </a>
-        </p>
+        <div className="flex flex-col items-center justify-center p-10 text-center">
+          <span className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-full" style={{ background: "var(--accent-subtle)" }}>
+            <CheckCircle2 size={32} style={{ color: EMP }} />
+          </span>
+          <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>Registration successful!</h1>
+          <p className="mt-3 text-[16px] leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+            Our team will verify your account and reach out within 24 hours. Once approved, you can log in and start posting jobs.
+          </p>
+          <Link
+            to="/employer/login"
+            className="mt-6 inline-flex items-center justify-center rounded-full px-6 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+            style={{ background: EMP }}
+          >
+            Go to login
+          </Link>
+          <p className="mt-4 text-sm" style={{ color: "var(--text-tertiary)" }}>
+            Questions? Email us at{" "}
+            <a className="hover:underline" href="mailto:employers@saudiacareers.com" style={{ color: EMP }}>
+              employers@saudiacareers.com
+            </a>
+          </p>
+        </div>
+        {imagePanel}
       </div>
     );
   }
 
   return (
     <div
-      className="mx-auto max-w-2xl overflow-hidden rounded-3xl"
+      className="mx-auto grid max-w-6xl overflow-hidden rounded-3xl lg:min-h-[680px] lg:grid-cols-2"
       style={{ border: "1px solid var(--border-default)", background: "var(--bg-white)" }}
     >
+      <div>
       {/* Header */}
       <div className="px-6 pb-6 pt-8 sm:px-8 sm:pt-10">
         <span
           className="mb-3 inline-flex rounded-full px-3 py-1 text-[12px] font-semibold uppercase tracking-[0.08em]"
-          style={{ background: "#E8F5F1", color: EMP }}
+          style={{ background: "var(--accent-subtle)", color: EMP }}
         >
           Employer portal
         </span>
@@ -199,34 +246,22 @@ export function EmployerRegister() {
             />
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className="block" htmlFor="reg-industry">
-                  <span className="field-label">Industry</span>
-                </label>
-                <select
-                  id="reg-industry"
-                  className="field-box"
-                  value={form.industry}
-                  onChange={update("industry")}
-                >
-                  <option value="">Select industry</option>
-                  {INDUSTRIES.map((i) => <option key={i} value={i}>{i}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block" htmlFor="reg-size">
-                  <span className="field-label">Company size</span>
-                </label>
-                <select
-                  id="reg-size"
-                  className="field-box"
-                  value={form.companySize}
-                  onChange={update("companySize")}
-                >
-                  <option value="">Select size</option>
-                  {SIZES.map((s) => <option key={s} value={s}>{s} employees</option>)}
-                </select>
-              </div>
+              <Select
+                id="reg-industry"
+                label="Industry"
+                value={form.industry}
+                onChange={update("industry")}
+                options={INDUSTRIES}
+                placeholder="Select industry"
+              />
+              <Select
+                id="reg-size"
+                label="Company size"
+                value={form.companySize}
+                onChange={update("companySize")}
+                options={SIZES.map((s) => ({ value: s, label: `${s} employees` }))}
+                placeholder="Select size"
+              />
             </div>
 
             <Input
@@ -297,16 +332,13 @@ export function EmployerRegister() {
               autoComplete="email"
             />
 
-            <Input
+            <PhoneInput
               id="reg-phone"
               label="Phone number"
-              labelHint="enter number with country code"
               required
-              placeholder="+966512345678"
               value={form.phone}
               onChange={update("phone")}
               error={fieldErrors.phone}
-              autoComplete="tel"
             />
 
             <div className="grid gap-4 sm:grid-cols-2">
@@ -345,9 +377,9 @@ export function EmployerRegister() {
               />
               <span style={{ color: "var(--text-secondary)" }}>
                 {"I agree to the "}
-                <a href="/terms" className="font-semibold hover:underline" style={{ color: EMP }}>Terms &amp; Conditions</a>
+                <Link to="/terms" target="_blank" rel="noopener noreferrer" className="font-semibold hover:underline" style={{ color: EMP }}>Terms &amp; Conditions</Link>
                 {" and "}
-                <a href="/privacy" className="font-semibold hover:underline" style={{ color: EMP }}>Privacy Policy</a>
+                <Link to="/privacy" target="_blank" rel="noopener noreferrer" className="font-semibold hover:underline" style={{ color: EMP }}>Privacy Policy</Link>
               </span>
             </label>
             {fieldErrors.agreeTerms && (
@@ -384,6 +416,8 @@ export function EmployerRegister() {
           </Link>
         </p>
       </div>
+      </div>
+      {imagePanel}
     </div>
   );
 }

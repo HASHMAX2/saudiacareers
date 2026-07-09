@@ -17,6 +17,10 @@ import { VisibilityChart } from "../../components/dashboard/VisibilityChart.jsx"
 import { Spinner } from "../../components/common/Spinner.jsx";
 import { Link } from "react-router-dom";
 
+// Toggle for placeholder/mock-data dashboard sections — see HIDDEN_FEATURES.md at the repo root
+// for what each hidden section is and what's needed before flipping this back to true.
+const SHOW_HIDDEN_DASHBOARD_SECTIONS = false;
+
 const SUGGESTED_CHIPS = ["React Developer", "Sales Consultant", "Civil Engineer", "Healthcare", "Finance"];
 
 const TOP_EMPLOYERS = [
@@ -61,10 +65,12 @@ export function Dashboard() {
       candidateApi.dashboard(),
       candidateApi.careerTips(),
       applicationsApi.mine(),
-    ]).then(([dashRes, tipsRes, appsRes]) => {
+      savedJobsApi.getAll(),
+    ]).then(([dashRes, tipsRes, appsRes, savedRes]) => {
       setData(dashRes.data.data);
       setTips(tipsRes.data.data);
       setApplications(appsRes.data.data ?? []);
+      setSavedJobs(savedRes.data.data ?? []);
     });
   }, []);
 
@@ -287,32 +293,34 @@ export function Dashboard() {
             </div>
 
             {/* Top employers */}
-            <SectionShell title="Jobs by top employers">
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5">
-                {TOP_EMPLOYERS.map((name, i) => {
-                  const t = tint(i);
-                  return (
-                    <a
-                      key={name}
-                      href="#"
-                      title={name}
-                      className="grid place-items-center h-[80px] rounded-xl bg-white px-3 transition-all hover:shadow-md hover:-translate-y-0.5"
-                      style={{ border: "1px solid var(--border-default)" }}
-                    >
-                      <span
-                        className="text-[14px] font-extrabold text-center leading-tight"
-                        style={{ fontFamily: "var(--font-display)", color: t.fg }}
+            {SHOW_HIDDEN_DASHBOARD_SECTIONS && (
+              <SectionShell title="Jobs by top employers">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5">
+                  {TOP_EMPLOYERS.map((name, i) => {
+                    const t = tint(i);
+                    return (
+                      <a
+                        key={name}
+                        href="#"
+                        title={name}
+                        className="grid place-items-center h-[80px] rounded-xl bg-white px-3 transition-all hover:shadow-md hover:-translate-y-0.5"
+                        style={{ border: "1px solid var(--border-default)" }}
                       >
-                        {name}
-                      </span>
-                    </a>
-                  );
-                })}
-              </div>
-            </SectionShell>
+                        <span
+                          className="text-[14px] font-extrabold text-center leading-tight"
+                          style={{ fontFamily: "var(--font-display)", color: t.fg }}
+                        >
+                          {name}
+                        </span>
+                      </a>
+                    );
+                  })}
+                </div>
+              </SectionShell>
+            )}
 
             {/* Career tips */}
-            {tips.length > 0 && (
+            {SHOW_HIDDEN_DASHBOARD_SECTIONS && tips.length > 0 && (
               <SectionShell title="Career tips" viewAllTo="#">
                 <Carousel>
                   {tips.map((post) => (
@@ -351,152 +359,160 @@ export function Dashboard() {
             )}
 
             {/* Companies hiring */}
-            <SectionShell title="Companies hiring for" subtitle={profile.designation || "your profile"} viewAllTo="/jobs">
-              <Carousel>
-                {COMPANIES_HIRING.map((co, i) => (
-                  <article
-                    key={co.name}
-                    className="flex flex-col items-start bg-white rounded-[14px] p-5 transition-all hover:shadow-lg hover:-translate-y-[3px]"
-                    style={{ flex: "0 0 270px", scrollSnapAlign: "start", border: "1px solid var(--border-default)" }}
-                  >
-                    <LogoTile name={co.name} size={52} radius={13} index={i + 1} />
-                    <div className="mt-3.5 text-[15.5px] font-bold" style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)" }}>
-                      {co.name}
-                    </div>
-                    <div className="flex flex-wrap gap-1.5 mt-3 mb-4">
-                      {co.tags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="text-[11.5px] font-medium px-2.5 py-0.5 rounded-full"
-                          style={{ color: "var(--text-secondary)", background: "var(--bg-elev)" }}
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                    <Link
-                      to="/jobs"
-                      className="mt-auto w-full text-center py-2.5 rounded-[10px] text-[13.5px] font-bold transition-colors"
-                      style={{
-                        fontFamily: "var(--font-display)",
-                        border: "1px solid var(--accent-subtle)",
-                        background: "var(--accent-subtle)",
-                        color: "var(--accent)",
-                      }}
+            {SHOW_HIDDEN_DASHBOARD_SECTIONS && (
+              <SectionShell title="Companies hiring for" subtitle={profile.designation || "your profile"} viewAllTo="/jobs">
+                <Carousel>
+                  {COMPANIES_HIRING.map((co, i) => (
+                    <article
+                      key={co.name}
+                      className="flex flex-col items-start bg-white rounded-[14px] p-5 transition-all hover:shadow-lg hover:-translate-y-[3px]"
+                      style={{ flex: "0 0 270px", scrollSnapAlign: "start", border: "1px solid var(--border-default)" }}
                     >
-                      View jobs
-                    </Link>
-                  </article>
-                ))}
-              </Carousel>
-            </SectionShell>
+                      <LogoTile name={co.name} size={52} radius={13} index={i + 1} />
+                      <div className="mt-3.5 text-[15.5px] font-bold" style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)" }}>
+                        {co.name}
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 mt-3 mb-4">
+                        {co.tags.map((tag) => (
+                          <span
+                            key={tag}
+                            className="text-[11.5px] font-medium px-2.5 py-0.5 rounded-full"
+                            style={{ color: "var(--text-secondary)", background: "var(--bg-elev)" }}
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                      <Link
+                        to="/jobs"
+                        className="mt-auto w-full text-center py-2.5 rounded-[10px] text-[13.5px] font-bold transition-colors"
+                        style={{
+                          fontFamily: "var(--font-display)",
+                          border: "1px solid var(--accent-subtle)",
+                          background: "var(--accent-subtle)",
+                          color: "var(--accent)",
+                        }}
+                      >
+                        View jobs
+                      </Link>
+                    </article>
+                  ))}
+                </Carousel>
+              </SectionShell>
+            )}
 
             {/* Featured employers / consultants */}
-            <div className="grid gap-6 md:grid-cols-2">
-              <SectionShell title="Featured employers" viewAllTo="#">
-                {FEATURED_EMPLOYERS.map((name) => (
-                  <a
-                    key={name}
-                    href="#"
-                    className="flex items-center gap-2.5 py-3 px-1.5 text-[14px] font-medium transition-colors hover:underline"
-                    style={{ color: "var(--text-primary)", borderBottom: "1px solid var(--bg-elev)" }}
-                  >
-                    <span className="w-[7px] h-[7px] rounded-full shrink-0" style={{ background: "var(--accent-subtle)" }} />
-                    {name}
-                  </a>
-                ))}
-              </SectionShell>
-              <SectionShell title="Featured consultants" viewAllTo="#">
-                {FEATURED_CONSULTANTS.map((name) => (
-                  <a
-                    key={name}
-                    href="#"
-                    className="flex items-center gap-2.5 py-3 px-1.5 text-[14px] font-medium transition-colors hover:underline"
-                    style={{ color: "var(--text-primary)", borderBottom: "1px solid var(--bg-elev)" }}
-                  >
-                    <span className="w-[7px] h-[7px] rounded-full shrink-0" style={{ background: "var(--accent-subtle)" }} />
-                    {name}
-                  </a>
-                ))}
-              </SectionShell>
-            </div>
+            {SHOW_HIDDEN_DASHBOARD_SECTIONS && (
+              <div className="grid gap-6 md:grid-cols-2">
+                <SectionShell title="Featured employers" viewAllTo="#">
+                  {FEATURED_EMPLOYERS.map((name) => (
+                    <a
+                      key={name}
+                      href="#"
+                      className="flex items-center gap-2.5 py-3 px-1.5 text-[14px] font-medium transition-colors hover:underline"
+                      style={{ color: "var(--text-primary)", borderBottom: "1px solid var(--bg-elev)" }}
+                    >
+                      <span className="w-[7px] h-[7px] rounded-full shrink-0" style={{ background: "var(--accent-subtle)" }} />
+                      {name}
+                    </a>
+                  ))}
+                </SectionShell>
+                <SectionShell title="Featured consultants" viewAllTo="#">
+                  {FEATURED_CONSULTANTS.map((name) => (
+                    <a
+                      key={name}
+                      href="#"
+                      className="flex items-center gap-2.5 py-3 px-1.5 text-[14px] font-medium transition-colors hover:underline"
+                      style={{ color: "var(--text-primary)", borderBottom: "1px solid var(--bg-elev)" }}
+                    >
+                      <span className="w-[7px] h-[7px] rounded-full shrink-0" style={{ background: "var(--accent-subtle)" }} />
+                      {name}
+                    </a>
+                  ))}
+                </SectionShell>
+              </div>
+            )}
 
             {/* Reminder banner */}
-            <div
-              className="flex items-center gap-4 px-6 py-5 rounded-[14px] flex-wrap"
-              style={{ background: "linear-gradient(90deg, var(--green-bg), #fff)", border: "1px solid #CFEBDC" }}
-            >
-              <span
-                className="grid h-10 w-10 shrink-0 place-items-center rounded-[11px] bg-white"
-                style={{ color: "var(--green)", boxShadow: "var(--sh-1)" }}
+            {SHOW_HIDDEN_DASHBOARD_SECTIONS && (
+              <div
+                className="flex items-center gap-4 px-6 py-5 rounded-[14px] flex-wrap"
+                style={{ background: "linear-gradient(90deg, var(--green-bg), #fff)", border: "1px solid #CFEBDC" }}
               >
-                <Shield size={20} />
-              </span>
-              <span className="text-[14px] flex-1 min-w-0" style={{ color: "var(--text-primary)" }}>
-                Make sure every detail is filled in correctly &mdash; it&apos;s what employers see first.
-              </span>
-              <Link
-                to="/dashboard/profile"
-                className="text-[14px] font-semibold whitespace-nowrap"
-                style={{ color: "var(--accent)" }}
-              >
-                View & update profile
-              </Link>
-            </div>
+                <span
+                  className="grid h-10 w-10 shrink-0 place-items-center rounded-[11px] bg-white"
+                  style={{ color: "var(--green)", boxShadow: "var(--sh-1)" }}
+                >
+                  <Shield size={20} />
+                </span>
+                <span className="text-[14px] flex-1 min-w-0" style={{ color: "var(--text-primary)" }}>
+                  Make sure every detail is filled in correctly &mdash; it&apos;s what employers see first.
+                </span>
+                <Link
+                  to="/dashboard/profile"
+                  className="text-[14px] font-semibold whitespace-nowrap"
+                  style={{ color: "var(--accent)" }}
+                >
+                  View & update profile
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* RIGHT SIDEBAR */}
           <aside className="flex flex-col gap-4 lg:gap-5">
             <ProfileCard profile={profile} />
             <VisibilityChart searchAppearances={stats.searchAppearances} employerActions={stats.employerActions} />
-            <FAQCard />
-            <PollWidget />
+            {SHOW_HIDDEN_DASHBOARD_SECTIONS && <FAQCard />}
+            {SHOW_HIDDEN_DASHBOARD_SECTIONS && <PollWidget />}
           </aside>
         </div>
 
         {/* BOOST SECTION — full width */}
-        <section
-          className="mt-7 rounded-2xl p-7 grid gap-7 items-center lg:grid-cols-[1fr_1.2fr]"
-          style={{
-            background: "linear-gradient(120deg, var(--accent-subtle), #FFF8F7 60%, var(--gold-bg))",
-            border: "1px solid var(--border-default)",
-            boxShadow: "var(--sh-2)",
-          }}
-        >
-          <div className="flex flex-col gap-2">
-            <span
-              className="grid h-14 w-14 place-items-center rounded-2xl bg-white mb-1.5"
-              style={{ boxShadow: "var(--sh-2)" }}
-            >
-              <Rocket size={28} style={{ color: "var(--gold)" }} />
-            </span>
-            <h2 className="text-[23px] font-bold" style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)" }}>
-              Boost your job hunt
-            </h2>
-            <p className="text-[15px] max-w-sm" style={{ color: "var(--text-secondary)" }}>
-              Get a CV that highlights your strengths and increase profile views by up to 50%.
-            </p>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {[
-              { icon: Pen, title: "Resume writing", desc: "Get an expert to sharpen your CV so the right things stand out to employers.", bg: "var(--accent-subtle)", fg: "var(--accent)" },
-              { icon: Sparkles, title: "Resume spotlight", desc: "Put your profile in front of recruiters searching the database first.", bg: "var(--gold-bg)", fg: "var(--gold-ink)" },
-            ].map((s) => (
-              <div
-                key={s.title}
-                className="bg-white rounded-[14px] p-5 flex flex-col gap-2.5"
-                style={{ border: "1px solid var(--border-default)", boxShadow: "var(--sh-1)" }}
+        {SHOW_HIDDEN_DASHBOARD_SECTIONS && (
+          <section
+            className="mt-7 rounded-2xl p-7 grid gap-7 items-center lg:grid-cols-[1fr_1.2fr]"
+            style={{
+              background: "linear-gradient(120deg, var(--accent-subtle), #FFF8F7 60%, var(--gold-bg))",
+              border: "1px solid var(--border-default)",
+              boxShadow: "var(--sh-2)",
+            }}
+          >
+            <div className="flex flex-col gap-2">
+              <span
+                className="grid h-14 w-14 place-items-center rounded-2xl bg-white mb-1.5"
+                style={{ boxShadow: "var(--sh-2)" }}
               >
-                <span className="grid h-[40px] w-[40px] place-items-center rounded-[10px]" style={{ background: s.bg, color: s.fg }}>
-                  <s.icon size={20} />
-                </span>
-                <h4 className="text-[15px] font-bold" style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)" }}>{s.title}</h4>
-                <p className="text-[13px] flex-1" style={{ color: "var(--text-secondary)" }}>{s.desc}</p>
-                <a href="#" className="text-[13.5px] font-semibold" style={{ color: "var(--accent)" }}>Know more →</a>
-              </div>
-            ))}
-          </div>
-        </section>
+                <Rocket size={28} style={{ color: "var(--gold)" }} />
+              </span>
+              <h2 className="text-[23px] font-bold" style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)" }}>
+                Boost your job hunt
+              </h2>
+              <p className="text-[15px] max-w-sm" style={{ color: "var(--text-secondary)" }}>
+                Get a CV that highlights your strengths and increase profile views by up to 50%.
+              </p>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {[
+                { icon: Pen, title: "Resume writing", desc: "Get an expert to sharpen your CV so the right things stand out to employers.", bg: "var(--accent-subtle)", fg: "var(--accent)" },
+                { icon: Sparkles, title: "Resume spotlight", desc: "Put your profile in front of recruiters searching the database first.", bg: "var(--gold-bg)", fg: "var(--gold-ink)" },
+              ].map((s) => (
+                <div
+                  key={s.title}
+                  className="bg-white rounded-[14px] p-5 flex flex-col gap-2.5"
+                  style={{ border: "1px solid var(--border-default)", boxShadow: "var(--sh-1)" }}
+                >
+                  <span className="grid h-[40px] w-[40px] place-items-center rounded-[10px]" style={{ background: s.bg, color: s.fg }}>
+                    <s.icon size={20} />
+                  </span>
+                  <h4 className="text-[15px] font-bold" style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)" }}>{s.title}</h4>
+                  <p className="text-[13px] flex-1" style={{ color: "var(--text-secondary)" }}>{s.desc}</p>
+                  <a href="#" className="text-[13.5px] font-semibold" style={{ color: "var(--accent)" }}>Know more →</a>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
       </div>
     </div>
   );

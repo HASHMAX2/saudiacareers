@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { Download, FileText } from "lucide-react";
+import { Download, FileText, SlidersHorizontal } from "lucide-react";
 import { Link } from "react-router-dom";
 import { adminApi } from "../../api/admin.js";
 import { Badge } from "../../components/common/Badge.jsx";
 import { Button } from "../../components/common/Button.jsx";
 import { Input } from "../../components/common/Input.jsx";
+import { Select } from "../../components/common/Select.jsx";
 import { Spinner } from "../../components/common/Spinner.jsx";
 import { formatDate } from "../../utils/formatDate.js";
 
@@ -32,12 +33,20 @@ export function Applications() {
       </div>
       <div className="flex flex-wrap gap-3 mb-6">
         <Input id="applicationSearch" placeholder="Candidate or job title" value={filters.search} onChange={(event) => setFilters({ ...filters, search: event.target.value })} />
-        <select className="field-box w-auto appearance-none" value={filters.status} onChange={(event) => setFilters({ ...filters, status: event.target.value })}>
-          <option value="">All statuses</option><option>APPLIED</option><option>UNDER_REVIEW</option><option>SELECTED</option><option>REJECTED</option>
-        </select>
-        <select className="field-box w-auto appearance-none" value={filters.hrEmailStatus} onChange={(event) => setFilters({ ...filters, hrEmailStatus: event.target.value })}>
-          <option value="">All email statuses</option><option>PENDING</option><option>SENT</option><option>FAILED</option>
-        </select>
+        <Select
+          className="w-44"
+          icon={SlidersHorizontal}
+          value={filters.status}
+          onChange={(event) => setFilters({ ...filters, status: event.target.value })}
+          options={[{ value: "", label: "All statuses" }, "APPLIED", "UNDER_REVIEW", "SELECTED", "REJECTED"]}
+        />
+        <Select
+          className="w-48"
+          icon={SlidersHorizontal}
+          value={filters.hrEmailStatus}
+          onChange={(event) => setFilters({ ...filters, hrEmailStatus: event.target.value })}
+          options={[{ value: "", label: "All email statuses" }, "PENDING", "SENT", "FAILED"]}
+        />
       </div>
       {!applications ? (
         <div className="grid min-h-64 place-items-center"><Spinner label="Loading applications" /></div>

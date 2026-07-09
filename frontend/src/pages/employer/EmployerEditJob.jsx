@@ -30,8 +30,8 @@ export function EmployerEditJob() {
   return (
     <>
       <Toast show={showToast} message="Changes saved! Taking you to your listings…" tone="success" duration={2500} />
-      <p className="section-label">Employer</p>
-      <h1 className="page-title mb-7 text-3xl md:text-4xl">Edit job</h1>
+      <p className="mb-1 text-xs font-bold uppercase tracking-wider" style={{ color: "var(--text-tertiary)" }}>Employer</p>
+      <h1 className="mb-7 text-3xl font-extrabold tracking-tight md:text-4xl" style={{ color: "var(--text-primary)" }}>Edit job</h1>
       <JobForm initialValue={job} onSubmit={handleSubmit} submitLabel="Save changes" />
     </>
   );

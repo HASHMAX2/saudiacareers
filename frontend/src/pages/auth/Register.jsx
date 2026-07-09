@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { Link, useNavigate } from "react-router-dom";
 import { authApi } from "../../api/auth.js";
 import { AuthShell } from "../../components/auth/AuthShell.jsx";
@@ -70,7 +71,13 @@ export function Register() {
       timerRef.current = setTimeout(() => {
         setToast((prev) => ({ ...prev, show: false }));
         setTimeout(() => {
-          setSession(pendingSession);
+          // PublicOnlyRoute reactively redirects authenticated users to "/dashboard" the
+          // moment isAuthenticated flips true. If setSession() and navigate() aren't forced
+          // into separate, ordered commits, PublicOnlyRoute's own redirect effect can fire
+          // *after* our navigate() and clobber the URL back to "/dashboard" instead of
+          // "/dashboard/profile". flushSync forces that stale redirect to fully resolve
+          // first, so our explicit navigate() below always applies last and wins.
+          flushSync(() => setSession(pendingSession));
           navigate("/dashboard/profile");
         }, 400);
       }, REDIRECT_DELAY);

@@ -1,6 +1,6 @@
 import { api } from "./client.js";
 
-const JOB_FIELDS = ["title", "companyName", "location", "industry", "employmentType", "experienceRequired", "salaryRange", "description", "requiredSkills", "hrEmail", "gender", "nationality", "applicationDeadline", "status"];
+const JOB_FIELDS = ["title", "companyName", "location", "industry", "employmentType", "experienceRequired", "salaryRange", "description", "requiredSkills", "hrEmail", "gender", "nationality", "applicationDeadline", "status", "department", "workMode", "applyMethod", "applyContact", "screeningQuestion", "listingDurationDays"];
 
 function pickJobFields(payload) {
   return Object.fromEntries(JOB_FIELDS.filter((k) => k in payload).map((k) => [k, payload[k]]));
@@ -21,4 +21,12 @@ export const adminApi = {
   exportApplications: (params = {}) =>
     api.get("/admin/applications/export", { params, responseType: "blob" }),
   parseImport: (text) => api.post("/admin/import/parse", { text }),
+
+  pendingVerifications: (params) => api.get("/admin/employer-verifications", { params }),
+  approveVerification: (id, note) => api.patch(`/admin/employer-verifications/${id}/approve`, { note }),
+  rejectVerification: (id, note) => api.patch(`/admin/employer-verifications/${id}/reject`, { note }),
+
+  invoices: (params) => api.get("/admin/invoices", { params }),
+  markInvoicePaid: (id) => api.patch(`/admin/invoices/${id}/mark-paid`),
+  markInvoiceRefunded: (id) => api.patch(`/admin/invoices/${id}/mark-refunded`),
 };

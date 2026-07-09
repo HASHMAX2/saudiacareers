@@ -1,7 +1,10 @@
+import crypto from "node:crypto";
+import path from "node:path";
 import { prisma } from "../config/prisma.js";
 import { sendEmail } from "../services/emailService.js";
 import { applicationStatusEmailTemplate } from "../services/emailTemplates/applicationStatus.js";
-import { createSignedDownloadUrl } from "../services/storageService.js";
+import { createSignedDownloadUrl, uploadPrivateFile } from "../services/storageService.js";
+import { consumeJobCredit, getOrCreateSubscription } from "../services/employerBillingService.js";
 import { ApiError } from "../utils/ApiError.js";
 import { sendSuccess } from "../utils/ApiResponse.js";
 
@@ -21,6 +24,45 @@ export async function updateEmployerProfile(req, res) {
     data: req.validated.body,
   });
   return sendSuccess(res, { message: "Profile updated", data: profile });
+}
+
+// ── Verification ──────────────────────────────────────────────────────────────
+
+export async function getVerification(req, res) {
+  const profile = await prisma.employerProfile.findUnique({
+    where: { userId: req.user.id },
+    select: { verificationStatus: true, verificationNote: true, verifiedAt: true, verificationDocPath: true },
+  });
+  if (!profile) throw new ApiError(404, "Employer profile not found");
+  return sendSuccess(res, {
+    message: "Verification status retrieved",
+    data: { ...profile, hasDocument: !!profile.verificationDocPath },
+  });
+}
+
+export async function submitVerificationDocument(req, res) {
+  if (!req.file) throw new ApiError(422, "Verification document is required");
+  const profile = await prisma.employerProfile.findUnique({ where: { userId: req.user.id } });
+  if (!profile) throw new ApiError(404, "Employer profile not found");
+
+  const extension = path.extname(req.file.originalname).toLowerCase() || ".pdf";
+  const docPath = `employer-verification/${profile.id}/${crypto.randomUUID()}${extension}`;
+  await uploadPrivateFile(docPath, req.file.buffer, req.file.mimetype);
+
+  const updated = await prisma.employerProfile.update({
+    where: { userId: req.user.id },
+    data: {
+      verificationDocPath: docPath,
+      verificationStatus: "PENDING",
+      verificationNote: null,
+      verifiedAt: null,
+    },
+  });
+
+  return sendSuccess(res, {
+    message: "Verification document submitted — our team will review it shortly",
+    data: { verificationStatus: updated.verificationStatus },
+  });
 }
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
@@ -83,11 +125,38 @@ export async function listEmployerJobs(req, res) {
 }
 
 export async function createEmployerJob(req, res) {
-  const { status: _ignored, ...jobData } = req.validated.body;
+  const { status: _ignored, saveAsDraft, ...jobData } = req.validated.body;
+
+  const employerProfile = await prisma.employerProfile.findUnique({ where: { userId: req.user.id } });
+  if (!employerProfile) throw new ApiError(404, "Employer profile not found");
+
+  if (saveAsDraft) {
+    const job = await prisma.job.create({
+      data: { ...jobData, createdBy: req.user.id, status: "DRAFT" },
+    });
+    return sendSuccess(res, { statusCode: 201, message: "Job saved as a draft", data: job });
+  }
+
+  if (employerProfile.verificationStatus !== "APPROVED") {
+    const job = await prisma.job.create({
+      data: { ...jobData, createdBy: req.user.id, status: "DRAFT" },
+    });
+    return sendSuccess(res, {
+      statusCode: 201,
+      message: "Job saved as a draft — publishing unlocks once company verification is approved",
+      data: job,
+    });
+  }
+
+  const subscription = await getOrCreateSubscription(employerProfile.id);
+  const creditSource = await consumeJobCredit(subscription);
+  const listingDurationDays = jobData.listingDurationDays ?? 30;
+  const expiresAt = new Date(Date.now() + listingDurationDays * 24 * 60 * 60 * 1000);
+
   const job = await prisma.job.create({
-    data: { ...jobData, createdBy: req.user.id, status: "ACTIVE" },
+    data: { ...jobData, createdBy: req.user.id, status: "ACTIVE", creditSource, expiresAt },
   });
-  return sendSuccess(res, { statusCode: 201, message: "Job created", data: job });
+  return sendSuccess(res, { statusCode: 201, message: "Job published", data: job });
 }
 
 export async function updateEmployerJob(req, res) {
@@ -97,18 +166,39 @@ export async function updateEmployerJob(req, res) {
   });
   if (!existing) throw new ApiError(404, "Job not found");
 
-  const { status: _ignored, ...jobData } = req.validated.body;
+  const { status: _ignored, saveAsDraft: _ignoredDraft, ...jobData } = req.validated.body;
   const job = await prisma.job.update({ where: { id }, data: jobData });
   return sendSuccess(res, { message: "Job updated", data: job });
 }
 
 export async function updateEmployerJobStatus(req, res) {
   const { id } = req.validated.params;
-  const result = await prisma.job.updateMany({
-    where: { id, createdBy: req.user.id, isDeleted: false },
-    data: { status: req.validated.body.status },
-  });
-  if (!result.count) throw new ApiError(404, "Job not found");
+  const { status: nextStatus } = req.validated.body;
+
+  const job = await prisma.job.findFirst({ where: { id, createdBy: req.user.id, isDeleted: false } });
+  if (!job) throw new ApiError(404, "Job not found");
+
+  // Publishing (moving into ACTIVE from a non-active state) is gated by
+  // verification + job credits, same as creating a brand-new job.
+  if (nextStatus === "ACTIVE" && job.status !== "ACTIVE") {
+    const employerProfile = await prisma.employerProfile.findUnique({ where: { userId: req.user.id } });
+    if (!employerProfile) throw new ApiError(404, "Employer profile not found");
+    if (employerProfile.verificationStatus !== "APPROVED") {
+      throw new ApiError(403, "Publishing is locked until company verification is approved");
+    }
+
+    const subscription = await getOrCreateSubscription(employerProfile.id);
+    const creditSource = await consumeJobCredit(subscription);
+    const expiresAt = new Date(Date.now() + job.listingDurationDays * 24 * 60 * 60 * 1000);
+
+    await prisma.job.update({
+      where: { id },
+      data: { status: "ACTIVE", creditSource, expiresAt },
+    });
+    return sendSuccess(res, { message: "Job published" });
+  }
+
+  await prisma.job.update({ where: { id }, data: { status: nextStatus } });
   return sendSuccess(res, { message: "Job status updated" });
 }
 

@@ -53,7 +53,7 @@ export function Footer() {
         </div>
 
         <div
-          className="mt-12 flex items-center justify-between gap-4 pt-6"
+          className="mt-12 flex flex-wrap items-center justify-between gap-4 pt-6"
           style={{ borderTop: "1px solid var(--border-default)" }}
         >
           <p
@@ -62,6 +62,10 @@ export function Footer() {
           >
             © {new Date().getFullYear()} SaudiaCareers · Built with care
           </p>
+          <div className="flex items-center gap-5 text-[12px] font-medium uppercase tracking-[0.08em]" style={{ color: "var(--text-tertiary)" }}>
+            <Link className="transition-colors hover:text-[var(--accent)]" to="/terms">Terms</Link>
+            <Link className="transition-colors hover:text-[var(--accent)]" to="/privacy">Privacy</Link>
+          </div>
         </div>
       </div>
     </footer>

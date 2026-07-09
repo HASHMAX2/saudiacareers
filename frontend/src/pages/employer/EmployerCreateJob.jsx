@@ -11,6 +11,7 @@ export function EmployerCreateJob() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
 
   useEffect(() => {
     employerApi.getProfile()
@@ -19,7 +20,8 @@ export function EmployerCreateJob() {
   }, []);
 
   async function handleSubmit(form) {
-    await employerApi.createJob(form);
+    const { data } = await employerApi.createJob(form);
+    setToastMessage(data.data.status === "DRAFT" ? "Job saved as a draft…" : "Job published! Taking you to your listings…");
     setShowToast(true);
     setTimeout(() => {
       setShowToast(false);
@@ -36,10 +38,10 @@ export function EmployerCreateJob() {
 
   return (
     <>
-      <Toast show={showToast} message="Job posted! Taking you to your listings…" tone="success" duration={2500} />
-      <p className="section-label">Employer</p>
-      <h1 className="page-title mb-7 text-3xl md:text-4xl">Post a new job</h1>
-      <JobForm initialValue={defaults} onSubmit={handleSubmit} submitLabel="Post job" />
+      <Toast show={showToast} message={toastMessage} tone="success" duration={2500} />
+      <p className="mb-1 text-xs font-bold uppercase tracking-wider" style={{ color: "var(--text-tertiary)" }}>Employer</p>
+      <h1 className="mb-7 text-3xl font-extrabold tracking-tight md:text-4xl" style={{ color: "var(--text-primary)" }}>Post a new job</h1>
+      <JobForm initialValue={defaults} onSubmit={handleSubmit} submitLabel="Publish job" allowDraft />
     </>
   );
 }

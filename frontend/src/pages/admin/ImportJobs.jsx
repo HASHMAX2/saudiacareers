@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import { adminApi } from "../../api/admin.js";
 import { Alert } from "../../components/common/Alert.jsx";
 import { Button } from "../../components/common/Button.jsx";
+import { Select } from "../../components/common/Select.jsx";
 import { Toast } from "../../components/common/Toast.jsx";
 
 const LOCATION_OPTIONS = ["Riyadh", "Jeddah", "Dammam", "Other"];
@@ -171,35 +172,14 @@ function JobReviewCard({ index, total, job, onUpdate, onDiscard }) {
             </FormField>
 
             <FormField label="Location" required error={errors.location}>
-              <select
-                className={`form-control appearance-none ${errors.location ? "border-red-400" : ""}`}
-                value={job.location ?? ""}
-                onChange={(e) => field("location", e.target.value)}
-              >
-                <option value="">Select…</option>
-                {LOCATION_OPTIONS.map((o) => <option key={o}>{o}</option>)}
-              </select>
+              <Select bare value={job.location ?? ""} onChange={(e) => field("location", e.target.value)} options={LOCATION_OPTIONS} error={errors.location} />
             </FormField>
             <FormField label="Industry" required error={errors.industry}>
-              <select
-                className={`form-control appearance-none ${errors.industry ? "border-red-400" : ""}`}
-                value={job.industry ?? ""}
-                onChange={(e) => field("industry", e.target.value)}
-              >
-                <option value="">Select…</option>
-                {INDUSTRY_OPTIONS.map((o) => <option key={o}>{o}</option>)}
-              </select>
+              <Select bare value={job.industry ?? ""} onChange={(e) => field("industry", e.target.value)} options={INDUSTRY_OPTIONS} error={errors.industry} />
             </FormField>
 
             <FormField label="Employment type" required error={errors.employmentType}>
-              <select
-                className={`form-control appearance-none ${errors.employmentType ? "border-red-400" : ""}`}
-                value={job.employmentType ?? ""}
-                onChange={(e) => field("employmentType", e.target.value)}
-              >
-                <option value="">Select…</option>
-                {EMPLOYMENT_OPTIONS.map((o) => <option key={o}>{o}</option>)}
-              </select>
+              <Select bare value={job.employmentType ?? ""} onChange={(e) => field("employmentType", e.target.value)} options={EMPLOYMENT_OPTIONS} error={errors.employmentType} />
             </FormField>
             <FormField label="Experience required" required error={errors.experienceRequired}>
               <input

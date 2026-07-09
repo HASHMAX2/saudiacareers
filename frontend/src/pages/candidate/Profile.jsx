@@ -8,6 +8,7 @@ import { profileApi } from "../../api/profile.js";
 import { Button } from "../../components/common/Button.jsx";
 import { Input } from "../../components/common/Input.jsx";
 import { Modal } from "../../components/common/Modal.jsx";
+import { Select } from "../../components/common/Select.jsx";
 import { Spinner } from "../../components/common/Spinner.jsx";
 import {
   AVAILABILITY_OPTIONS,
@@ -284,13 +285,7 @@ function ProfessionalSection({ profile, editing, setEditing, saveSection, saving
                 required
               />
             </label>
-            <label>
-              <span className="field-label">Industry</span>
-              <select className="field-box" value={f("industry")} onChange={set("industry")}>
-                <option value="">Select industry</option>
-                {INDUSTRIES.map((i) => <option key={i} value={i}>{i}</option>)}
-              </select>
-            </label>
+            <Select label="Industry" value={f("industry")} onChange={set("industry")} options={INDUSTRIES} placeholder="Select industry" />
             <Input
               id="functionalArea"
               label="Functional Area"
@@ -819,22 +814,14 @@ function PersonalSection({ profile, editing, setEditing, saveSection, savingSect
           {/* Core fields */}
           <div className="grid gap-4 sm:grid-cols-2">
             <Input id="mobile-p" label="Mobile Number" labelHint="enter number with country code" required value={f("mobile")} onChange={set("mobile")} placeholder="+966XXXXXXXXX" />
-            <label>
-              <span className="field-label">Location <span className="text-red-500">*</span></span>
-              <select className="field-box" value={f("location")} onChange={set("location")}>
-                <option value="">Select location</option>
-                {LOCATIONS.map((l) => <option key={l} value={l}>{l}</option>)}
-              </select>
-            </label>
-            <label>
-              <span className="field-label">Gender</span>
-              <select className="field-box" value={f("gender")} onChange={set("gender")}>
-                <option value="">Select gender</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Prefer not to say">Prefer not to say</option>
-              </select>
-            </label>
+            <Select label="Location" required value={f("location")} onChange={set("location")} options={LOCATIONS} placeholder="Select location" />
+            <Select
+              label="Gender"
+              value={f("gender")}
+              onChange={set("gender")}
+              options={["Male", "Female", "Prefer not to say"]}
+              placeholder="Select gender"
+            />
             <Input id="nationality-p" label="Nationality" placeholder="e.g. Saudi, Indian, Pakistani" value={f("nationality")} onChange={set("nationality")} />
           </div>
 
@@ -944,13 +931,13 @@ function DesiredJobSection({ profile, editing, setEditing, saveSection, savingSe
               value={f("desiredLocation")}
               onChange={set("desiredLocation")}
             />
-            <label>
-              <span className="field-label">Availability to Join</span>
-              <select className="field-box" value={f("availabilityToJoin")} onChange={set("availabilityToJoin")}>
-                <option value="">Select availability</option>
-                {AVAILABILITY_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
-              </select>
-            </label>
+            <Select
+              label="Availability to Join"
+              value={f("availabilityToJoin")}
+              onChange={set("availabilityToJoin")}
+              options={AVAILABILITY_OPTIONS}
+              placeholder="Select availability"
+            />
           </div>
           {sectionError[sid] && <p className="text-xs text-red-600 mt-2">{sectionError[sid]}</p>}
           <EditBar saving={savingSection === sid} onCancel={() => setEditing(null)} />
@@ -1099,20 +1086,8 @@ function EmploymentModal({ entry, onClose, onSave }) {
         <Input label="Job Title" required value={form.jobTitle} onChange={set("jobTitle")} />
         <Input label="Company Name" required value={form.companyName} onChange={set("companyName")} />
         <div className="grid grid-cols-2 gap-3">
-          <label>
-            <span className="field-label">Start Month</span>
-            <select className="field-box" value={form.startMonth} onChange={set("startMonth")}>
-              <option value="">Month</option>
-              {MONTHS_LONG.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
-            </select>
-          </label>
-          <label>
-            <span className="field-label">Start Year <span className="text-red-500">*</span></span>
-            <select className="field-box" value={form.startYear} onChange={set("startYear")} required>
-              <option value="">Year</option>
-              {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
-            </select>
-          </label>
+          <Select label="Start Month" value={form.startMonth} onChange={set("startMonth")} options={MONTHS_LONG.map((m, i) => ({ value: i + 1, label: m }))} placeholder="Month" />
+          <Select label="Start Year" required value={form.startYear} onChange={set("startYear")} options={YEARS} placeholder="Year" />
         </div>
         <label className="flex items-center gap-2 cursor-pointer">
           <input
@@ -1125,20 +1100,8 @@ function EmploymentModal({ entry, onClose, onSave }) {
         </label>
         {!form.isCurrent && (
           <div className="grid grid-cols-2 gap-3">
-            <label>
-              <span className="field-label">End Month</span>
-              <select className="field-box" value={form.endMonth} onChange={set("endMonth")}>
-                <option value="">Month</option>
-                {MONTHS_LONG.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
-              </select>
-            </label>
-            <label>
-              <span className="field-label">End Year</span>
-              <select className="field-box" value={form.endYear} onChange={set("endYear")}>
-                <option value="">Year</option>
-                {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
-              </select>
-            </label>
+            <Select label="End Month" value={form.endMonth} onChange={set("endMonth")} options={MONTHS_LONG.map((m, i) => ({ value: i + 1, label: m }))} placeholder="Month" />
+            <Select label="End Year" value={form.endYear} onChange={set("endYear")} options={YEARS} placeholder="Year" />
           </div>
         )}
         <label>
@@ -1205,20 +1168,8 @@ function EducationModal({ entry, onClose, onSave }) {
         <Input label="Institution" required placeholder="e.g. King Abdulaziz University" value={form.institution} onChange={set("institution")} />
         <Input label="Field of Study (optional)" placeholder="e.g. Computer Science" value={form.fieldOfStudy} onChange={set("fieldOfStudy")} />
         <div className="grid grid-cols-2 gap-3">
-          <label>
-            <span className="field-label">Start Year</span>
-            <select className="field-box" value={form.startYear} onChange={set("startYear")}>
-              <option value="">Year</option>
-              {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
-            </select>
-          </label>
-          <label>
-            <span className="field-label">End Year</span>
-            <select className="field-box" value={form.endYear} onChange={set("endYear")} disabled={form.isCurrent}>
-              <option value="">Year</option>
-              {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
-            </select>
-          </label>
+          <Select label="Start Year" value={form.startYear} onChange={set("startYear")} options={YEARS} placeholder="Year" />
+          <Select label="End Year" value={form.endYear} onChange={set("endYear")} options={YEARS} placeholder="Year" disabled={form.isCurrent} />
         </div>
         <label className="flex items-center gap-2 cursor-pointer">
           <input
@@ -1276,13 +1227,7 @@ function CertificationModal({ entry, onClose, onSave }) {
         <Input label="Certification Name" required placeholder="e.g. AWS Solutions Architect" value={form.name} onChange={set("name")} />
         <Input label="Issuing Organization (optional)" placeholder="e.g. Amazon Web Services" value={form.issuingOrg} onChange={set("issuingOrg")} />
         <div className="grid grid-cols-2 gap-3">
-          <label>
-            <span className="field-label">Issue Year</span>
-            <select className="field-box" value={form.issueYear} onChange={set("issueYear")}>
-              <option value="">Year</option>
-              {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
-            </select>
-          </label>
+          <Select label="Issue Year" value={form.issueYear} onChange={set("issueYear")} options={YEARS} placeholder="Year" />
         </div>
         <Input label="Credential URL (optional)" placeholder="https://…" type="url" value={form.credentialUrl} onChange={set("credentialUrl")} />
         {error && <p className="text-xs text-red-600">{error}</p>}

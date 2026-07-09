@@ -4,6 +4,7 @@ import { useParams } from "react-router-dom";
 import { adminApi } from "../../api/admin.js";
 import { Badge } from "../../components/common/Badge.jsx";
 import { Button } from "../../components/common/Button.jsx";
+import { Select } from "../../components/common/Select.jsx";
 import { Spinner } from "../../components/common/Spinner.jsx";
 import { formatDate } from "../../utils/formatDate.js";
 
@@ -51,9 +52,12 @@ export function ApplicationDetail() {
         <aside className="space-y-4 xl:sticky xl:top-24 xl:self-start">
           <section className="card-soft p-5">
             <h2 className="font-semibold" style={{ color: "var(--text-primary)" }}>Application status</h2>
-            <select className="field-box mt-4 w-full appearance-none" value={application.status} onChange={async (event) => { await adminApi.updateApplicationStatus(id, event.target.value); load(); }}>
-              <option>APPLIED</option><option>UNDER_REVIEW</option><option>SELECTED</option><option>REJECTED</option>
-            </select>
+            <Select
+              className="mt-4"
+              value={application.status}
+              onChange={async (event) => { await adminApi.updateApplicationStatus(id, event.target.value); load(); }}
+              options={["APPLIED", "UNDER_REVIEW", "SELECTED", "REJECTED"]}
+            />
             <p className="mt-3 font-mono text-xs leading-5" style={{ color: "var(--text-tertiary)" }}>Changing status sends an email notification to the candidate.</p>
           </section>
           <section className="card-soft p-5">

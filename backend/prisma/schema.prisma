@@ -82,9 +82,9 @@ model CandidateProfile {
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
-  employmentEntries  EmploymentEntry[]
-  educationEntries   EducationEntry[]
-  certifications     Certification[]
+  employmentEntries EmploymentEntry[]
+  educationEntries  EducationEntry[]
+  certifications    Certification[]
 
   @@index([location])
   @@index([experience])
@@ -155,6 +155,15 @@ model Job {
   applicationDeadline DateTime?
   status              JobStatus     @default(ACTIVE)
   isDeleted           Boolean       @default(false)
+  department          String?
+  workMode            String?
+  applyMethod         ApplyMethod   @default(PLATFORM)
+  applyContact        String?
+  screeningQuestion   String?
+  listingDurationDays Int           @default(30)
+  expiresAt           DateTime?
+  creditSource        String?
+  featured            Boolean       @default(false)
   createdBy           Int
   creator             User          @relation(fields: [createdBy], references: [id])
   createdAt           DateTime      @default(now())
@@ -174,6 +183,14 @@ model Job {
 enum JobStatus {
   ACTIVE
   INACTIVE
+  DRAFT
+  EXPIRED
+}
+
+enum ApplyMethod {
+  PLATFORM
+  EXTERNAL_URL
+  EMAIL
 }
 
 model Application {
@@ -241,22 +258,86 @@ model PasswordResetToken {
 }
 
 model EmployerProfile {
-  id                 Int      @id @default(autoincrement())
-  userId             Int      @unique
-  user               User     @relation(fields: [userId], references: [id])
-  companyName        String
-  industry           String?
-  location           String?
-  website            String?
-  phone              String?
-  description        String?
-  logoPath           String?
-  companySize        String?
-  contactDesignation String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  id                    Int                @id @default(autoincrement())
+  userId                Int                @unique
+  user                  User               @relation(fields: [userId], references: [id])
+  companyName           String
+  industry              String?
+  location              String?
+  website               String?
+  phone                 String?
+  description           String?
+  logoPath              String?
+  companySize           String?
+  contactDesignation    String?
+  verificationStatus    VerificationStatus @default(PENDING)
+  verificationDocPath   String?
+  verificationNote      String?
+  verifiedAt            DateTime?
+  taxRegistrationNumber String?
+  billingAddress        String?
+  billingEmail          String?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  subscription EmployerSubscription?
+  invoices     Invoice[]
 
   @@index([companyName])
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model EmployerSubscription {
+  id                   Int             @id @default(autoincrement())
+  employerProfileId    Int             @unique
+  employerProfile      EmployerProfile @relation(fields: [employerProfileId], references: [id])
+  planTier             PlanTier        @default(FREE)
+  paidCreditsRemaining Int             @default(0)
+  freeJobUsedAt        DateTime?
+  renewsAt             DateTime?
+  cancelAtPeriodEnd    Boolean         @default(false)
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+}
+
+enum PlanTier {
+  FREE
+  STARTER
+  GROWTH
+}
+
+model Invoice {
+  id                Int             @id @default(autoincrement())
+  employerProfileId Int
+  employerProfile   EmployerProfile @relation(fields: [employerProfileId], references: [id])
+  type              InvoiceType
+  amountSar         Int
+  status            InvoiceStatus   @default(PENDING)
+  gatewayRef        String?
+  note              String?
+  issuedAt          DateTime        @default(now())
+  paidAt            DateTime?
+
+  @@index([employerProfileId])
+  @@index([status])
+}
+
+enum InvoiceType {
+  SUBSCRIPTION
+  CREDIT_PACK
+  REFUND
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  REFUND_REQUESTED
+  REFUNDED
 }
 
 model Enquiry {
@@ -283,4 +364,3 @@ model SavedJob {
   @@index([userId])
   @@index([jobId])
 }
-

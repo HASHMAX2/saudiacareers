@@ -28,3 +28,16 @@ export const avatarUpload = multer({
     return callback(null, true);
   },
 });
+
+const VERIFICATION_DOC_MIME_TYPES = new Set(["application/pdf", "image/jpeg", "image/png"]);
+
+export const verificationDocUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024, files: 1 },
+  fileFilter(_req, file, callback) {
+    if (!VERIFICATION_DOC_MIME_TYPES.has(file.mimetype)) {
+      return callback(new ApiError(422, "Verification document must be a PDF, JPEG, or PNG file"));
+    }
+    return callback(null, true);
+  },
+});

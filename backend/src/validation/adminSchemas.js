@@ -1,4 +1,4 @@
-import { ApplicationStatus, JobStatus } from "@prisma/client";
+import { ApplicationStatus, ApplyMethod, InvoiceStatus, JobStatus } from "@prisma/client";
 import { z } from "zod";
 
 const jobBody = z.object({
@@ -16,6 +16,13 @@ const jobBody = z.object({
   nationality: z.string().trim().max(100).nullable().optional(),
   applicationDeadline: z.coerce.date().nullable().optional(),
   status: z.nativeEnum(JobStatus).optional(),
+  department: z.string().trim().max(100).nullable().optional(),
+  workMode: z.string().trim().max(50).nullable().optional(),
+  applyMethod: z.nativeEnum(ApplyMethod).optional(),
+  applyContact: z.string().trim().max(255).nullable().optional(),
+  screeningQuestion: z.string().trim().max(500).nullable().optional(),
+  listingDurationDays: z.coerce.number().int().min(7).max(90).optional(),
+  saveAsDraft: z.boolean().optional(),
 });
 
 const envelope = (body, params = z.object({}).passthrough(), query = z.object({}).passthrough()) =>
@@ -48,6 +55,40 @@ export const adminJobsQuerySchema = envelope(
     status: z.nativeEnum(JobStatus).optional(),
   }),
 );
+export const pendingVerificationsQuerySchema = envelope(
+  z.object({}).passthrough(),
+  z.object({}).passthrough(),
+  z.object({
+    page: z.coerce.number().int().positive().default(1),
+    limit: z.coerce.number().int().min(1).max(100).default(20),
+  }),
+);
+
+export const verificationDecisionSchema = envelope(
+  z.object({ note: z.string().trim().max(500).optional() }).strict(),
+  z.object({ id: z.coerce.number().int().positive() }),
+);
+
+export const rejectVerificationSchema = envelope(
+  z.object({ note: z.string().trim().min(3).max(500) }).strict(),
+  z.object({ id: z.coerce.number().int().positive() }),
+);
+
+export const adminInvoicesQuerySchema = envelope(
+  z.object({}).passthrough(),
+  z.object({}).passthrough(),
+  z.object({
+    page: z.coerce.number().int().positive().default(1),
+    limit: z.coerce.number().int().min(1).max(100).default(20),
+    status: z.nativeEnum(InvoiceStatus).optional(),
+  }),
+);
+
+export const invoiceIdSchema = envelope(
+  z.object({}).passthrough(),
+  z.object({ id: z.coerce.number().int().positive() }),
+);
+
 export const adminApplicationsQuerySchema = envelope(
   z.object({}).passthrough(),
   z.object({}).passthrough(),

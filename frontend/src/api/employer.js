@@ -13,6 +13,20 @@ export const employerApi = {
   getJobApplications:    (jobId, params) => api.get(`/employer/jobs/${jobId}/applications`, { params }),
   getApplication:        (id)           => api.get(`/employer/applications/${id}`),
   updateAppStatus:       (id, data)     => api.patch(`/employer/applications/${id}/status`, data),
+
+  getVerification:       ()             => api.get("/employer/verification"),
+  submitVerificationDoc: (file)         => {
+    const form = new FormData();
+    form.append("document", file);
+    return api.post("/employer/verification/document", form, { headers: { "Content-Type": "multipart/form-data" } });
+  },
+
+  getSubscription:       ()             => api.get("/employer/subscription"),
+  listInvoices:          (params)       => api.get("/employer/invoices", { params }),
+  requestCreditPurchase: (credits)      => api.post("/employer/invoices/credit-purchase", { credits }),
+  requestPlanChange:     (planTier)     => api.post("/employer/invoices/plan-change", { planTier }),
+  requestRefund:         (invoiceId, reason) => api.post(`/employer/invoices/${invoiceId}/refund-request`, { reason }),
+  cancelSubscription:    ()             => api.post("/employer/subscription/cancel"),
 };
 
 export const enquiryApi = {

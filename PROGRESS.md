@@ -1,18 +1,20 @@
 # SaudiaCareers Project Progress
 
-Last updated: July 6, 2026 (applied-job indicator + dashboard tab fix + deterministic job sort)
+Last updated: July 9, 2026 (employer portal visual rebuild + billing/credits/verification system + bug fixes)
 
 Future sessions must read both `CLAUDE.md` and this file before coding.
 
 ## Current Checkpoint
 
-Current branch: `candidateloginpage` (branched from `employer`). **Pushed to GitHub** — latest commit `2629732`.
+Current branch: `employer-v2` (branched from `candidateloginpage` tip `474cfd4`, which is itself branched from `employer`).
 
-All session changes are committed and pushed. Safe to continue from here.
+- `candidateloginpage` is pushed to GitHub, up to date, and has two extra local-history commits beyond `2629732`: `042d4d1` (session-restore flash fix + phone country-code picker fix) and `8caf52b` (employer dropdown click-to-open, dashboard coming-soon labels, landing tagline tweak) — both pushed.
+- A checkpoint tag `stable-2026-07-09-candidateloginpage` and backup branch `candidateloginpage-stable-backup` were created at commit `474cfd4` in case future work needs to roll back.
+- `employer-v2` branch and its two commits are **pushed to GitHub**.
+- The current session's employer billing/credits/verification work, **plus a full visual rebuild of the employer portal** (see below), is **implemented and manually verified end-to-end (backend via HTTP requests, frontend via Playwright + screenshots), but not yet committed** — still sitting as uncommitted changes on `employer-v2`.
+- Two small uncommitted fixes from the prior session are also still pending a commit: `JobDetail.jsx` (job description word-wrap) and `Dashboard.jsx` (hidden placeholder sections, saved-jobs count fix).
 
-The database has been wiped clean and reseeded with only the default admin account. All previous test users, jobs, and applications have been removed. Start fresh by registering new candidate accounts.
-
-Admin account: `admin@saudiacareers.com` / `Admin@1234` (must change password on first login).
+The database has been wiped clean and reseeded with only the default admin account. Admin account: `admin@saudiacareers.com` / `Admin@1234` (must change password on first login — `mustChangePassword` is still `true`).
 
 ## Live URLs
 
@@ -851,6 +853,128 @@ Branch: `candidateloginpage`. Committed as `2629732`. **Pushed to GitHub.**
 
 - `backend/.env` — `TEST_HR_EMAIL=ali.hashmi0@gmail.com` added.
 - `applicationController.js` — `deliverApplication` reads `process.env.TEST_HR_EMAIL` and uses it instead of `job.hrEmail` when set. Remove this env var before production deployment to restore per-job HR routing.
+
+---
+
+## Session: Bug fixes — session-restore flash, phone picker, layout shift, dropdown behavior, dashboard polish (July 9, 2026)
+
+Branch: `candidateloginpage`. Commits `042d4d1` and `8caf52b`, both pushed. Two further fixes below (`JobDetail.jsx`, `Dashboard.jsx` hidden-sections) are done but not yet committed.
+
+### Session-restore flash fixed (`App.jsx`)
+- Access token lives only in Zustand memory, so on every reload the app briefly rendered the guest UI before the silent refresh-token cookie restore completed, flashing "logged out" for returning users.
+- `App.jsx` now gates route rendering on `authStore.isInitialized`; shows a centered `Spinner` until `restoreSession()` resolves (success or failure), then renders routes. `restoreSession()` always ends in `setSession()` or `clearSession()`, both of which set `isInitialized: true`, so the spinner can never hang.
+
+### Phone country-code picker bug fixed (`PhoneInput.jsx`)
+- `emit()` collapsed the whole field value to `""` whenever digits were empty — meaning picking a country code before typing any digits (the normal signup flow) silently reverted to the default `+966`.
+- Fixed by always emitting `newCode + newDigits`. Also wrapped the "enter at least 6 digits" hint in a reserved-height container so the form no longer visibly shifts as the hint appears/disappears while typing.
+
+### Employer navbar dropdown — click instead of hover (`Navbar.jsx`)
+- The guest-only "Employers" dropdown opened on `onMouseEnter` and closed on `onMouseLeave`, closing the instant the mouse left the button.
+- Changed to a click toggle with the same click-outside/Escape-to-close pattern already used for the candidate account menu (`empMenuRef` + a dedicated `useEffect`).
+
+### Dashboard "Saved" tab count fixed (`Dashboard.jsx`)
+- On mount, applications were fetched eagerly (correct "Applied" count immediately) but saved jobs were only fetched lazily when the Saved tab was clicked, so the count badge showed `0` until then.
+- Added `savedJobsApi.getAll()` to the initial mount `Promise.all()` alongside applications, dashboard stats, and career tips.
+
+### Dashboard — mock/placeholder sections hidden (`Dashboard.jsx`)
+- Hid "Jobs by top employers," "Career tips," "Companies hiring for," "Featured employers/consultants," the profile-completeness reminder banner, "Boost your job hunt," `PollWidget` ("YOUR OPINION MATTERS"), and `FAQCard` ("Frequently asked") behind one module-level flag: `const SHOW_HIDDEN_DASHBOARD_SECTIONS = false;`. Code and hardcoded data constants (`TOP_EMPLOYERS`, `FEATURED_EMPLOYERS`, `FEATURED_CONSULTANTS`, `COMPANIES_HIRING`) are untouched, just unused while hidden.
+- Full detail on what each hidden section needs before going live is documented in **`HIDDEN_FEATURES.md`** at the repo root. Two of the eight (the reminder banner and `FAQCard`) are actually fully functional today and were only swept up because they shipped in the same pass — worth re-enabling independently later.
+
+### Job description word-wrap fixed (`JobDetail.jsx`)
+- The public job description display only had `whitespace-pre-wrap`, which wraps at spaces but not inside a long unbroken run of characters (e.g. a pasted URL or run-on text) — such text overflowed the card sideways instead of wrapping, hiding the rest of the description.
+- Added Tailwind's `break-words` (`overflow-wrap: break-word`) alongside it.
+
+---
+
+## Session: Employer Portal v2 — Billing, Credits, Verification & Refined UI (July 9, 2026)
+
+Branch: `employer-v2` (created from `candidateloginpage` tip `474cfd4`). **Implemented and manually verified end-to-end via real HTTP requests — not yet committed.**
+
+Built from a static HTML mockup the user supplied ("TalentDesk" — Dashboard, Jobs, Post a Job, Applicants, Company Profile, Billing). Re-skinned to SaudiaCareers' existing design tokens (no blue theme, no ₹, no Indian cities) and built as a real backend feature rather than a UI stub, per user decision. Payment gateway integration (Stripe/Moyasar/HyperPay/PayTabs/Tap) is explicitly out of scope for this pass — billing is **admin-managed**: an employer requests a plan/credit purchase, a `PENDING` invoice is created, and an admin manually marks it `PAID` (e.g. after a bank transfer), which grants the credits/plan. An `Invoice.gatewayRef` field is reserved so a real gateway can slot in later without a schema change.
+
+Placeholder pricing (single config object, easy to change): Free — 1 job/month. Starter — 199 SAR/mo, 5 paid credits. Growth — 599 SAR/mo, 20 paid credits. Extra credits outside a plan: 49 SAR/credit.
+
+### Database (migration `20260709150144_add_employer_billing_and_verification`)
+- New enums: `VerificationStatus` (PENDING/APPROVED/REJECTED), `PlanTier` (FREE/STARTER/GROWTH), `InvoiceType` (SUBSCRIPTION/CREDIT_PACK/REFUND), `InvoiceStatus` (PENDING/PAID/REFUND_REQUESTED/REFUNDED), `ApplyMethod` (PLATFORM/EXTERNAL_URL/EMAIL).
+- `JobStatus` extended with `DRAFT` and `EXPIRED` (existing `ACTIVE`/`INACTIVE` unchanged).
+- `EmployerProfile` extended: `verificationStatus` (default PENDING), `verificationDocPath`, `verificationNote`, `verifiedAt`, `taxRegistrationNumber`, `billingAddress`, `billingEmail`.
+- New model `EmployerSubscription` (1:1 with `EmployerProfile`): `planTier`, `paidCreditsRemaining`, `freeJobUsedAt`, `renewsAt`, `cancelAtPeriodEnd`. Created lazily on first job post or billing-page visit — not created at registration time.
+- New model `Invoice`: `employerProfileId`, `type`, `amountSar`, `status`, `gatewayRef`, `note`, `issuedAt`, `paidAt`.
+- `Job` extended: `department`, `workMode`, `applyMethod`, `applyContact`, `screeningQuestion`, `listingDurationDays` (default 30), `expiresAt`, `creditSource` (`"FREE"` or `"PAID"`, stamped at publish time), `featured`.
+
+### Job-credit gating (`backend/src/controllers/employerController.js`, `backend/src/services/employerBillingService.js`)
+- `createEmployerJob`: if the employer's company isn't `APPROVED`, the job always saves as `DRAFT` regardless of quota. If approved, consumes the free monthly job first (tracked via `freeJobUsedAt` compared to the current calendar month), then paid credits; throws `402` if both are exhausted.
+- `updateEmployerJobStatus`: the same gating applies when an employer manually republishes a `DRAFT`/`INACTIVE`/`EXPIRED` job to `ACTIVE` (e.g. via the "Publish"/"Unpublish" toggle in `EmployerJobs.jsx`), not just on initial creation.
+- Shared helpers `getOrCreateSubscription()` and `consumeJobCredit()` live in `employerBillingService.js` so both the job controller and the billing controller use identical logic.
+- Admin plan-tier/credit derivation on invoice payment (`adminEmployerBillingController.js`) matches invoices back to plans by exact SAR amount rather than storing a redundant plan/credit field on `Invoice` — acceptable given the fixed, small set of prices.
+
+### New backend endpoints
+```text
+GET    /api/employer/subscription
+GET    /api/employer/invoices
+POST   /api/employer/invoices/credit-purchase
+POST   /api/employer/invoices/plan-change
+POST   /api/employer/invoices/:id/refund-request
+POST   /api/employer/subscription/cancel
+GET    /api/employer/verification
+POST   /api/employer/verification/document        (multipart, PDF/JPEG/PNG, 5MB max)
+
+GET    /api/admin/employer-verifications
+PATCH  /api/admin/employer-verifications/:id/approve
+PATCH  /api/admin/employer-verifications/:id/reject
+GET    /api/admin/invoices
+PATCH  /api/admin/invoices/:id/mark-paid
+PATCH  /api/admin/invoices/:id/mark-refunded
+```
+
+### New/changed files
+- `backend/src/config/plans.js` — plan catalog + price-per-credit, single source of truth.
+- `backend/src/services/employerBillingService.js` — `getOrCreateSubscription`, `consumeJobCredit`.
+- `backend/src/controllers/employerBillingController.js` — employer-side billing actions.
+- `backend/src/controllers/adminEmployerBillingController.js` — admin-side verification review + invoice actions.
+- `backend/src/validation/employerBillingSchemas.js` — new Zod schemas.
+- `backend/src/validation/adminSchemas.js` / `employerSchemas.js` — extended with the new job fields (department/workMode/applyMethod/applyContact/screeningQuestion/listingDurationDays), verification/invoice admin schemas, and widened job-status filters to include `DRAFT`/`EXPIRED`.
+- `backend/src/middleware/upload.js` — added `verificationDocUpload` (mirrors the existing resume/avatar multer configs).
+
+### Frontend
+- `components/admin/JobForm.jsx` — new "Posting details" section (department, work mode, listing duration, apply method + conditional apply contact, screening question). Shared between admin and employer job create/edit.
+- `frontend/src/api/admin.js` `JOB_FIELDS` whitelist and `frontend/src/api/employer.js` extended with all new billing/verification calls.
+- New pages: `pages/employer/EmployerBilling.jsx` (plan cards, subscription summary, credit progress, invoices table, refund/cancel), `pages/employer/EmployerVerification.jsx` (checklist, document upload, status banner), `pages/admin/EmployerVerifications.jsx` (approve/reject queue), `pages/admin/Invoices.jsx` (mark-paid/mark-refunded queue). All built with existing tokens/components (`card-soft`, `Badge`, `Button`, `Spinner`, `Alert`) — no new design system introduced.
+- `pages/employer/EmployerJobs.jsx` — status badge now covers `DRAFT`/`EXPIRED`; publish-toggle errors (e.g. `402` quota exhausted, `403` unverified) now surface via an inline `Alert` instead of failing silently.
+- `App.jsx` — `employerLinks` gained "Billing" and "Company Profile"; `adminLinks` gained "Verifications" and "Invoices"; all four new routes registered (`/employer/billing`, `/employer/verification`, `/admin/verifications`, `/admin/invoices`).
+
+### Verification performed
+Manually exercised the full flow via real HTTP requests against the running dev servers (not just code review): registered a fresh test employer → posted a job while unverified (confirmed `DRAFT`) → approved verification as admin → posted a job (confirmed `ACTIVE`, `creditSource: "FREE"`, `expiresAt` set) → posted a second job (confirmed `402` block) → requested a 5-credit purchase (confirmed `PENDING` invoice, `245 SAR`) → admin marked it paid (confirmed `paidCreditsRemaining` incremented to 5) → retried the blocked job post (confirmed success, `creditSource: "PAID"`) → requested a refund on the paid invoice (confirmed `REFUND_REQUESTED`) → admin marked it refunded (confirmed `REFUNDED`). All test data and temporary admin state changes were cleaned up afterward. `npm run lint` (frontend + backend) and `npm run build --workspace frontend` both pass with zero new errors — the errors present are pre-existing and in files untouched by this session.
+
+### Known gaps for a future session
+- No real payment gateway — all billing is admin-recorded.
+- `EmployerSubscription` is created lazily; there is no seed/backfill for the one pre-existing employer account (`DAVIK CAPITAL`), so its first job post or billing-page visit will create its subscription on the fly.
+- No Playwright/automated test coverage was added for this feature (flagged and accepted as a scope tradeoff — this was already a large session).
+
+---
+
+## Session: Employer Portal Visual Rebuild (July 9, 2026)
+
+Branch: `employer-v2`, same day as the backend billing session above. The user's reaction to the first pass: "the front end UI is completely different from what I gave you, make it like the HTML file I shared" — the billing/verification pages had been built with the app's generic shared components instead of actually porting the mockup's distinctive visual design. Confirmed scope with the user: restyle the *entire* employer portal (not just the 4 new pages), and give employer routes their own dedicated shell instead of the shared `DashboardLayout`/`Sidebar` used by candidate/admin.
+
+### New shell, separate from the rest of the app
+- `frontend/src/components/employer/EmployerShell.jsx` — full-bleed sidebar + topbar, replacing `DashboardLayout` for authenticated employer routes only. Sidebar: teal brand mark, workspace card (company name + live verification status), icon nav with real count badges (Jobs → `totalJobs`, Applicants → `totalApplications` — the latter is a plain button, not a `NavLink`, since it intentionally routes to `/employer/jobs` rather than a nonexistent aggregate applicants page, so it never double-highlights alongside the real "Jobs" nav item), a bottom CTA card linking to Billing. Topbar: mobile hamburger + slide-in drawer with dark overlay, a working search box (submits to `/employer/jobs?search=…`), an avatar dropdown with real logout (click-outside/Escape pattern copied from `Navbar.jsx`'s candidate menu).
+- `App.jsx` — the authenticated employer routes (`dashboard`, `jobs`, `jobs/create`, `jobs/:id/edit`, `jobs/:id/applications`, `billing`, `verification`) were pulled **out of** the `<AppLayout>` tree (which renders the global public Navbar/Footer) into their own sibling top-level route wrapped in `EmployerRoute` + `EmployerShell`. `employer/login`, `employer/register`, and `employer/contact` were left untouched inside `AppLayout` — they're public marketing/auth pages, not part of the mockup.
+- Visual language: reused the project's *existing* design tokens (`--bg-elev`, `--border-default`, `--sh-1/2/3`, `--green`/`--green-bg`, `--gold-bg`, `--purple-bg`) rather than a second CSS-variable system — what was actually ported from the mockup is its *structure*: corner-circle-decorated KPI cards, dotted pill badges, plan cards with checkmark lists, applicant cards, checklist rows, split billing layout. Accent color is the teal already established for employer branding (`const EMP = "#0F6E56"`, same constant already used in `EmployerLogin.jsx`/`EmployerRegister.jsx`/`EmployerContact.jsx`) instead of the mockup's blue.
+
+### Every employer page rebuilt to match the mockup's structure
+- `EmployerDashboard.jsx` — verification status banner, 4 corner-circle KPI cards (Active jobs, Applications, Free job used this month, Paid credits), two-column Recent jobs table + Billing summary card.
+- `EmployerJobs.jsx` — notice banner when unverified, pill-styled search + status filter (location filter deliberately not added — no backend support exists for it, avoided inventing a decorative dead-end control), table gained a Credit-source column.
+- `EmployerCreateJob.jsx` / `EmployerEditJob.jsx` / `components/admin/JobForm.jsx` — Post-a-Job now has two explicit actions, "Save draft" and "Publish job" (mockup's core interaction), instead of one submit button. New `allowDraft` prop on `JobForm` renders the second button; only employer's create page passes it (admin's `CreateJob.jsx`/`EditJob.jsx` and employer's edit page are unaffected).
+- `EmployerApplications.jsx` — rebuilt from a flat table into the mockup's applicant-grid cards: avatar-initial circles, skill pills split from `profile.skills`, stage badges, actions.
+- `EmployerBilling.jsx` / `EmployerVerification.jsx` — restyled to the mockup's specific layouts (gradient plan-highlight card with a real progress bar; two-column company-info form + document upload + sidebar checklist/notice). `EmployerVerification` also grew a real editable company-info form (name/website/industry/tax number/about) wired to `PUT /employer/profile` — the first pass only had the document upload.
+
+### Backend: `saveAsDraft` flag (small, contained addition)
+- `adminSchemas.js` — added `saveAsDraft: z.boolean().optional()` to the shared `jobBody` schema (no-op for admin, which never sends it).
+- `employerController.js` `createEmployerJob` — when `saveAsDraft: true`, skips the verification/credit gate entirely and force-saves as `DRAFT`, regardless of verification status or remaining credits. `updateEmployerJob` explicitly strips the flag (edit never creates/publishes a job, so it's meaningless there).
+
+### Verification performed
+Backend re-verified via curl (job-credit gating, draft flag). Frontend verified with a disposable Playwright script driving a real browser against the running dev servers — logged in as a fresh test employer, clicked through Dashboard → Jobs → Post a Job (filled the form, clicked "Save draft", confirmed it landed in the list as `DRAFT` with a "Not consumed" credit source) → Billing → Company Profile → Applicants (confirmed the shortcut to Jobs), plus a 390px mobile viewport pass confirming the drawer opens/closes with its overlay. Screenshots confirmed close visual fidelity to the mockup at every step. One real bug was caught and fixed this way: the "Submit document" button on Company Profile was still the app's default red (`--accent`) instead of the employer teal — missed a `style` override that every other primary button in the portal already had. All test data and scratch verification scripts were deleted afterward. `npm run lint` (both workspaces) and `npm run build --workspace frontend` re-confirmed at zero new errors.
 
 ---
 

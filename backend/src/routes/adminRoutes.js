@@ -12,6 +12,14 @@ import {
   updateJob,
   updateJobStatus,
 } from "../controllers/adminController.js";
+import {
+  approveVerification,
+  listInvoicesAdmin,
+  listPendingVerifications,
+  markInvoicePaid,
+  markInvoiceRefunded,
+  rejectVerification,
+} from "../controllers/adminEmployerBillingController.js";
 import { parseImport } from "../controllers/importController.js";
 import { authenticate } from "../middleware/authenticate.js";
 import {
@@ -23,11 +31,16 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import {
   adminApplicationsQuerySchema,
   adminIdSchema,
+  adminInvoicesQuerySchema,
   adminJobsQuerySchema,
   applicationStatusSchema,
   createJobSchema,
+  invoiceIdSchema,
   jobStatusSchema,
+  pendingVerificationsQuerySchema,
+  rejectVerificationSchema,
   updateJobSchema,
+  verificationDecisionSchema,
 } from "../validation/adminSchemas.js";
 
 export const adminRouter = Router();
@@ -44,3 +57,23 @@ adminRouter.get("/applications", validate(adminApplicationsQuerySchema), asyncHa
 adminRouter.get("/applications/:id", validate(adminIdSchema), asyncHandler(getApplication));
 adminRouter.patch("/applications/:id/status", validate(applicationStatusSchema), asyncHandler(updateApplicationStatus));
 adminRouter.post("/import/parse", asyncHandler(parseImport));
+
+adminRouter.get(
+  "/employer-verifications",
+  validate(pendingVerificationsQuerySchema),
+  asyncHandler(listPendingVerifications),
+);
+adminRouter.patch(
+  "/employer-verifications/:id/approve",
+  validate(verificationDecisionSchema),
+  asyncHandler(approveVerification),
+);
+adminRouter.patch(
+  "/employer-verifications/:id/reject",
+  validate(rejectVerificationSchema),
+  asyncHandler(rejectVerification),
+);
+
+adminRouter.get("/invoices", validate(adminInvoicesQuerySchema), asyncHandler(listInvoicesAdmin));
+adminRouter.patch("/invoices/:id/mark-paid", validate(invoiceIdSchema), asyncHandler(markInvoicePaid));
+adminRouter.patch("/invoices/:id/mark-refunded", validate(invoiceIdSchema), asyncHandler(markInvoiceRefunded));

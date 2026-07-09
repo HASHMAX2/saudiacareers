@@ -26,6 +26,7 @@ import { CandidateChangePassword } from "./pages/candidate/CandidateChangePasswo
 import { MyApplications } from "./pages/candidate/MyApplications.jsx";
 import { Profile } from "./pages/candidate/Profile.jsx";
 import { SavedJobs } from "./pages/candidate/SavedJobs.jsx";
+import { EmployerShell } from "./components/employer/EmployerShell.jsx";
 import { EmployerLogin } from "./pages/employer/EmployerLogin.jsx";
 import { EmployerRegister } from "./pages/employer/EmployerRegister.jsx";
 import { EmployerContact } from "./pages/employer/EmployerContact.jsx";
@@ -34,26 +35,28 @@ import { EmployerJobs } from "./pages/employer/EmployerJobs.jsx";
 import { EmployerCreateJob } from "./pages/employer/EmployerCreateJob.jsx";
 import { EmployerEditJob } from "./pages/employer/EmployerEditJob.jsx";
 import { EmployerApplications } from "./pages/employer/EmployerApplications.jsx";
+import { EmployerBilling } from "./pages/employer/EmployerBilling.jsx";
+import { EmployerVerification } from "./pages/employer/EmployerVerification.jsx";
+import { EmployerVerifications } from "./pages/admin/EmployerVerifications.jsx";
+import { Invoices } from "./pages/admin/Invoices.jsx";
 import { Contact } from "./pages/public/Contact.jsx";
 import { JobDetail } from "./pages/public/JobDetail.jsx";
 import { Jobs } from "./pages/public/Jobs.jsx";
 import { Landing } from "./pages/public/Landing.jsx";
+import { Terms } from "./pages/public/Terms.jsx";
+import { Privacy } from "./pages/public/Privacy.jsx";
 import { NotFound } from "./pages/shared/NotFound.jsx";
 import { Unauthorized } from "./pages/shared/Unauthorized.jsx";
 
 const candidateLinks = [];
-
-const employerLinks = [
-  { label: "Overview",  to: "/employer/dashboard",  end: true },
-  { label: "My Jobs",   to: "/employer/jobs",        end: true },
-  { label: "Post a Job",to: "/employer/jobs/create"           },
-];
 
 const adminLinks = [
   { label: "Overview", to: "/admin/dashboard", end: true },
   { label: "Jobs", to: "/admin/jobs", end: true },
   { label: "Import Jobs", to: "/admin/jobs/import" },
   { label: "Applications", to: "/admin/applications" },
+  { label: "Verifications", to: "/admin/verifications" },
+  { label: "Invoices", to: "/admin/invoices" },
 ];
 
 export default function App() {
@@ -78,6 +81,8 @@ export default function App() {
         <Route path="jobs" element={<Jobs />} />
         <Route path="jobs/:id" element={<JobDetail />} />
         <Route path="contact" element={<Contact />} />
+        <Route path="terms" element={<Terms />} />
+        <Route path="privacy" element={<Privacy />} />
 
         <Route path="employer/contact" element={<EmployerContact />} />
 
@@ -101,16 +106,6 @@ export default function App() {
           </Route>
         </Route>
 
-        <Route element={<EmployerRoute />}>
-          <Route element={<DashboardLayout links={employerLinks} />}>
-            <Route path="employer/dashboard" element={<EmployerDashboard />} />
-            <Route path="employer/jobs" element={<EmployerJobs />} />
-            <Route path="employer/jobs/create" element={<EmployerCreateJob />} />
-            <Route path="employer/jobs/:id/edit" element={<EmployerEditJob />} />
-            <Route path="employer/jobs/:id/applications" element={<EmployerApplications />} />
-          </Route>
-        </Route>
-
         <Route element={<AdminRoute />}>
           <Route path="admin/change-password" element={<ChangePassword />} />
           <Route element={<DashboardLayout links={adminLinks} />}>
@@ -121,12 +116,26 @@ export default function App() {
             <Route path="admin/jobs/:id/edit" element={<EditJob />} />
             <Route path="admin/applications" element={<Applications />} />
             <Route path="admin/applications/:id" element={<ApplicationDetail />} />
+            <Route path="admin/verifications" element={<EmployerVerifications />} />
+            <Route path="admin/invoices" element={<Invoices />} />
           </Route>
         </Route>
 
         <Route path="unauthorized" element={<Unauthorized />} />
         <Route path="404" element={<NotFound />} />
         <Route path="*" element={<Navigate replace to="/404" />} />
+      </Route>
+
+      <Route element={<EmployerRoute />}>
+        <Route element={<EmployerShell />}>
+          <Route path="employer/dashboard" element={<EmployerDashboard />} />
+          <Route path="employer/jobs" element={<EmployerJobs />} />
+          <Route path="employer/jobs/create" element={<EmployerCreateJob />} />
+          <Route path="employer/jobs/:id/edit" element={<EmployerEditJob />} />
+          <Route path="employer/jobs/:id/applications" element={<EmployerApplications />} />
+          <Route path="employer/billing" element={<EmployerBilling />} />
+          <Route path="employer/verification" element={<EmployerVerification />} />
+        </Route>
       </Route>
     </Routes>
   );

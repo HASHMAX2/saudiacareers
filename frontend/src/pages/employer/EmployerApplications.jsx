@@ -1,27 +1,30 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Download, Loader2 } from "lucide-react";
+import { ArrowLeft, Download, Loader2, SlidersHorizontal } from "lucide-react";
 import { employerApi } from "../../api/employer.js";
 import { Badge } from "../../components/common/Badge.jsx";
 import { Button } from "../../components/common/Button.jsx";
 import { Pagination } from "../../components/common/Pagination.jsx";
+import { Select } from "../../components/common/Select.jsx";
 import { Spinner } from "../../components/common/Spinner.jsx";
 import { formatDate } from "../../utils/formatDate.js";
+
+const EMP = "var(--accent)";
+const EMP_SUBTLE = "var(--accent-subtle)";
 
 const STATUS_OPTIONS = ["APPLIED", "SHORTLISTED", "ON_HOLD", "REJECTED"];
 
 const STATUS_META = {
-  APPLIED:     { label: "Applied",     tone: "blue"  },
-  SHORTLISTED: { label: "Shortlisted", tone: "green" },
-  ON_HOLD:     { label: "On hold",     tone: "amber" },
-  UNDER_REVIEW:{ label: "Under review",tone: "amber" },
-  SELECTED:    { label: "Selected",    tone: "green" },
-  REJECTED:    { label: "Rejected",    tone: "red"   },
+  APPLIED:      { label: "New",         tone: "blue"  },
+  SHORTLISTED:  { label: "Shortlisted", tone: "green" },
+  ON_HOLD:      { label: "On hold",     tone: "amber" },
+  UNDER_REVIEW: { label: "Under review",tone: "amber" },
+  SELECTED:     { label: "Selected",    tone: "green" },
+  REJECTED:     { label: "Rejected",    tone: "red"   },
 };
 
-function AppBadge({ status }) {
-  const meta = STATUS_META[status] ?? { label: status, tone: "blue" };
-  return <Badge tone={meta.tone}>{meta.label}</Badge>;
+function initialsOf(name) {
+  return (name ?? "?").split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
 }
 
 export function EmployerApplications() {
@@ -85,62 +88,76 @@ export function EmployerApplications() {
 
   return (
     <div>
-      <Link to="/employer/jobs" className="inline-flex items-center gap-1.5 text-sm mb-4 hover:underline" style={{ color: "var(--text-secondary)" }}>
+      <Link to="/employer/jobs" className="mb-4 inline-flex items-center gap-1.5 text-sm hover:underline" style={{ color: "var(--text-secondary)" }}>
         <ArrowLeft size={14} />Back to listings
       </Link>
-      <p className="section-label">Employer</p>
-      <h1 className="page-title text-3xl md:text-4xl">{job?.title ?? "Applications"}</h1>
+      <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl" style={{ color: "var(--text-primary)" }}>{job?.title ?? "Applicants"}</h1>
       <p className="mt-1 mb-6 text-base" style={{ color: "var(--text-secondary)" }}>
         {total} applicant{total !== 1 ? "s" : ""}
       </p>
 
-      {/* Filters */}
       <form onSubmit={handleSearch} className="mb-5 flex flex-wrap gap-2">
         <input
-          className="form-control flex-1 min-w-40"
-          placeholder="Search by name or email…"
+          className="min-w-40 flex-1 rounded-full px-4 py-2.5 text-sm outline-none"
+          style={{ border: "1px solid var(--border-default)", background: "var(--bg-white)" }}
+          placeholder="Search candidate…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <select
-          className="form-control appearance-none w-44"
+        <Select
+          className="w-44"
+          pill
+          icon={SlidersHorizontal}
           value={statusFilter}
           onChange={(e) => { setStatus(e.target.value); setPage(1); load(1, search, e.target.value); }}
-        >
-          <option value="">All statuses</option>
-          {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{STATUS_META[s]?.label ?? s}</option>)}
-        </select>
+          options={[{ value: "", label: "All stages" }, ...STATUS_OPTIONS.map((s) => ({ value: s, label: STATUS_META[s]?.label ?? s }))]}
+        />
         <Button type="submit" variant="secondary">Search</Button>
       </form>
 
       {loading ? (
         <div className="grid min-h-64 place-items-center"><Spinner label="Loading applications" /></div>
       ) : !applications.length ? (
-        <div className="card-soft grid min-h-56 place-items-center p-8 text-center">
+        <div className="rounded-2xl p-8 text-center" style={{ border: "1px solid var(--border-default)", background: "var(--bg-white)" }}>
           <p className="text-sm" style={{ color: "var(--text-secondary)" }}>No applications yet.</p>
         </div>
       ) : (
         <>
-          <div className="space-y-3">
-            {applications.map((app) => (
-              <div key={app.id} className="card-soft p-5">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <p className="font-semibold" style={{ color: "var(--text-primary)" }}>{app.user.name}</p>
-                      <AppBadge status={app.status} />
+          <div className="grid gap-4 md:grid-cols-2">
+            {applications.map((app) => {
+              const skills = (app.user.profile?.skills ?? "").split(",").map((s) => s.trim()).filter(Boolean).slice(0, 6);
+              return (
+                <div key={app.id} className="rounded-2xl p-5" style={{ border: "1px solid var(--border-default)", background: "var(--bg-white)" }}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-sm font-extrabold" style={{ background: EMP_SUBTLE, color: EMP }}>
+                        {initialsOf(app.user.name)}
+                      </span>
+                      <div>
+                        <h4 className="font-bold" style={{ color: "var(--text-primary)" }}>{app.user.name}</h4>
+                        <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>
+                          {[app.user.profile?.designation, app.user.profile?.experience, app.user.profile?.location].filter(Boolean).join(" · ")}
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{app.user.email}</p>
-                    {app.user.mobile && <p className="text-sm" style={{ color: "var(--text-tertiary)" }}>{app.user.mobile}</p>}
-                    {app.user.profile?.designation && (
-                      <p className="mt-1 text-sm" style={{ color: "var(--text-secondary)" }}>{app.user.profile.designation}</p>
-                    )}
-                    {app.user.profile?.experience && (
-                      <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>{app.user.profile.experience} experience</p>
-                    )}
-                    <p className="mt-2 text-xs" style={{ color: "var(--text-tertiary)" }}>Applied {formatDate(app.appliedAt)}</p>
+                    <Badge tone={STATUS_META[app.status]?.tone ?? "blue"}>{STATUS_META[app.status]?.label ?? app.status}</Badge>
                   </div>
-                  <div className="flex flex-wrap gap-2 shrink-0">
+
+                  {skills.length > 0 && (
+                    <div className="mt-3.5 flex flex-wrap gap-1.5">
+                      {skills.map((skill) => (
+                        <span key={skill} className="rounded-full px-2.5 py-1 text-xs font-semibold" style={{ background: "var(--bg-elev)", color: "var(--text-secondary)" }}>
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  <p className="mt-3 text-xs" style={{ color: "var(--text-tertiary)" }}>
+                    Applied {formatDate(app.appliedAt)}{app.user.email ? ` · ${app.user.email}` : ""}
+                  </p>
+
+                  <div className="mt-4 flex flex-wrap gap-2">
                     {app.user.profile?.resumePath && (
                       <Button size="sm" variant="secondary" disabled={!!busyId || downloadingId === app.id} onClick={() => handleDownload(app)}>
                         {downloadingId === app.id ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
@@ -151,10 +168,10 @@ export function EmployerApplications() {
                       <Button
                         key={s}
                         size="sm"
-                        variant={s === "REJECTED" ? "ghost" : "secondary"}
+                        variant={s === "REJECTED" ? "ghost" : "primary"}
                         disabled={!!busyId}
                         onClick={() => handleStatus(app.id, s)}
-                        style={s === "REJECTED" ? { color: "var(--text-tertiary)" } : {}}
+                        style={s === "REJECTED" ? { color: "var(--text-tertiary)" } : { background: EMP, borderColor: EMP }}
                       >
                         {busyId === app.id ? <Loader2 size={13} className="animate-spin" /> : null}
                         {STATUS_META[s]?.label}
@@ -162,8 +179,8 @@ export function EmployerApplications() {
                     ))}
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
           {totalPages > 1 && (
             <div className="mt-6">

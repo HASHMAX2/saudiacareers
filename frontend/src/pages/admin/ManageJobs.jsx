@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
-import { BriefcaseBusiness, Loader2, Plus, Trash2 } from "lucide-react";
+import { BriefcaseBusiness, Loader2, Plus, SlidersHorizontal, Trash2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { adminApi } from "../../api/admin.js";
 import { Badge } from "../../components/common/Badge.jsx";
 import { Button } from "../../components/common/Button.jsx";
 import { Input } from "../../components/common/Input.jsx";
 import { Pagination } from "../../components/common/Pagination.jsx";
+import { Select } from "../../components/common/Select.jsx";
 import { Spinner } from "../../components/common/Spinner.jsx";
 
 const PAGE_LIMIT = 30;
@@ -94,15 +95,13 @@ export function ManageJobs() {
           value={filters.search}
           onChange={(e) => updateFilter("search", e.target.value)}
         />
-        <select
-          className="field-box w-auto appearance-none"
+        <Select
+          className="w-44"
+          icon={SlidersHorizontal}
           value={filters.status}
           onChange={(e) => updateFilter("status", e.target.value)}
-        >
-          <option value="">All statuses</option>
-          <option>ACTIVE</option>
-          <option>INACTIVE</option>
-        </select>
+          options={[{ value: "", label: "All statuses" }, { value: "ACTIVE", label: "ACTIVE" }, { value: "INACTIVE", label: "INACTIVE" }]}
+        />
       </div>
 
       {selectedIds.size > 0 && (
