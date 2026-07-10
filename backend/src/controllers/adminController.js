@@ -3,6 +3,8 @@ import { sendEmail } from "../services/emailService.js";
 import { applicationStatusEmailTemplate } from "../services/emailTemplates/applicationStatus.js";
 import { createSignedDownloadUrl } from "../services/storageService.js";
 import { consumeJobCredit, getOrCreateSubscription } from "../services/employerBillingService.js";
+import { expireOverdueJobs } from "../services/jobExpiryService.js";
+import { notify, notifyJobClosedForCandidates } from "../services/notificationService.js";
 import { ApiError } from "../utils/ApiError.js";
 import { sendSuccess } from "../utils/ApiResponse.js";
 
@@ -41,6 +43,7 @@ export async function dashboard(req, res) {
 }
 
 export async function listAdminJobs(req, res) {
+  await expireOverdueJobs();
   const { page, limit, search, status } = req.validated.query;
   const where = {
     isDeleted: false,
@@ -98,20 +101,28 @@ export async function updateJob(req, res) {
 }
 
 export async function deleteJob(req, res) {
-  const result = await prisma.job.updateMany({
-    where: { id: req.validated.params.id, isDeleted: false },
+  const existing = await prisma.job.findFirst({ where: { id: req.validated.params.id, isDeleted: false } });
+  if (!existing) throw new ApiError(404, "Job not found");
+
+  await prisma.job.update({
+    where: { id: existing.id },
     data: { isDeleted: true, status: "INACTIVE" },
   });
-  if (!result.count) throw new ApiError(404, "Job not found");
+  if (existing.status === "ACTIVE") await notifyJobClosedForCandidates(existing);
   return sendSuccess(res, { message: "Job deleted" });
 }
 
 export async function updateJobStatus(req, res) {
-  const result = await prisma.job.updateMany({
-    where: { id: req.validated.params.id, isDeleted: false },
+  const existing = await prisma.job.findFirst({ where: { id: req.validated.params.id, isDeleted: false } });
+  if (!existing) throw new ApiError(404, "Job not found");
+
+  await prisma.job.update({
+    where: { id: existing.id },
     data: { status: req.validated.body.status },
   });
-  if (!result.count) throw new ApiError(404, "Job not found");
+  if (existing.status === "ACTIVE" && req.validated.body.status !== "ACTIVE") {
+    await notifyJobClosedForCandidates(existing);
+  }
   return sendSuccess(res, { message: "Job status updated" });
 }
 
@@ -128,12 +139,19 @@ export async function approveJobReview(req, res) {
   }
 
   const subscription = await getOrCreateSubscription(employerProfile.id);
-  const creditSource = await consumeJobCredit(subscription);
+  const creditSource = await consumeJobCredit(subscription, { userId: job.createdBy, companyName: employerProfile.companyName });
   const expiresAt = new Date(Date.now() + job.listingDurationDays * 24 * 60 * 60 * 1000);
 
   const updated = await prisma.job.update({
     where: { id },
     data: { status: "ACTIVE", creditSource, expiresAt, reviewNote: req.validated.body.note || null },
+  });
+  await notify({
+    userId: job.createdBy,
+    type: "JOB_PUBLISHED",
+    title: "Job published",
+    message: `"${job.title}" was approved and is now live and visible to candidates.`,
+    link: "/employer/jobs",
   });
   return sendSuccess(res, { message: "Job approved and published", data: updated });
 }

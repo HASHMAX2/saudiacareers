@@ -1,5 +1,6 @@
 import { JobStatus } from "@prisma/client";
 import { prisma } from "../config/prisma.js";
+import { expireOverdueJobs } from "../services/jobExpiryService.js";
 import { ApiError } from "../utils/ApiError.js";
 import { sendSuccess } from "../utils/ApiResponse.js";
 
@@ -66,6 +67,7 @@ export async function getFilterOptions(req, res) {
 }
 
 export async function listJobs(req, res) {
+  await expireOverdueJobs();
   const { page, limit, q, locations, industries, employmentTypes, experiences, salaries, genders, nationalities, postedAfter, postedBefore, sort } = req.validated.query;
   const now = new Date();
 

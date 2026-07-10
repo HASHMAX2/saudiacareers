@@ -7,6 +7,8 @@ import {
 import { authApi } from "../../api/auth.js";
 import { employerApi } from "../../api/employer.js";
 import { useAuthStore } from "../../store/authStore.js";
+import { useNotificationStore } from "../../store/notificationStore.js";
+import { NotificationBell } from "../common/NotificationBell.jsx";
 import { Toast } from "../common/Toast.jsx";
 
 const EMP = "var(--accent)";
@@ -22,6 +24,7 @@ const VERIFICATION_META = {
 export function EmployerShell() {
   const user = useAuthStore((state) => state.user);
   const clearSession = useAuthStore((state) => state.clearSession);
+  const resetNotifications = useNotificationStore((state) => state.reset);
   const navigate = useNavigate();
 
   const [profile, setProfile] = useState(null);
@@ -71,6 +74,7 @@ export function EmployerShell() {
       setShowToast(false);
       navigate("/employer/login");
       clearSession();
+      resetNotifications();
       setLoggingOut(false);
     }, LOGOUT_DELAY);
   }
@@ -194,7 +198,9 @@ export function EmployerShell() {
             />
           </form>
 
-          <div className="relative ml-auto" ref={menuRef}>
+          <div className="ml-auto flex items-center gap-2">
+            <NotificationBell accent={EMP} />
+            <div className="relative" ref={menuRef}>
             <button
               onClick={() => setMenuOpen((v) => !v)}
               className="flex items-center gap-2 rounded-full py-1 pl-1 pr-3 text-[15px] font-semibold transition-colors"
@@ -240,6 +246,7 @@ export function EmployerShell() {
                 {loggingOut ? <Loader2 size={16} className="animate-spin" /> : <LogOut size={16} />}
                 {loggingOut ? "Signing out…" : "Logout"}
               </button>
+            </div>
             </div>
           </div>
         </header>

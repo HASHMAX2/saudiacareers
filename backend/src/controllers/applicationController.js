@@ -3,8 +3,11 @@ import { prisma } from "../config/prisma.js";
 import { sendEmail } from "../services/emailService.js";
 import { applicationEmailTemplate } from "../services/emailTemplates/application.js";
 import { downloadPrivateFile } from "../services/storageService.js";
+import { notify, notifyAdmins } from "../services/notificationService.js";
 import { ApiError } from "../utils/ApiError.js";
 import { sendSuccess } from "../utils/ApiResponse.js";
+
+const HIGH_APPLICATION_MILESTONES = new Set([10, 25, 50, 100, 250, 500]);
 
 async function deliverApplication(applicationId) {
   const application = await prisma.application.findUnique({
@@ -82,6 +85,32 @@ export async function apply(req, res) {
     throw error;
   }
   setImmediate(() => deliverApplication(application.id));
+
+  await notify({
+    userId: user.id,
+    type: "APPLICATION_SUBMITTED",
+    title: "Application submitted",
+    message: `Your application for "${job.title}" at ${job.companyName} was submitted.`,
+    link: "/dashboard/applications",
+  });
+  await notify({
+    userId: job.createdBy,
+    type: "NEW_APPLICATION_RECEIVED",
+    title: "New application received",
+    message: `${user.name} applied for "${job.title}".`,
+    link: "/employer/applicants",
+  });
+
+  const applicationCount = await prisma.application.count({ where: { jobId: job.id } });
+  if (HIGH_APPLICATION_MILESTONES.has(applicationCount)) {
+    await notifyAdmins({
+      type: "HIGH_APPLICATION_VOLUME",
+      title: "High number of applications on a job",
+      message: `"${job.title}" at ${job.companyName} has reached ${applicationCount} applications.`,
+      link: "/admin/applications",
+    });
+  }
+
   return sendSuccess(res, {
     statusCode: 201,
     message: "Application submitted",

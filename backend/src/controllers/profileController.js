@@ -7,6 +7,7 @@ import {
   uploadPrivateFile,
 } from "../services/storageService.js";
 import { parseResume } from "../services/resumeParserService.js";
+import { notify } from "../services/notificationService.js";
 import { ApiError } from "../utils/ApiError.js";
 import { sendSuccess } from "../utils/ApiResponse.js";
 
@@ -85,6 +86,13 @@ export async function updateProfile(req, res) {
       profile: { upsert: { create: normalizedProfile, update: normalizedProfile } },
     },
     include: profileInclude,
+  });
+  await notify({
+    userId: req.user.id,
+    type: "PROFILE_UPDATED",
+    title: "Profile updated",
+    message: "Your profile changes were saved.",
+    link: "/dashboard/profile",
   });
   return sendSuccess(res, { message: "Profile updated", data: serializeProfile(user) });
 }
@@ -195,6 +203,14 @@ export async function uploadResume(req, res) {
       data: parsedCerts.map(c => ({ ...c, candidateProfileId: profileId })),
     });
   }
+
+  await notify({
+    userId: req.user.id,
+    type: "PROFILE_UPDATED",
+    title: "CV updated",
+    message: "Your resume was uploaded and your profile was refreshed with the new details.",
+    link: "/dashboard/profile",
+  });
 
   return sendSuccess(res, {
     statusCode: 201,

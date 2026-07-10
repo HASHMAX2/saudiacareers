@@ -13,6 +13,7 @@ import { savedJobsRouter } from "./routes/savedJobsRoutes.js";
 import { employerRouter } from "./routes/employerRoutes.js";
 import { enquiryRouter } from "./routes/enquiryRoutes.js";
 import { candidateRouter } from "./routes/candidateRoutes.js";
+import { notificationRouter } from "./routes/notificationRoutes.js";
 import { ApiError } from "./utils/ApiError.js";
 import { sendSuccess } from "./utils/ApiResponse.js";
 
@@ -53,6 +54,7 @@ app.use("/api/saved-jobs", savedJobsRouter);
 app.use("/api/candidate", candidateRouter);
 app.use("/api/employer", employerRouter);
 app.use("/api/enquiries", enquiryRouter);
+app.use("/api/notifications", notificationRouter);
 app.use("/api/admin", adminRouter);
 
 app.use(notFoundHandler);

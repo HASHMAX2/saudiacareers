@@ -2,6 +2,7 @@ import PDFDocument from "pdfkit";
 import { prisma } from "../config/prisma.js";
 import { PRICE_PER_CREDIT_SAR } from "../config/plans.js";
 import { getOrCreateSubscription } from "../services/employerBillingService.js";
+import { notify, notifyAdmins } from "../services/notificationService.js";
 import { ApiError } from "../utils/ApiError.js";
 import { sendSuccess } from "../utils/ApiResponse.js";
 
@@ -89,6 +90,13 @@ export async function requestCreditPurchase(req, res) {
       note: `${credits} job credit${credits === 1 ? "" : "s"}`,
     },
   });
+  await notify({
+    userId: req.user.id,
+    type: "INVOICE_AVAILABLE",
+    title: "Invoice available",
+    message: `Invoice #${invoice.id} for ${invoice.amountSar} SAR is available.`,
+    link: "/employer/billing",
+  });
 
   return sendSuccess(res, {
     statusCode: 201,
@@ -121,6 +129,13 @@ export async function requestPlanChange(req, res) {
       note: `${plan.name} plan subscription`,
     },
   });
+  await notify({
+    userId: req.user.id,
+    type: "INVOICE_AVAILABLE",
+    title: "Invoice available",
+    message: `Invoice #${invoice.id} for ${invoice.amountSar} SAR is available.`,
+    link: "/employer/billing",
+  });
 
   return sendSuccess(res, {
     statusCode: 201,
@@ -148,6 +163,12 @@ export async function requestRefund(req, res) {
       note: reason || `Refund request for invoice #${original.id}`,
     },
   });
+  await notifyAdmins({
+    type: "REFUND_REQUESTED",
+    title: "Refund/cancellation request",
+    message: `${employerProfile.companyName} requested a refund on invoice #${original.id}.`,
+    link: "/admin/refunds",
+  });
 
   return sendSuccess(res, { statusCode: 201, message: "Refund requested", data: refund });
 }
@@ -162,6 +183,19 @@ export async function cancelSubscription(req, res) {
   const updated = await prisma.employerSubscription.update({
     where: { id: subscription.id },
     data: { cancelAtPeriodEnd: true },
+  });
+  await notify({
+    userId: req.user.id,
+    type: "CANCELLATION_SCHEDULED",
+    title: "Cancellation scheduled",
+    message: "Your subscription will not renew after the current billing period.",
+    link: "/employer/billing",
+  });
+  await notifyAdmins({
+    type: "SUBSCRIPTION_CANCELLED",
+    title: "Subscription cancelled",
+    message: `${employerProfile.companyName} scheduled their subscription to cancel.`,
+    link: "/admin/billing",
   });
 
   return sendSuccess(res, { message: "Your plan will not renew after the current period", data: updated });

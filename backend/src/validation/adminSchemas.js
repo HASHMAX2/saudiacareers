@@ -141,6 +141,11 @@ export const rejectRefundSchema = envelope(
   z.object({ id: z.coerce.number().int().positive() }),
 );
 
+export const markInvoiceFailedSchema = envelope(
+  z.object({ reason: z.string().trim().min(3).max(500) }).strict(),
+  z.object({ id: z.coerce.number().int().positive() }),
+);
+
 export const adminApplicationsQuerySchema = envelope(
   z.object({}).passthrough(),
   z.object({}).passthrough(),

@@ -22,6 +22,7 @@ import {
   listBillingOverview,
   listInvoicesAdmin,
   listPendingVerifications,
+  markInvoiceFailed,
   markInvoicePaid,
   markInvoiceRefunded,
   rejectInvoiceRefund,
@@ -61,6 +62,7 @@ import {
   jobApprovalSchema,
   jobRejectionSchema,
   jobStatusSchema,
+  markInvoiceFailedSchema,
   pendingVerificationsQuerySchema,
   rejectRefundSchema,
   rejectVerificationSchema,
@@ -123,6 +125,7 @@ adminRouter.patch(
 adminRouter.get("/billing-overview", validate(billingOverviewQuerySchema), asyncHandler(listBillingOverview));
 adminRouter.get("/invoices", validate(adminInvoicesQuerySchema), asyncHandler(listInvoicesAdmin));
 adminRouter.patch("/invoices/:id/mark-paid", validate(invoiceIdSchema), asyncHandler(markInvoicePaid));
+adminRouter.patch("/invoices/:id/mark-failed", validate(markInvoiceFailedSchema), asyncHandler(markInvoiceFailed));
 adminRouter.patch("/invoices/:id/mark-refunded", validate(invoiceIdSchema), asyncHandler(markInvoiceRefunded));
 adminRouter.patch("/invoices/:id/reject-refund", validate(rejectRefundSchema), asyncHandler(rejectInvoiceRefund));
 

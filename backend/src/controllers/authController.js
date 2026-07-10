@@ -6,6 +6,7 @@ import { prisma } from "../config/prisma.js";
 import { sendEmail } from "../services/emailService.js";
 import { passwordResetEmailTemplate } from "../services/emailTemplates/passwordReset.js";
 import { welcomeEmailTemplate } from "../services/emailTemplates/welcome.js";
+import { notify, notifyAdmins } from "../services/notificationService.js";
 import {
   REFRESH_COOKIE_NAME,
   createAccessToken,
@@ -100,6 +101,12 @@ export async function registerEmployer(req, res) {
   const template = welcomeEmailTemplate({ name: user.name });
   sendEmail({ to: user.email, ...template }).catch((error) => {
     console.error("Employer welcome email failed:", error.message);
+  });
+  await notifyAdmins({
+    type: "NEW_EMPLOYER_REGISTERED",
+    title: "New employer registered",
+    message: `${companyName} joined SaudiaCareers.`,
+    link: "/admin/employers",
   });
 
   return sendSuccess(res, {
@@ -222,6 +229,14 @@ export async function resetPassword(req, res) {
     }),
   ]);
 
+  await notify({
+    userId: resetRecord.userId,
+    type: "SECURITY_ALERT",
+    title: "Password reset",
+    message: "Your password was just reset. If this wasn't you, contact support immediately.",
+    link: "/dashboard/change-password",
+  });
+
   return sendSuccess(res, { message: "Password reset successful" });
 }
 
@@ -244,6 +259,13 @@ export async function changePassword(req, res) {
 
   const updatedUser = await prisma.user.findUnique({ where: { id: user.id } });
   const accessToken = await establishSession(res, updatedUser);
+  await notify({
+    userId: user.id,
+    type: "SECURITY_ALERT",
+    title: "Password changed",
+    message: "Your password was just changed. If this wasn't you, contact support immediately.",
+    link: user.role === "CANDIDATE" ? "/dashboard/change-password" : null,
+  });
   return sendSuccess(res, {
     message: "Password changed successfully",
     data: { user: publicUser(updatedUser), accessToken },

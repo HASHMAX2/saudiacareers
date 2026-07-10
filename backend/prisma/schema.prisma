@@ -27,8 +27,24 @@ model User {
   jobReports         JobReport[]
   refreshTokens      RefreshToken[]
   passwordResets     PasswordResetToken[]
+  notifications      Notification[]
 
   @@index([role])
+  @@index([createdAt])
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, isRead])
   @@index([createdAt])
 }
 
@@ -371,6 +387,7 @@ enum InvoiceType {
 enum InvoiceStatus {
   PENDING
   PAID
+  FAILED
   REFUND_REQUESTED
   REFUNDED
 }

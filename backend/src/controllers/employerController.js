@@ -6,6 +6,8 @@ import { applicationStatusEmailTemplate } from "../services/emailTemplates/appli
 import { createSignedDownloadUrl, uploadPrivateFile } from "../services/storageService.js";
 import { consumeJobCredit, getOrCreateSubscription } from "../services/employerBillingService.js";
 import { checkJobLegitimacy } from "../services/jobLegitimacyService.js";
+import { expireOverdueJobs } from "../services/jobExpiryService.js";
+import { notify, notifyAdmins, notifyJobClosedForCandidates } from "../services/notificationService.js";
 import { ApiError } from "../utils/ApiError.js";
 import { sendSuccess } from "../utils/ApiResponse.js";
 
@@ -20,10 +22,19 @@ export async function getEmployerProfile(req, res) {
 }
 
 export async function updateEmployerProfile(req, res) {
+  const existing = await prisma.employerProfile.findUnique({ where: { userId: req.user.id } });
   const profile = await prisma.employerProfile.update({
     where: { userId: req.user.id },
     data: req.validated.body,
   });
+  if (existing?.verificationStatus === "REJECTED") {
+    await notifyAdmins({
+      type: "EMPLOYER_UPDATED_AFTER_REJECTION",
+      title: "Company details updated after rejection",
+      message: `${profile.companyName} updated their company details after a rejected verification — review again.`,
+      link: `/admin/verifications`,
+    });
+  }
   return sendSuccess(res, { message: "Profile updated", data: profile });
 }
 
@@ -61,6 +72,13 @@ export async function submitVerificationDocument(req, res) {
     },
   });
 
+  await notifyAdmins({
+    type: "NEW_VERIFICATION_REQUEST",
+    title: "New company verification request",
+    message: `${updated.companyName} submitted a verification document for review.`,
+    link: "/admin/verifications",
+  });
+
   return sendSuccess(res, {
     message: "Verification document submitted — our team will review it shortly",
     data: { verificationStatus: updated.verificationStatus },
@@ -92,6 +110,7 @@ export async function getEmployerDashboard(req, res) {
 // ── Jobs ──────────────────────────────────────────────────────────────────────
 
 export async function listEmployerJobs(req, res) {
+  await expireOverdueJobs();
   const userId = req.user.id;
   const { page, limit, search, status } = req.validated.query;
 
@@ -165,6 +184,12 @@ export async function createEmployerJob(req, res) {
     const job = await prisma.job.create({
       data: { ...jobData, createdBy: req.user.id, status: "PENDING_REVIEW", flagReasons: legitimacy.reasons },
     });
+    await notifyAdmins({
+      type: "SUSPICIOUS_JOB_DETECTED",
+      title: "Suspicious job detected",
+      message: `"${job.title}" from ${employerProfile.companyName} was flagged for review: ${legitimacy.reasons.join(", ")}.`,
+      link: "/admin/job-reviews",
+    });
     return sendSuccess(res, {
       statusCode: 201,
       message: "Job submitted for admin review before it can go live",
@@ -173,12 +198,19 @@ export async function createEmployerJob(req, res) {
   }
 
   const subscription = await getOrCreateSubscription(employerProfile.id);
-  const creditSource = await consumeJobCredit(subscription);
+  const creditSource = await consumeJobCredit(subscription, { userId: req.user.id, companyName: employerProfile.companyName });
   const listingDurationDays = jobData.listingDurationDays ?? 30;
   const expiresAt = new Date(Date.now() + listingDurationDays * 24 * 60 * 60 * 1000);
 
   const job = await prisma.job.create({
     data: { ...jobData, createdBy: req.user.id, status: "ACTIVE", creditSource, expiresAt },
+  });
+  await notify({
+    userId: req.user.id,
+    type: "JOB_PUBLISHED",
+    title: "Job published",
+    message: `"${job.title}" is now live and visible to candidates.`,
+    link: "/employer/jobs",
   });
   return sendSuccess(res, { statusCode: 201, message: "Job published", data: job });
 }
@@ -209,6 +241,13 @@ export async function updateEmployerJobStatus(req, res) {
     if (!employerProfile) throw new ApiError(404, "Employer profile not found");
     if (employerProfile.isSuspended) throw new ApiError(403, "This account is suspended and cannot publish jobs");
     if (employerProfile.verificationStatus !== "APPROVED") {
+      await notify({
+        userId: req.user.id,
+        type: "PUBLISHING_BLOCKED",
+        title: "Publishing blocked",
+        message: `"${job.title}" can't go live until your company verification is approved.`,
+        link: "/employer/verification",
+      });
       throw new ApiError(403, "Publishing is locked until company verification is approved");
     }
 
@@ -218,31 +257,53 @@ export async function updateEmployerJobStatus(req, res) {
         where: { id },
         data: { status: "PENDING_REVIEW", flagReasons: legitimacy.reasons },
       });
+      await notifyAdmins({
+        type: "SUSPICIOUS_JOB_DETECTED",
+        title: "Suspicious job detected",
+        message: `"${job.title}" from ${employerProfile.companyName} was flagged for review: ${legitimacy.reasons.join(", ")}.`,
+        link: "/admin/job-reviews",
+      });
       return sendSuccess(res, { message: "Job submitted for admin review before it can go live" });
     }
 
     const subscription = await getOrCreateSubscription(employerProfile.id);
-    const creditSource = await consumeJobCredit(subscription);
+    const creditSource = await consumeJobCredit(subscription, { userId: req.user.id, companyName: employerProfile.companyName });
     const expiresAt = new Date(Date.now() + job.listingDurationDays * 24 * 60 * 60 * 1000);
 
     await prisma.job.update({
       where: { id },
       data: { status: "ACTIVE", creditSource, expiresAt },
     });
+    await notify({
+      userId: req.user.id,
+      type: "JOB_PUBLISHED",
+      title: "Job published",
+      message: `"${job.title}" is now live and visible to candidates.`,
+      link: "/employer/jobs",
+    });
     return sendSuccess(res, { message: "Job published" });
   }
 
   await prisma.job.update({ where: { id }, data: { status: nextStatus } });
+  if (job.status === "ACTIVE" && nextStatus !== "ACTIVE") {
+    await notifyJobClosedForCandidates(job);
+    await notifyAdmins({
+      type: "JOB_MANUALLY_CLOSED",
+      title: "Job manually closed",
+      message: `"${job.title}" was manually closed by its employer.`,
+      link: "/admin/jobs",
+    });
+  }
   return sendSuccess(res, { message: "Job status updated" });
 }
 
 export async function deleteEmployerJob(req, res) {
   const { id } = req.validated.params;
-  const result = await prisma.job.updateMany({
-    where: { id, createdBy: req.user.id, isDeleted: false },
-    data: { isDeleted: true, status: "INACTIVE" },
-  });
-  if (!result.count) throw new ApiError(404, "Job not found");
+  const existing = await prisma.job.findFirst({ where: { id, createdBy: req.user.id, isDeleted: false } });
+  if (!existing) throw new ApiError(404, "Job not found");
+
+  await prisma.job.update({ where: { id }, data: { isDeleted: true, status: "INACTIVE" } });
+  if (existing.status === "ACTIVE") await notifyJobClosedForCandidates(existing);
   return sendSuccess(res, { message: "Job deleted" });
 }
 

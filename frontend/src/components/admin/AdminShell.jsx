@@ -8,6 +8,8 @@ import {
 import { adminApi } from "../../api/admin.js";
 import { authApi } from "../../api/auth.js";
 import { useAuthStore } from "../../store/authStore.js";
+import { useNotificationStore } from "../../store/notificationStore.js";
+import { NotificationBell } from "../common/NotificationBell.jsx";
 import { Toast } from "../common/Toast.jsx";
 
 const ACCENT = "var(--accent)";
@@ -53,6 +55,7 @@ const NAV_GROUPS = [
 export function AdminShell() {
   const user = useAuthStore((state) => state.user);
   const clearSession = useAuthStore((state) => state.clearSession);
+  const resetNotifications = useNotificationStore((state) => state.reset);
   const navigate = useNavigate();
 
   const [counts, setCounts] = useState({});
@@ -112,6 +115,7 @@ export function AdminShell() {
       setShowToast(false);
       navigate("/admin/login");
       clearSession();
+      resetNotifications();
       setLoggingOut(false);
     }, LOGOUT_DELAY);
   }
@@ -215,52 +219,55 @@ export function AdminShell() {
             />
           </form>
 
-          <div className="relative ml-auto" ref={menuRef}>
-            <button
-              onClick={() => setMenuOpen((v) => !v)}
-              className="flex items-center gap-2 rounded-full py-1 pl-1 pr-3 text-[15px] font-semibold transition-colors"
-              style={{
-                border: "1px solid var(--border-default)",
-                background: menuOpen ? ACCENT_SUBTLE : "transparent",
-                color: "var(--text-primary)",
-              }}
-              type="button"
-              aria-haspopup="menu"
-              aria-expanded={menuOpen}
-            >
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-xs font-extrabold text-white" style={{ background: ACCENT }}>
-                {initials}
-              </span>
-              <span className="hidden sm:inline">{user?.name}</span>
-              <ChevronDown
-                size={14}
-                style={{ color: "var(--text-tertiary)", transition: "transform 200ms", transform: menuOpen ? "rotate(180deg)" : "rotate(0deg)" }}
-              />
-            </button>
-
-            <div
-              className="absolute right-0 top-full z-30 w-56 rounded-2xl bg-white py-2"
-              style={{
-                border: "1px solid var(--border-default)",
-                boxShadow: "var(--sh-3)",
-                marginTop: "8px",
-                opacity: menuOpen ? 1 : 0,
-                transform: menuOpen ? "translateY(0)" : "translateY(-8px)",
-                pointerEvents: menuOpen ? "auto" : "none",
-                transition: "opacity 180ms ease, transform 180ms ease",
-              }}
-            >
-              <p className="truncate px-4 py-1.5 text-xs" style={{ color: "var(--text-tertiary)" }}>{user?.email}</p>
-              <div className="my-1.5 mx-3" style={{ borderTop: "1px solid var(--border-default)" }} />
+          <div className="ml-auto flex items-center gap-2">
+            <NotificationBell accent={ACCENT} />
+            <div className="relative" ref={menuRef}>
               <button
-                onClick={handleLogout}
-                disabled={loggingOut}
-                className="flex w-full items-center gap-3 px-4 py-2.5 text-[14px] font-medium transition-colors hover:bg-red-50 disabled:opacity-50"
-                style={{ color: ACCENT }}
+                onClick={() => setMenuOpen((v) => !v)}
+                className="flex items-center gap-2 rounded-full py-1 pl-1 pr-3 text-[15px] font-semibold transition-colors"
+                style={{
+                  border: "1px solid var(--border-default)",
+                  background: menuOpen ? ACCENT_SUBTLE : "transparent",
+                  color: "var(--text-primary)",
+                }}
+                type="button"
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
               >
-                {loggingOut ? <Loader2 size={16} className="animate-spin" /> : <LogOut size={16} />}
-                {loggingOut ? "Signing out…" : "Logout"}
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-xs font-extrabold text-white" style={{ background: ACCENT }}>
+                  {initials}
+                </span>
+                <span className="hidden sm:inline">{user?.name}</span>
+                <ChevronDown
+                  size={14}
+                  style={{ color: "var(--text-tertiary)", transition: "transform 200ms", transform: menuOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+                />
               </button>
+
+              <div
+                className="absolute right-0 top-full z-30 w-56 rounded-2xl bg-white py-2"
+                style={{
+                  border: "1px solid var(--border-default)",
+                  boxShadow: "var(--sh-3)",
+                  marginTop: "8px",
+                  opacity: menuOpen ? 1 : 0,
+                  transform: menuOpen ? "translateY(0)" : "translateY(-8px)",
+                  pointerEvents: menuOpen ? "auto" : "none",
+                  transition: "opacity 180ms ease, transform 180ms ease",
+                }}
+              >
+                <p className="truncate px-4 py-1.5 text-xs" style={{ color: "var(--text-tertiary)" }}>{user?.email}</p>
+                <div className="my-1.5 mx-3" style={{ borderTop: "1px solid var(--border-default)" }} />
+                <button
+                  onClick={handleLogout}
+                  disabled={loggingOut}
+                  className="flex w-full items-center gap-3 px-4 py-2.5 text-[14px] font-medium transition-colors hover:bg-red-50 disabled:opacity-50"
+                  style={{ color: ACCENT }}
+                >
+                  {loggingOut ? <Loader2 size={16} className="animate-spin" /> : <LogOut size={16} />}
+                  {loggingOut ? "Signing out…" : "Logout"}
+                </button>
+              </div>
             </div>
           </div>
         </header>

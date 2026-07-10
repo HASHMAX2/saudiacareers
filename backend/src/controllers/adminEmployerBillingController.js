@@ -2,6 +2,7 @@ import { prisma } from "../config/prisma.js";
 import { PRICE_PER_CREDIT_SAR } from "../config/plans.js";
 import { getOrCreateSubscription } from "../services/employerBillingService.js";
 import { createSignedViewUrl } from "../services/storageService.js";
+import { notify, notifyAdmins } from "../services/notificationService.js";
 import { ApiError } from "../utils/ApiError.js";
 import { sendSuccess } from "../utils/ApiResponse.js";
 
@@ -112,6 +113,13 @@ export async function approveVerification(req, res) {
       verificationNote: req.validated.body.note || null,
     },
   });
+  await notify({
+    userId: updated.userId,
+    type: "COMPANY_APPROVED",
+    title: "Company approved",
+    message: "Your company has been verified — you can now publish jobs.",
+    link: "/employer/dashboard",
+  });
   return sendSuccess(res, { message: "Employer verified", data: updated });
 }
 
@@ -127,6 +135,13 @@ export async function rejectVerification(req, res) {
       verifiedAt: null,
       verificationNote: req.validated.body.note,
     },
+  });
+  await notify({
+    userId: updated.userId,
+    type: "COMPANY_REJECTED",
+    title: "Company rejected",
+    message: `Your company verification was rejected: ${req.validated.body.note}`,
+    link: "/employer/verification",
   });
   return sendSuccess(res, { message: "Verification rejected", data: updated });
 }
@@ -216,6 +231,7 @@ export async function markInvoicePaid(req, res) {
   if (!invoice) throw new ApiError(404, "Invoice not found");
   if (invoice.status !== "PENDING") throw new ApiError(400, "Only pending invoices can be marked paid");
 
+  const employerProfile = await prisma.employerProfile.findUnique({ where: { id: invoice.employerProfileId } });
   const subscription = await getOrCreateSubscription(invoice.employerProfileId);
   const now = new Date();
 
@@ -226,6 +242,13 @@ export async function markInvoicePaid(req, res) {
     await prisma.employerSubscription.update({
       where: { id: subscription.id },
       data: { planTier: plan.tier, renewsAt, cancelAtPeriodEnd: false },
+    });
+    await notify({
+      userId: employerProfile.userId,
+      type: "SUBSCRIPTION_ACTIVATED",
+      title: "Subscription activated",
+      message: `Your ${plan.name} plan is now active.`,
+      link: "/employer/billing",
     });
   } else if (invoice.type === "CREDIT_PACK") {
     const credits = Math.round(invoice.amountSar / PRICE_PER_CREDIT_SAR);
@@ -238,7 +261,44 @@ export async function markInvoicePaid(req, res) {
   }
 
   const updated = await prisma.invoice.update({ where: { id }, data: { status: "PAID", paidAt: now } });
+  await notify({
+    userId: employerProfile.userId,
+    type: "PAYMENT_SUCCESSFUL",
+    title: "Payment successful",
+    message: `Payment of ${invoice.amountSar} SAR for invoice #${invoice.id} was confirmed.`,
+    link: "/employer/billing",
+  });
   return sendSuccess(res, { message: "Invoice marked paid", data: updated });
+}
+
+export async function markInvoiceFailed(req, res) {
+  const { id } = req.validated.params;
+  const { reason } = req.validated.body;
+  const invoice = await prisma.invoice.findUnique({ where: { id } });
+  if (!invoice) throw new ApiError(404, "Invoice not found");
+  if (invoice.status !== "PENDING") throw new ApiError(400, "Only pending invoices can be marked failed");
+
+  const employerProfile = await prisma.employerProfile.findUnique({ where: { id: invoice.employerProfileId } });
+  const updated = await prisma.invoice.update({
+    where: { id },
+    data: { status: "FAILED", note: `Payment failed: ${reason}` },
+  });
+
+  await notify({
+    userId: employerProfile.userId,
+    type: "PAYMENT_FAILED",
+    title: "Payment failed",
+    message: `Your payment of ${invoice.amountSar} SAR for invoice #${invoice.id} could not be confirmed: ${reason}`,
+    link: "/employer/billing",
+  });
+  await notifyAdmins({
+    type: "PAYMENT_FAILED_FOR_COMPANY",
+    title: "Payment failed for company",
+    message: `${employerProfile.companyName}'s payment for invoice #${invoice.id} failed: ${reason}`,
+    link: "/admin/invoices",
+  });
+
+  return sendSuccess(res, { message: "Invoice marked failed", data: updated });
 }
 
 export async function markInvoiceRefunded(req, res) {

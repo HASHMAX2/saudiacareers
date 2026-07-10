@@ -8,7 +8,9 @@ import { authApi } from "../../api/auth.js";
 import { useAuthStore } from "../../store/authStore.js";
 import { useAppliedJobsStore } from "../../store/appliedJobsStore.js";
 import { useSavedJobsStore } from "../../store/savedJobsStore.js";
+import { useNotificationStore } from "../../store/notificationStore.js";
 import { Button } from "../common/Button.jsx";
+import { NotificationBell } from "../common/NotificationBell.jsx";
 import { Toast } from "../common/Toast.jsx";
 
 const LOGOUT_DELAY = 1500;
@@ -36,6 +38,7 @@ export function Navbar() {
   const clearSession = useAuthStore((state) => state.clearSession);
   const resetSaved    = useSavedJobsStore((state) => state.reset);
   const resetApplied  = useAppliedJobsStore((state) => state.reset);
+  const resetNotifications = useNotificationStore((state) => state.reset);
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [empOpen, setEmpOpen] = useState(false);
@@ -97,6 +100,7 @@ export function Navbar() {
       navigate("/");
       resetSaved();
       resetApplied();
+      resetNotifications();
       clearSession();
       setLoggingOut(false);
       setIsOpen(false);
@@ -132,16 +136,19 @@ export function Navbar() {
             </span>
           </Link>
 
-          <button
-            aria-expanded={isOpen}
-            aria-label="Toggle navigation"
-            className="rounded-full p-2 md:hidden"
-            style={{ color: "var(--text-primary)" }}
-            onClick={() => setIsOpen((v) => !v)}
-            type="button"
-          >
-            {isOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
+          <div className="ml-auto flex items-center gap-2 md:ml-0 md:order-last">
+            {user && <NotificationBell />}
+            <button
+              aria-expanded={isOpen}
+              aria-label="Toggle navigation"
+              className="rounded-full p-2 md:hidden"
+              style={{ color: "var(--text-primary)" }}
+              onClick={() => setIsOpen((v) => !v)}
+              type="button"
+            >
+              {isOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+          </div>
 
           <nav
             className={`${
