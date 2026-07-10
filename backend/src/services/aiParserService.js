@@ -23,26 +23,77 @@ RULES:
 12. companyName: extract school/company name if clearly stated. Empty string "" if unknown.
 13. Strip ALL emoji characters from every field value.
 14. Ignore sender names, timestamps, and forwarding metadata at the top of messages.
-15. Return ONLY a valid JSON array — no explanation text, no markdown fences, no preamble.`;
+15. Never invent a value that is not stated or clearly implied in the source text. When genuinely unsure, use the field's documented empty/fallback value ("", "Not specified", or "Other") rather than guessing — a missing field is far better than a fabricated one.
+16. Call the extract_jobs tool exactly once with every job you found. If no job postings are present, call it with an empty jobs array.`;
 
-export async function parseJobsFromWhatsApp(rawText) {
+const JOB_ITEM_SCHEMA = {
+  type: "object",
+  properties: {
+    title: { type: "string" },
+    companyName: { type: "string" },
+    location: { type: "string", enum: ["Riyadh", "Jeddah", "Dammam", "Other"] },
+    industry: { type: "string" },
+    employmentType: { type: "string", enum: ["Full-time", "Part-time", "Contract", "Internship"] },
+    experienceRequired: { type: "string" },
+    salaryRange: { type: "string" },
+    description: { type: "string" },
+    requiredSkills: { type: "string" },
+    hrEmail: { type: "string" },
+    applicationDeadline: { type: "string" },
+  },
+  // Every key must be present in the model's output (each can still be an empty
+  // string per the prompt's fallback rules) — this is what actually prevents the
+  // "AI silently omits a field" failure mode, rather than just asking nicely.
+  required: [
+    "title", "companyName", "location", "industry", "employmentType",
+    "experienceRequired", "salaryRange", "description", "requiredSkills",
+    "hrEmail", "applicationDeadline",
+  ],
+};
+
+const EXTRACT_JOBS_TOOL = {
+  name: "extract_jobs",
+  description: "Record every job listing extracted from the WhatsApp messages.",
+  input_schema: {
+    type: "object",
+    properties: {
+      jobs: { type: "array", items: JOB_ITEM_SCHEMA },
+    },
+    required: ["jobs"],
+  },
+};
+
+async function callModel(rawText) {
   const message = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
     max_tokens: 4096,
     system: SYSTEM_PROMPT,
+    tools: [EXTRACT_JOBS_TOOL],
+    tool_choice: { type: "tool", name: "extract_jobs" },
     messages: [
       {
         role: "user",
-        content: `Extract all job listings from the following WhatsApp messages and return a JSON array.\n\nEach object must have exactly these fields: title, companyName, location, industry, employmentType, experienceRequired, salaryRange, description, requiredSkills, hrEmail, applicationDeadline.\n\n--- MESSAGES START ---\n${rawText}\n--- MESSAGES END ---`,
+        content: `Extract all job listings from the following WhatsApp messages.\n\n--- MESSAGES START ---\n${rawText}\n--- MESSAGES END ---`,
       },
     ],
   });
 
-  let raw = message.content[0].text.trim();
-  // Strip markdown code fences if the model wraps output
-  raw = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+  const toolUse = message.content.find((block) => block.type === "tool_use" && block.name === "extract_jobs");
+  if (!toolUse) throw new Error("AI did not return a structured extraction result");
 
-  const parsed = JSON.parse(raw);
-  if (!Array.isArray(parsed)) throw new Error("AI did not return a JSON array");
-  return parsed;
+  const jobs = toolUse.input?.jobs;
+  if (!Array.isArray(jobs)) throw new Error("AI result did not include a jobs array");
+  return jobs;
+}
+
+export async function parseJobsFromWhatsApp(rawText) {
+  try {
+    return await callModel(rawText);
+  } catch (error) {
+    // One retry for transient issues (rate limits, network blips, or the rare
+    // malformed tool call) — not a fix for bad input, just resilience against
+    // the AI call itself failing outright and losing the whole batch.
+    console.error("AI import parse attempt 1 failed, retrying once:", error.message);
+    return await callModel(rawText);
+  }
 }

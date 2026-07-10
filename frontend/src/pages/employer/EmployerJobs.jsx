@@ -12,8 +12,8 @@ import { formatDate } from "../../utils/formatDate.js";
 
 const EMP = "var(--accent)";
 
-const STATUS_LABELS = { ACTIVE: "Active", INACTIVE: "Inactive", DRAFT: "Draft", EXPIRED: "Expired", PENDING_REVIEW: "Pending review" };
-const STATUS_TONES = { ACTIVE: "green", INACTIVE: "amber", DRAFT: "neutral", EXPIRED: "red", PENDING_REVIEW: "blue" };
+const STATUS_LABELS = { ACTIVE: "Active", INACTIVE: "Inactive", DRAFT: "Draft", EXPIRED: "Expired", REJECTED: "Rejected" };
+const STATUS_TONES = { ACTIVE: "green", INACTIVE: "amber", DRAFT: "neutral", EXPIRED: "red", REJECTED: "red" };
 const CREDIT_LABELS = { FREE: "Free monthly job", PAID: "Paid credit" };
 
 function StatusBadge({ status }) {
@@ -70,6 +70,26 @@ export function EmployerJobs() {
     try {
       await employerApi.deleteJob(job.id);
       await load();
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleEdit(job) {
+    // A live job is never edited in place — start (or resume) a revision and
+    // edit that working copy instead, so candidates keep seeing the current
+    // version until an admin approves the change.
+    if (job.status !== "ACTIVE") {
+      navigate(`/employer/jobs/${job.id}/edit`);
+      return;
+    }
+    setBusyId(job.id);
+    setToggleError("");
+    try {
+      const { data } = await employerApi.reviseJob(job.id);
+      navigate(`/employer/jobs/${data.data.id}/edit`);
+    } catch (error) {
+      setToggleError(error.response?.data?.message ?? "Unable to start an update for this job");
     } finally {
       setBusyId(null);
     }
@@ -160,7 +180,14 @@ export function EmployerJobs() {
                       <p className="font-semibold" style={{ color: "var(--text-primary)" }}>{job.title}</p>
                       <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>{job.location}</p>
                     </td>
-                    <td className="px-4 py-3"><StatusBadge status={job.status} /></td>
+                    <td className="px-4 py-3">
+                      <StatusBadge status={job.status} />
+                      {job.status === "REJECTED" && job.reviewNote && (
+                        <p className="mt-1 max-w-[220px] text-xs" style={{ color: "var(--text-tertiary)" }} title={job.reviewNote}>
+                          {job.reviewNote}
+                        </p>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-xs" style={{ color: "var(--text-tertiary)" }}>{CREDIT_LABELS[job.creditSource] ?? "Not consumed"}</td>
                     <td className="px-4 py-3">
                       <Link to={`/employer/jobs/${job.id}/applications`} className="font-semibold hover:underline" style={{ color: EMP }}>
@@ -170,12 +197,12 @@ export function EmployerJobs() {
                     <td className="px-4 py-3 text-xs" style={{ color: "var(--text-tertiary)" }}>{formatDate(job.createdAt)}</td>
                     <td className="py-3 pl-4 pr-5">
                       <div className="flex items-center justify-end gap-1.5">
-                        <Button size="sm" variant="secondary" className="w-[104px] justify-center" onClick={() => navigate(`/employer/jobs/${job.id}/edit`)} disabled={!!busyId}>
-                          <Edit2 size={13} />Edit
+                        <Button size="sm" variant="secondary" className="w-[104px] justify-center" onClick={() => handleEdit(job)} disabled={!!busyId}>
+                          {busyId === job.id ? <Loader2 size={13} className="animate-spin" /> : <Edit2 size={13} />}Edit
                         </Button>
-                        {job.status === "PENDING_REVIEW" ? (
-                          <Button size="sm" variant="secondary" className="w-[104px] justify-center" disabled title="Awaiting admin review before this job can go live">
-                            Awaiting review
+                        {job.status === "REJECTED" ? (
+                          <Button size="sm" variant="secondary" className="w-[104px] justify-center" disabled title="Rejected jobs can't be republished directly">
+                            Rejected
                           </Button>
                         ) : (
                           <Button size="sm" variant="secondary" className="w-[104px] justify-center" disabled={!!busyId} onClick={() => handleToggle(job)}>

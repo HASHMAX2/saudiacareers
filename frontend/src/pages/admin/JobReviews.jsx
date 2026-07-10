@@ -26,8 +26,16 @@ export function JobReviews() {
   const [error, setError] = useState("");
 
   async function load() {
-    const { data } = await adminApi.jobs({ status: "PENDING_REVIEW", page: 1, limit: 50 });
-    setJobs(data.data.jobs);
+    // New submissions and job-update revisions are two distinct statuses,
+    // but they share a single review queue — approve/reject work the same
+    // way for both (approveJobReview branches internally on revisesJobId).
+    const [newSubmissions, revisions] = await Promise.all([
+      adminApi.jobs({ status: "PENDING_REVIEW", page: 1, limit: 50 }),
+      adminApi.jobs({ status: "REVISION_PENDING_APPROVAL", page: 1, limit: 50 }),
+    ]);
+    const merged = [...newSubmissions.data.data.jobs, ...revisions.data.data.jobs]
+      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    setJobs(merged);
   }
 
   useEffect(() => { load(); }, []);
@@ -65,7 +73,9 @@ export function JobReviews() {
       <p className="section-label">Admin</p>
       <h1 className="page-title text-3xl md:text-4xl">Job reviews</h1>
       <p className="mt-2 mb-7 text-base" style={{ color: "var(--text-secondary)" }}>
-        Jobs automatically flagged by the legitimacy check. Approving publishes the job (consumes a credit); rejecting keeps it off listings.
+        New submissions flagged by the legitimacy check, plus edits to already-live jobs awaiting approval.
+        Approving a new submission publishes it (consumes a credit); approving an edit merges it into the live
+        job (no credit consumed). Rejecting either keeps things as they were — the live job, if any, is untouched.
       </p>
 
       {error && <Alert>{error}</Alert>}
@@ -86,6 +96,16 @@ export function JobReviews() {
             <div key={job.id} className="card-soft p-5">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
+                  <div className="mb-1.5 flex flex-wrap items-center gap-2">
+                    <Badge tone={job.revisesJobId ? "blue" : "amber"}>
+                      {job.revisesJobId ? "Job update" : "New submission"}
+                    </Badge>
+                    {job.revisesJobId && (
+                      <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>
+                        of &quot;{job.revisesJob?.title ?? `job #${job.revisesJobId}`}&quot;
+                      </span>
+                    )}
+                  </div>
                   <p className="font-semibold" style={{ color: "var(--text-primary)" }}>{job.title}</p>
                   <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>{job.companyName} · {job.location}</p>
                   <p className="mt-1 text-xs" style={{ color: "var(--text-tertiary)" }}>Submitted {formatDate(job.createdAt)}</p>

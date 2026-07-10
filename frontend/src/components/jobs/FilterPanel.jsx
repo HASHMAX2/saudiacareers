@@ -1,11 +1,10 @@
 import { ChevronDown, SlidersHorizontal, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Toast } from "../common/Toast.jsx";
-import { EMPTY_FILTERS, SALARY_RANGES } from "../../utils/constants.js";
+import { EMPTY_FILTERS, EXPERIENCE_LEVELS, SALARY_RANGES } from "../../utils/constants.js";
 
 const LOCATIONS        = ["Riyadh", "Jeddah", "Dammam", "Other"];
 const EMPLOYMENT_TYPES = ["Full-time", "Part-time", "Contract", "Internship"];
-const EXPERIENCE_LEVELS = ["Fresh graduate", "1-2 years", "2-3 years", "3-5 years", "5-10 years", "10+ years"];
 const GENDERS          = ["Any", "Male", "Female"];
 const FRESHNESS_OPTIONS = [
   { value: 1,  label: "Last 24 hours" },

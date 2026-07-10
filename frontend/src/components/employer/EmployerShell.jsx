@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
-  Briefcase, Building2, ChevronDown, LayoutDashboard, Loader2, LogOut,
-  Menu, PlusCircle, Search, Users, Wallet, X,
+  Briefcase, Building2, ChevronDown, Clock3, LayoutDashboard, Loader2, LogOut,
+  Menu, PlusCircle, Users, Wallet, X,
 } from "lucide-react";
 import { authApi } from "../../api/auth.js";
 import { employerApi } from "../../api/employer.js";
@@ -29,9 +29,9 @@ export function EmployerShell() {
 
   const [profile, setProfile] = useState(null);
   const [metrics, setMetrics] = useState(null);
+  const [pendingCount, setPendingCount] = useState(undefined);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [search, setSearch] = useState("");
   const [loggingOut, setLoggingOut] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const menuRef = useRef(null);
@@ -42,6 +42,7 @@ export function EmployerShell() {
   useEffect(() => {
     employerApi.getProfile().then(({ data }) => setProfile(data.data)).catch(() => setProfile({}));
     employerApi.getDashboard().then(({ data }) => setMetrics(data.data)).catch(() => {});
+    employerApi.listPendingJobs().then(({ data }) => setPendingCount(data.data.length)).catch(() => {});
   }, []);
 
   const closeMenu = useCallback(() => setMenuOpen(false), []);
@@ -79,19 +80,13 @@ export function EmployerShell() {
     }, LOGOUT_DELAY);
   }
 
-  function handleSearch(e) {
-    e.preventDefault();
-    const q = search.trim();
-    navigate(q ? `/employer/jobs?search=${encodeURIComponent(q)}` : "/employer/jobs");
-    setSidebarOpen(false);
-  }
-
   const verMeta = VERIFICATION_META[profile?.verificationStatus] ?? VERIFICATION_META.PENDING;
   const initials = (user?.name ?? "E").split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
 
   const navItems = [
     { label: "Overview", to: "/employer/dashboard", icon: LayoutDashboard, end: true },
     { label: "Jobs", to: "/employer/jobs", icon: Briefcase, badge: metrics?.totalJobs, end: true },
+    { label: "Pending Jobs", to: "/employer/jobs/pending", icon: Clock3, badge: pendingCount },
     { label: "Post a Job", to: "/employer/jobs/create", icon: PlusCircle },
     { label: "Applicants", to: "/employer/applicants", icon: Users, badge: metrics?.totalApplications },
     { label: "Billing", to: "/employer/billing", icon: Wallet },
@@ -186,17 +181,6 @@ export function EmployerShell() {
           <button className="rounded-lg p-2 md:hidden" onClick={() => setSidebarOpen(true)} aria-label="Open menu">
             <Menu size={20} style={{ color: "var(--text-primary)" }} />
           </button>
-
-          <form onSubmit={handleSearch} className="relative hidden max-w-md flex-1 md:block">
-            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: "var(--text-tertiary)" }} />
-            <input
-              className="w-full rounded-full py-2 pl-10 pr-4 text-sm outline-none"
-              style={{ border: "1px solid var(--border-default)", background: "var(--bg-elev)" }}
-              placeholder="Search your jobs…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </form>
 
           <div className="ml-auto flex items-center gap-2">
             <NotificationBell accent={EMP} />

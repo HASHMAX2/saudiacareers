@@ -8,8 +8,12 @@ import { consumeJobCredit, getOrCreateSubscription } from "../services/employerB
 import { checkJobLegitimacy } from "../services/jobLegitimacyService.js";
 import { expireOverdueJobs } from "../services/jobExpiryService.js";
 import { notify, notifyAdmins, notifyJobClosedForCandidates } from "../services/notificationService.js";
+import { pickRevisableFields } from "../utils/jobFields.js";
 import { ApiError } from "../utils/ApiError.js";
 import { sendSuccess } from "../utils/ApiResponse.js";
+
+const PENDING_STATUSES = ["PENDING_REVIEW", "REVISION_PENDING_APPROVAL"];
+const PENDING_REVIEW_MESSAGE = "Pending review jobs can only be managed through the Job Review workflow.";
 
 // ── Profile ───────────────────────────────────────────────────────────────────
 
@@ -93,7 +97,8 @@ export async function getEmployerDashboard(req, res) {
 
   const [totalJobs, activeJobs, totalApplications, newApplications] =
     await prisma.$transaction([
-      prisma.job.count({ where: { createdBy: userId, isDeleted: false } }),
+      // revisesJobId: null — revision working copies aren't real listings.
+      prisma.job.count({ where: { createdBy: userId, isDeleted: false, revisesJobId: null } }),
       prisma.job.count({ where: { createdBy: userId, isDeleted: false, status: "ACTIVE" } }),
       prisma.application.count({ where: { job: { createdBy: userId } } }),
       prisma.application.count({
@@ -117,7 +122,12 @@ export async function listEmployerJobs(req, res) {
   const where = {
     createdBy: userId,
     isDeleted: false,
-    ...(status ? { status } : {}),
+    // Revision working copies (drafts, pending-review edits, and rejected
+    // edits) never appear as their own row here — only the Pending Jobs page
+    // shows them. A rejected *new* submission (revisesJobId null) still
+    // belongs here so the employer can see it, per the moderation workflow.
+    revisesJobId: null,
+    status: status ?? { notIn: PENDING_STATUSES },
     ...(search
       ? {
           OR: [
@@ -145,13 +155,59 @@ export async function listEmployerJobs(req, res) {
   });
 }
 
+// Jobs (new submissions) and revisions (edits to an already-live job) that
+// are currently awaiting an admin decision, plus recently rejected revisions
+// so the employer can see why an edit didn't go live. New-submission
+// rejections are excluded here — those live on the main Jobs page instead.
+export async function listEmployerPendingJobs(req, res) {
+  const userId = req.user.id;
+  const jobs = await prisma.job.findMany({
+    where: {
+      createdBy: userId,
+      isDeleted: false,
+      OR: [
+        { status: { in: PENDING_STATUSES } },
+        { status: "REJECTED", revisesJobId: { not: null } },
+      ],
+    },
+    include: { revisesJob: { select: { id: true, title: true } } },
+    orderBy: { createdAt: "desc" },
+  });
+  return sendSuccess(res, { message: "Pending jobs retrieved", data: jobs });
+}
+
 export async function getEmployerJob(req, res) {
   const { id } = req.validated.params;
   const job = await prisma.job.findFirst({
     where: { id, createdBy: req.user.id, isDeleted: false },
+    include: { revisesJob: { select: { id: true, title: true } } },
   });
   if (!job) throw new ApiError(404, "Job not found");
   return sendSuccess(res, { message: "Job retrieved", data: job });
+}
+
+// Starts (or resumes) an edit to a live job. The live job is never touched —
+// a separate DRAFT row is created (or, if one is already in flight, reused)
+// seeded from the live job's current content. The employer edits this
+// working copy and submits it via updateEmployerJobStatus, which is the only
+// way it can move to REVISION_PENDING_APPROVAL.
+export async function createJobRevision(req, res) {
+  const { id } = req.validated.params;
+  const original = await prisma.job.findFirst({ where: { id, createdBy: req.user.id, isDeleted: false } });
+  if (!original) throw new ApiError(404, "Job not found");
+  if (original.status !== "ACTIVE") throw new ApiError(400, "Only a live job can be revised — edit it directly instead.");
+
+  const existingRevision = await prisma.job.findFirst({
+    where: { revisesJobId: id, isDeleted: false, status: { in: ["DRAFT", "REVISION_PENDING_APPROVAL"] } },
+  });
+  if (existingRevision) {
+    return sendSuccess(res, { message: "Resuming the update already in progress for this job", data: existingRevision });
+  }
+
+  const revision = await prisma.job.create({
+    data: { ...pickRevisableFields(original), createdBy: req.user.id, status: "DRAFT", revisesJobId: original.id },
+  });
+  return sendSuccess(res, { statusCode: 201, message: "Draft update created", data: revision });
 }
 
 export async function createEmployerJob(req, res) {
@@ -221,6 +277,14 @@ export async function updateEmployerJob(req, res) {
     where: { id, createdBy: req.user.id, isDeleted: false },
   });
   if (!existing) throw new ApiError(404, "Job not found");
+  if (PENDING_STATUSES.includes(existing.status)) throw new ApiError(409, PENDING_REVIEW_MESSAGE);
+  // Live jobs are never edited in place — candidates are already seeing this
+  // content, so a change has to go through the revision workflow (revise →
+  // edit the DRAFT copy → submit for review) instead of silently mutating
+  // what's currently public.
+  if (existing.status === "ACTIVE") {
+    throw new ApiError(409, "Live jobs can't be edited directly. Start an update from the Jobs page instead.");
+  }
 
   const { status: _ignored, saveAsDraft: _ignoredDraft, ...jobData } = req.validated.body;
   const job = await prisma.job.update({ where: { id }, data: jobData });
@@ -233,6 +297,37 @@ export async function updateEmployerJobStatus(req, res) {
 
   const job = await prisma.job.findFirst({ where: { id, createdBy: req.user.id, isDeleted: false } });
   if (!job) throw new ApiError(404, "Job not found");
+  // A job already in the review queue can only leave PENDING_REVIEW through
+  // approveJobReview/rejectJobReview — never through this generic endpoint,
+  // regardless of the requested nextStatus (including re-requesting ACTIVE,
+  // which would otherwise re-run the legitimacy check on possibly-edited
+  // content and publish it for free without ever reaching an admin).
+  if (PENDING_STATUSES.includes(job.status)) throw new ApiError(409, PENDING_REVIEW_MESSAGE);
+  // A rejected job (new submission or revision) can't be silently
+  // republished by the employer — that would defeat the point of having
+  // rejected it. There's no resubmit flow yet, so this is a dead end short
+  // of creating a fresh listing.
+  if (job.status === "REJECTED" && nextStatus === "ACTIVE") {
+    throw new ApiError(403, "Rejected jobs can't be republished directly. Create a new listing instead.");
+  }
+
+  // A DRAFT revision (revisesJobId set) has exactly one meaningful
+  // transition: submitting it for admin review. It never auto-publishes —
+  // no legitimacy check, no credit consumption — because approveJobReview is
+  // the only thing allowed to merge it into the live job.
+  if (job.revisesJobId) {
+    if (nextStatus !== "REVISION_PENDING_APPROVAL") {
+      throw new ApiError(400, "This update can only be submitted for review.");
+    }
+    const updated = await prisma.job.update({ where: { id }, data: { status: "REVISION_PENDING_APPROVAL" } });
+    await notifyAdmins({
+      type: "JOB_REVISION_SUBMITTED",
+      title: "Job update submitted for review",
+      message: `An update to "${job.title}" was submitted for review.`,
+      link: "/admin/job-reviews",
+    });
+    return sendSuccess(res, { message: "Update submitted for admin review", data: updated });
+  }
 
   // Publishing (moving into ACTIVE from a non-active state) is gated by
   // verification + job credits, same as creating a brand-new job.
@@ -301,6 +396,7 @@ export async function deleteEmployerJob(req, res) {
   const { id } = req.validated.params;
   const existing = await prisma.job.findFirst({ where: { id, createdBy: req.user.id, isDeleted: false } });
   if (!existing) throw new ApiError(404, "Job not found");
+  if (PENDING_STATUSES.includes(existing.status)) throw new ApiError(409, PENDING_REVIEW_MESSAGE);
 
   await prisma.job.update({ where: { id }, data: { isDeleted: true, status: "INACTIVE" } });
   if (existing.status === "ACTIVE") await notifyJobClosedForCandidates(existing);

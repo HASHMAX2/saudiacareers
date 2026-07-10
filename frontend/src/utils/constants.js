@@ -18,6 +18,8 @@ export const INDUSTRIES = [
   "Other",
 ];
 
+export const EXPERIENCE_LEVELS = ["Fresh graduate", "1-2 years", "2-3 years", "3-5 years", "5-10 years", "10+ years"];
+
 export const AVAILABILITY_OPTIONS = [
   "Immediately",
   "2 Weeks Notice",

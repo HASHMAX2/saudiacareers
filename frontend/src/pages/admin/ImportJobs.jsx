@@ -1,87 +1,27 @@
-import { AlertCircle, Check, ChevronDown, ChevronUp, Loader2, Sparkles, Trash2, Upload } from "lucide-react";
+import { AlertCircle, Check, CheckCircle2, ChevronDown, ChevronUp, Loader2, Sparkles, Trash2, Upload, X, XCircle } from "lucide-react";
 import { useRef, useState } from "react";
 import { adminApi } from "../../api/admin.js";
 import { Alert } from "../../components/common/Alert.jsx";
 import { Button } from "../../components/common/Button.jsx";
-import { Select } from "../../components/common/Select.jsx";
-import { Toast } from "../../components/common/Toast.jsx";
+import { JobForm } from "../../components/admin/JobForm.jsx";
 
-const LOCATION_OPTIONS = ["Riyadh", "Jeddah", "Dammam", "Other"];
-const INDUSTRY_OPTIONS = ["Education", "Healthcare", "Technology", "Finance", "Engineering", "Retail", "Hospitality", "Construction", "Marketing", "Administration", "Other"];
-const EMPLOYMENT_OPTIONS = ["Full-time", "Part-time", "Contract", "Internship"];
-
+// Snapshot of what the AI extraction itself was missing or unsure about, taken
+// once at parse time. This is a pre-review hint, not a live validity check —
+// JobForm owns moment-to-moment field validation once a card is expanded.
 const REQUIRED = ["title", "companyName", "location", "industry", "employmentType", "experienceRequired", "description", "requiredSkills", "hrEmail"];
 
 function missingFields(job) {
   return REQUIRED.filter((k) => !job[k]?.trim());
 }
 
-function emailValid(v) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((v ?? "").trim());
-}
-
-function validateCard(job) {
-  const errors = {};
-  if (!job.title?.trim()) errors.title = "Required";
-  else if (job.title.trim().length < 2) errors.title = "Min 2 chars";
-  if (!job.companyName?.trim()) errors.companyName = "Required";
-  if (!job.location?.trim()) errors.location = "Required";
-  if (!job.industry?.trim()) errors.industry = "Required";
-  if (!job.employmentType?.trim()) errors.employmentType = "Required";
-  if (!job.experienceRequired?.trim()) errors.experienceRequired = "Required";
-  if (!job.description?.trim()) errors.description = "Required";
-  else if (job.description.trim().length < 20) errors.description = "Min 20 chars";
-  if (!job.requiredSkills?.trim()) errors.requiredSkills = "Required";
-  if (!job.hrEmail?.trim()) errors.hrEmail = "Required";
-  else if (!emailValid(job.hrEmail)) errors.hrEmail = "Invalid email";
-  return errors;
-}
-
 // ─── Individual job review card ───────────────────────────────────────────────
-function JobReviewCard({ index, total, job, onUpdate, onDiscard }) {
-  const [expanded, setExpanded] = useState(true);
-  const [publishing, setPublishing] = useState(false);
-  const [published, setPublished] = useState(false);
-  const [pubError, setPubError] = useState("");
-  const [errors, setErrors] = useState({});
-  const [toast, setToast] = useState({ show: false, text: "" });
-  const timerRef = useRef(null);
-
+function JobReviewCard({ formRef, index, total, job, expanded, onToggleExpand, published, onPublished, onDiscard }) {
   const missing = missingFields(job);
-  const hasWarnings = missing.length > 0 || !emailValid(job.hrEmail);
+  const hasWarnings = !published && missing.length > 0;
 
-  function field(key, value) {
-    onUpdate(index, key, value);
-    setErrors((prev) => ({ ...prev, [key]: undefined }));
-  }
-
-  async function handlePublish() {
-    const errs = validateCard(job);
-    if (Object.keys(errs).length) {
-      setErrors(errs);
-      setExpanded(true);
-      return;
-    }
-    setErrors({});
-    setPubError("");
-    setPublishing(true);
-    try {
-      await adminApi.createJob({
-        ...job,
-        salaryRange: job.salaryRange || null,
-        applicationDeadline: job.applicationDeadline ? new Date(job.applicationDeadline).toISOString() : null,
-        status: "ACTIVE",
-      });
-      setPublished(true);
-      setExpanded(false);
-      setToast({ show: true, text: "Job published!" });
-      clearTimeout(timerRef.current);
-      timerRef.current = setTimeout(() => setToast({ show: false, text: "" }), 2500);
-    } catch (err) {
-      setPubError(err.response?.data?.message ?? "Failed to publish. Check all fields.");
-    } finally {
-      setPublishing(false);
-    }
+  async function handleSubmit(payload) {
+    await adminApi.createJob(payload);
+    onPublished();
   }
 
   // ── Published state ──────────────────────────────────────────────────────
@@ -91,7 +31,6 @@ function JobReviewCard({ index, total, job, onUpdate, onDiscard }) {
         className="card-soft flex items-center gap-3 px-5 py-4"
         style={{ borderColor: "#86EFAC", background: "#F0FDF4" }}
       >
-        <Toast show={toast.show} message={toast.text} tone="success" duration={2500} />
         <span
           className="grid h-8 w-8 shrink-0 place-items-center rounded-full"
           style={{ background: "#16A34A", color: "#fff" }}
@@ -113,7 +52,7 @@ function JobReviewCard({ index, total, job, onUpdate, onDiscard }) {
       <div
         className="flex items-start gap-3 px-5 py-4 cursor-pointer"
         style={{ borderBottom: expanded ? "1px solid var(--border-default)" : "none" }}
-        onClick={() => setExpanded((v) => !v)}
+        onClick={onToggleExpand}
       >
         <span
           className="mt-0.5 shrink-0 text-[11px] font-bold rounded-full px-2 py-0.5"
@@ -131,18 +70,18 @@ function JobReviewCard({ index, total, job, onUpdate, onDiscard }) {
           {hasWarnings && (
             <p className="mt-1 flex items-center gap-1 text-xs font-medium" style={{ color: "#D97706" }}>
               <AlertCircle size={12} />
-              {missing.length} field{missing.length !== 1 ? "s" : ""} need attention
+              AI extraction flagged {missing.length} field{missing.length !== 1 ? "s" : ""} for review
             </p>
           )}
         </div>
         <div className="flex shrink-0 items-center gap-2" onClick={(e) => e.stopPropagation()}>
-          <Button size="sm" variant="danger" onClick={onDiscard} disabled={publishing}>
+          <Button size="sm" variant="danger" onClick={onDiscard}>
             <Trash2 size={13} />
           </Button>
           <button
             className="rounded-full p-1.5 transition-colors hover:bg-black/5"
             style={{ color: "var(--text-tertiary)" }}
-            onClick={() => setExpanded((v) => !v)}
+            onClick={onToggleExpand}
             type="button"
           >
             {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -150,118 +89,49 @@ function JobReviewCard({ index, total, job, onUpdate, onDiscard }) {
         </div>
       </div>
 
-      {/* Expanded form */}
+      {/* Expanded form — the same JobForm used by the manual "Create job" page,
+          so imported jobs get the exact same field set, dropdowns (Industry,
+          Experience level), and company-email validation. */}
       {expanded && (
         <div className="px-5 pb-5 pt-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <FormField label="Job title" required error={errors.title}>
-              <input
-                className={`form-control ${errors.title ? "border-red-400" : ""}`}
-                value={job.title ?? ""}
-                onChange={(e) => field("title", e.target.value)}
-                placeholder="e.g. English Teacher"
-              />
-            </FormField>
-            <FormField label="Company name" required error={errors.companyName}>
-              <input
-                className={`form-control ${errors.companyName ? "border-red-400" : ""}`}
-                value={job.companyName ?? ""}
-                onChange={(e) => field("companyName", e.target.value)}
-                placeholder="e.g. Najd Schools"
-              />
-            </FormField>
-
-            <FormField label="Location" required error={errors.location}>
-              <Select bare value={job.location ?? ""} onChange={(e) => field("location", e.target.value)} options={LOCATION_OPTIONS} error={errors.location} />
-            </FormField>
-            <FormField label="Industry" required error={errors.industry}>
-              <Select bare value={job.industry ?? ""} onChange={(e) => field("industry", e.target.value)} options={INDUSTRY_OPTIONS} error={errors.industry} />
-            </FormField>
-
-            <FormField label="Employment type" required error={errors.employmentType}>
-              <Select bare value={job.employmentType ?? ""} onChange={(e) => field("employmentType", e.target.value)} options={EMPLOYMENT_OPTIONS} error={errors.employmentType} />
-            </FormField>
-            <FormField label="Experience required" required error={errors.experienceRequired}>
-              <input
-                className={`form-control ${errors.experienceRequired ? "border-red-400" : ""}`}
-                value={job.experienceRequired ?? ""}
-                onChange={(e) => field("experienceRequired", e.target.value)}
-                placeholder="e.g. 2+ years"
-              />
-            </FormField>
-
-            <FormField label="Salary range (optional)">
-              <input
-                className="form-control"
-                value={job.salaryRange ?? ""}
-                onChange={(e) => field("salaryRange", e.target.value)}
-                placeholder="e.g. SAR 8,000–12,000/month"
-              />
-            </FormField>
-            <FormField label="Application deadline (optional)">
-              <input
-                type="date"
-                className="form-control"
-                value={job.applicationDeadline?.slice?.(0, 10) ?? ""}
-                onChange={(e) => field("applicationDeadline", e.target.value)}
-              />
-            </FormField>
-
-            <FormField label="Required skills" required error={errors.requiredSkills} className="md:col-span-2">
-              <input
-                className={`form-control ${errors.requiredSkills ? "border-red-400" : ""}`}
-                value={job.requiredSkills ?? ""}
-                onChange={(e) => field("requiredSkills", e.target.value)}
-                placeholder="Comma-separated, e.g. English, Teaching, Communication"
-              />
-            </FormField>
-            <FormField label="HR application email" required error={errors.hrEmail} className="md:col-span-2">
-              <input
-                type="email"
-                className={`form-control ${errors.hrEmail ? "border-red-400" : ""}`}
-                value={job.hrEmail ?? ""}
-                onChange={(e) => field("hrEmail", e.target.value)}
-                placeholder="hr@company.com"
-              />
-            </FormField>
-            <FormField label="Job description" required error={errors.description} className="md:col-span-2">
-              <textarea
-                className={`form-control min-h-32 resize-y ${errors.description ? "border-red-400" : ""}`}
-                value={job.description ?? ""}
-                onChange={(e) => field("description", e.target.value)}
-                placeholder="Role summary and requirements…"
-              />
-            </FormField>
-          </div>
-
-          {pubError && <div className="mt-4 alert-error">{pubError}</div>}
-
-          <div className="mt-5 flex justify-end gap-3">
-            <Button variant="secondary" onClick={onDiscard} disabled={publishing}>
-              Discard
-            </Button>
-            <Button onClick={handlePublish} disabled={publishing}>
-              {publishing
-                ? <><Loader2 size={14} className="animate-spin" />Publishing…</>
-                : <><Upload size={14} />Publish job</>}
-            </Button>
-          </div>
+          <JobForm ref={formRef} initialValue={job} onSubmit={handleSubmit} submitLabel="Publish job" />
         </div>
       )}
     </div>
   );
 }
 
-function FormField({ label, required, error, children, className = "" }) {
+// ─── Persistent (dismissible) publish-all summary — replaces the old 3s toast ──
+function PublishSummary({ summary, onDismiss }) {
+  if (!summary) return null;
+  const { total, succeeded, failed } = summary;
+  const allGood = failed === 0;
   return (
-    <label className={className}>
-      <span className="field-label">
-        {label}
-        {required && <span className="text-red-500 ml-0.5" aria-hidden="true"> *</span>}
-      </span>
-      {children}
-      {error && <span className="mt-1 block text-xs text-red-600">{error}</span>}
-    </label>
+    <div
+      className="mb-5 flex items-start gap-3 rounded-2xl p-4"
+      style={{
+        background: allGood ? "#F0FDF4" : "#FFFBEB",
+        border: `1px solid ${allGood ? "#86EFAC" : "#FCD34D"}`,
+      }}
+    >
+      {allGood
+        ? <CheckCircle2 size={18} className="mt-0.5 shrink-0" style={{ color: "#16A34A" }} />
+        : <XCircle size={18} className="mt-0.5 shrink-0" style={{ color: "#D97706" }} />}
+      <div className="flex-1 text-sm">
+        <p className="font-semibold" style={{ color: allGood ? "#15803D" : "#92400E" }}>
+          Publish all: {succeeded} of {total} job{total !== 1 ? "s" : ""} published
+        </p>
+        {!allGood && (
+          <p className="mt-0.5" style={{ color: "#92400E" }}>
+            {failed} failed and {failed !== 1 ? "have" : "has"} been expanded below with the exact reason —
+            fix and use each card&apos;s own &quot;Publish job&quot; button to retry.
+          </p>
+        )}
+      </div>
+      <button type="button" onClick={onDismiss} className="shrink-0 rounded-full p-1 hover:bg-black/5" style={{ color: "var(--text-tertiary)" }}>
+        <X size={14} />
+      </button>
+    </div>
   );
 }
 
@@ -271,16 +141,15 @@ export function ImportJobs() {
   const [parsing, setParsing] = useState(false);
   const [parseError, setParseError] = useState("");
   const [jobs, setJobs] = useState(null);
+  const [expandedKeys, setExpandedKeys] = useState(new Set());
+  const [publishedKeys, setPublishedKeys] = useState(new Set());
   const [publishAllBusy, setPublishAllBusy] = useState(false);
-  const [publishAllToast, setPublishAllToast] = useState({ show: false, text: "" });
-  const toastTimer = useRef(null);
+  const [publishSummary, setPublishSummary] = useState(null);
+  const formRefs = useRef(new Map());
 
-  function updateJob(index, key, value) {
-    setJobs((prev) => prev.map((j, i) => (i === index ? { ...j, [key]: value } : j)));
-  }
-
-  function discardJob(index) {
-    setJobs((prev) => prev.filter((_, i) => i !== index));
+  function discardJob(key) {
+    setJobs((prev) => prev.filter((j) => j._key !== key));
+    formRefs.current.delete(key);
   }
 
   async function handleParse() {
@@ -288,9 +157,14 @@ export function ImportJobs() {
     setParsing(true);
     setParseError("");
     setJobs(null);
+    setPublishSummary(null);
+    formRefs.current.clear();
     try {
       const { data } = await adminApi.parseImport(rawText);
-      setJobs(data.data.jobs);
+      const withKeys = data.data.jobs.map((job, i) => ({ ...job, _key: `job-${Date.now()}-${i}` }));
+      setJobs(withKeys);
+      setExpandedKeys(new Set(withKeys.map((j) => j._key)));
+      setPublishedKeys(new Set());
     } catch (err) {
       setParseError(err.response?.data?.message ?? "Parsing failed — please try again.");
     } finally {
@@ -299,50 +173,31 @@ export function ImportJobs() {
   }
 
   async function handlePublishAll() {
-    if (!jobs?.length) return;
+    const pending = jobs.filter((j) => !publishedKeys.has(j._key));
+    if (!pending.length) return;
     setPublishAllBusy(true);
-    // Trigger publish on each card individually via the ref approach isn't clean,
-    // so we do a direct batch publish of all valid pending jobs
+    setPublishSummary(null);
+
     const results = await Promise.allSettled(
-      jobs.map((job) => {
-        const errs = validateCard(job);
-        if (Object.keys(errs).length) return Promise.reject(new Error("Validation failed"));
-        return adminApi.createJob({
-          ...job,
-          salaryRange: job.salaryRange || null,
-          applicationDeadline: job.applicationDeadline ? new Date(job.applicationDeadline).toISOString() : null,
-          status: "ACTIVE",
-        });
-      })
+      pending.map((job) => formRefs.current.get(job._key)?.publish() ?? Promise.resolve(false)),
     );
-    const succeeded = results.filter((r) => r.status === "fulfilled").length;
-    const failed = results.length - succeeded;
+
+    // Each result is the boolean JobForm.publish() resolved with — true means
+    // that card's own onSubmit already fired onPublished() during the call, so
+    // publishedKeys is already up to date by the time we get here.
+    const failedKeys = pending
+      .filter((_, i) => results[i].status !== "fulfilled" || results[i].value !== true)
+      .map((j) => j._key);
+
+    setExpandedKeys((prev) => new Set([...prev, ...failedKeys]));
     setPublishAllBusy(false);
-
-    const text = failed === 0
-      ? `All ${succeeded} job${succeeded !== 1 ? "s" : ""} published!`
-      : `${succeeded} published, ${failed} failed (check individual cards).`;
-
-    setPublishAllToast({ show: true, text });
-    clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setPublishAllToast({ show: false, text: "" }), 3000);
-
-    if (succeeded > 0) {
-      // Mark succeeded jobs as published by removing them from the list after a short delay
-      setJobs((prev) =>
-        prev.map((job, i) =>
-          results[i].status === "fulfilled" ? { ...job, _published: true } : job
-        )
-      );
-    }
+    setPublishSummary({ total: pending.length, succeeded: pending.length - failedKeys.length, failed: failedKeys.length });
   }
 
-  const pendingCount = jobs?.filter((j) => !j._published).length ?? 0;
+  const pendingCount = jobs?.filter((j) => !publishedKeys.has(j._key)).length ?? 0;
 
   return (
     <div>
-      <Toast show={publishAllToast.show} message={publishAllToast.text} tone="success" duration={3000} />
-
       <div className="mb-6">
         <p className="section-label">Admin</p>
         <h1 className="page-title text-3xl md:text-4xl">Import jobs</h1>
@@ -398,18 +253,33 @@ export function ImportJobs() {
             )}
           </div>
 
+          <PublishSummary summary={publishSummary} onDismiss={() => setPublishSummary(null)} />
+
           {jobs.length === 0 ? (
             <Alert>No jobs were extracted from the messages. Check that the text contains job postings and try again.</Alert>
           ) : (
             <div className="space-y-4">
               {jobs.map((job, i) => (
                 <JobReviewCard
-                  key={i}
+                  key={job._key}
+                  formRef={(el) => {
+                    if (el) formRefs.current.set(job._key, el);
+                    else formRefs.current.delete(job._key);
+                  }}
                   index={i}
                   total={jobs.length}
                   job={job}
-                  onUpdate={updateJob}
-                  onDiscard={() => discardJob(i)}
+                  expanded={expandedKeys.has(job._key)}
+                  onToggleExpand={() =>
+                    setExpandedKeys((prev) => {
+                      const next = new Set(prev);
+                      next.has(job._key) ? next.delete(job._key) : next.add(job._key);
+                      return next;
+                    })
+                  }
+                  published={publishedKeys.has(job._key)}
+                  onPublished={() => setPublishedKeys((prev) => new Set([...prev, job._key]))}
+                  onDiscard={() => discardJob(job._key)}
                 />
               ))}
             </div>

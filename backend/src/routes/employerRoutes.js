@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   createEmployerJob,
+  createJobRevision,
   deleteEmployerJob,
   getApplicationDetail,
   getEmployerDashboard,
@@ -9,6 +10,7 @@ import {
   getVerification,
   listAllApplications,
   listEmployerJobs,
+  listEmployerPendingJobs,
   listJobApplications,
   submitVerificationDocument,
   updateApplicationStatus,
@@ -57,10 +59,12 @@ employerRouter.get("/dashboard", asyncHandler(getEmployerDashboard));
 
 employerRouter.get("/jobs", validate(employerJobQuerySchema), asyncHandler(listEmployerJobs));
 employerRouter.post("/jobs", validate(createJobSchema), asyncHandler(createEmployerJob));
+employerRouter.get("/jobs/pending", asyncHandler(listEmployerPendingJobs));
 employerRouter.get("/jobs/:id", validate(adminIdSchema), asyncHandler(getEmployerJob));
 employerRouter.put("/jobs/:id", validate(updateJobSchema), asyncHandler(updateEmployerJob));
 employerRouter.patch("/jobs/:id/status", validate(jobStatusSchema), asyncHandler(updateEmployerJobStatus));
 employerRouter.delete("/jobs/:id", validate(adminIdSchema), asyncHandler(deleteEmployerJob));
+employerRouter.post("/jobs/:id/revise", validate(adminIdSchema), asyncHandler(createJobRevision));
 employerRouter.get(
   "/jobs/:jobId/applications",
   validate(employerJobApplicationsQuerySchema),

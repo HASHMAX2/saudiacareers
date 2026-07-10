@@ -183,6 +183,9 @@ model Job {
   featured            Boolean       @default(false)
   flagReasons         String[]      @default([])
   reviewNote          String?
+  revisesJobId        Int?
+  revisesJob          Job?          @relation("JobRevisions", fields: [revisesJobId], references: [id])
+  revisions           Job[]         @relation("JobRevisions")
   createdBy           Int
   creator             User          @relation(fields: [createdBy], references: [id])
   createdAt           DateTime      @default(now())
@@ -198,6 +201,7 @@ model Job {
   @@index([experienceRequired])
   @@index([applicationDeadline])
   @@index([createdAt])
+  @@index([revisesJobId])
 }
 
 enum JobStatus {
@@ -206,6 +210,8 @@ enum JobStatus {
   DRAFT
   EXPIRED
   PENDING_REVIEW
+  REVISION_PENDING_APPROVAL
+  REJECTED
 }
 
 enum ApplyMethod {

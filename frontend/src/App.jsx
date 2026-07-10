@@ -41,6 +41,7 @@ import { EmployerRegister } from "./pages/employer/EmployerRegister.jsx";
 import { EmployerContact } from "./pages/employer/EmployerContact.jsx";
 import { EmployerDashboard } from "./pages/employer/EmployerDashboard.jsx";
 import { EmployerJobs } from "./pages/employer/EmployerJobs.jsx";
+import { EmployerPendingJobs } from "./pages/employer/EmployerPendingJobs.jsx";
 import { EmployerCreateJob } from "./pages/employer/EmployerCreateJob.jsx";
 import { EmployerEditJob } from "./pages/employer/EmployerEditJob.jsx";
 import { EmployerApplications } from "./pages/employer/EmployerApplications.jsx";
@@ -117,6 +118,7 @@ export default function App() {
         <Route element={<EmployerShell />}>
           <Route path="employer/dashboard" element={<EmployerDashboard />} />
           <Route path="employer/jobs" element={<EmployerJobs />} />
+          <Route path="employer/jobs/pending" element={<EmployerPendingJobs />} />
           <Route path="employer/jobs/create" element={<EmployerCreateJob />} />
           <Route path="employer/jobs/:id/edit" element={<EmployerEditJob />} />
           <Route path="employer/jobs/:id/applications" element={<EmployerApplications />} />

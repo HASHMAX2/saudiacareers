@@ -1,3 +1,4 @@
+import { CheckCircle2, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { authApi } from "../../api/auth.js";
@@ -58,6 +59,80 @@ export function Login({ admin = false, employer = false }) {
     ? <p className="mt-6 text-center text-sm" style={{ color: "var(--text-secondary)" }}>New employer? <Link className="font-semibold hover:underline" style={{ color: "var(--accent)" }} to="/employer/register">Create an employer account</Link></p>
     : <p className="mt-6 text-center text-sm" style={{ color: "var(--text-secondary)" }}>New to SaudiaCareers? <Link className="font-semibold hover:underline" style={{ color: "var(--accent)" }} to="/register">Create an account</Link></p>;
 
+  const form_ = (
+    <form className="space-y-4" onSubmit={handleSubmit}>
+      <Input autoComplete="email" id={admin ? "admin-email" : employer ? "employer-email" : "email"} label="Email address" onChange={(event) => setForm({ ...form, email: event.target.value })} placeholder="you@example.com" required type="email" value={form.email} />
+      <div>
+        <Input autoComplete="current-password" id={admin ? "admin-password" : employer ? "employer-password" : "password"} label="Password" onChange={(event) => setForm({ ...form, password: event.target.value })} placeholder="Enter your password" required type="password" value={form.password} />
+        {!admin && <div className="mt-2 text-right"><Link className="font-mono text-xs hover:underline" style={{ color: "var(--accent)" }} to="/forgot-password">Forgot password?</Link></div>}
+      </div>
+      {error && <Alert>{error}</Alert>}
+      <Button className="w-full" disabled={submitting} type="submit">{submitting ? "Signing in..." : "Sign in"}</Button>
+    </form>
+  );
+
+  if (!admin && !employer) {
+    return (
+      <div
+        className="mx-auto grid max-w-6xl overflow-hidden rounded-3xl lg:min-h-[680px] lg:grid-cols-2"
+        style={{ border: "1px solid var(--border-default)", background: "var(--bg-white)" }}
+      >
+        {/* Left: form */}
+        <div className="p-6 sm:p-8 lg:p-12">
+          <div className="mb-7">
+            <h1
+              className="font-bold tracking-tight"
+              style={{ fontSize: "36px", letterSpacing: "-0.01em", color: "var(--text-primary)" }}
+            >
+              {title}
+            </h1>
+            <p className="mt-2 text-[15px] leading-6" style={{ color: "var(--text-secondary)" }}>
+              {subtitle}
+            </p>
+          </div>
+          {form_}
+          {footer}
+        </div>
+
+        {/* Right: premium image panel, hidden below lg */}
+        <div className="relative hidden lg:block">
+          <img
+            src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=900&q=80"
+            alt=""
+            className="h-full w-full object-cover"
+          />
+          <div
+            className="absolute inset-0"
+            style={{ background: "linear-gradient(180deg, rgba(20,20,20,0) 35%, rgba(20,20,20,0.82) 100%)" }}
+          />
+          <div className="absolute bottom-9 left-9 right-9 text-white">
+            <span className="grid h-11 w-11 place-items-center rounded-2xl" style={{ background: "rgba(255,255,255,0.15)" }}>
+              <Sparkles size={20} />
+            </span>
+            <h2 className="mt-4 text-2xl font-bold leading-snug">
+              Your next role is one click away.
+            </h2>
+            <p className="mt-2 max-w-sm text-[14px] leading-6" style={{ color: "rgba(255,255,255,0.75)" }}>
+              Track applications, save jobs, and apply in seconds — all from one profile.
+            </p>
+            <ul className="mt-5 space-y-2">
+              {[
+                "Apply to jobs in one click",
+                "Track every application status",
+                "Get discovered by verified employers",
+              ].map((item) => (
+                <li key={item} className="flex items-center gap-2.5 text-[13.5px]" style={{ color: "rgba(255,255,255,0.85)" }}>
+                  <CheckCircle2 size={15} className="shrink-0" style={{ color: "rgba(255,255,255,0.65)" }} />
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <AuthShell
       admin={admin}
@@ -65,15 +140,7 @@ export function Login({ admin = false, employer = false }) {
       subtitle={subtitle}
       footer={footer}
     >
-      <form className="space-y-4" onSubmit={handleSubmit}>
-        <Input autoComplete="email" id={admin ? "admin-email" : employer ? "employer-email" : "email"} label="Email address" onChange={(event) => setForm({ ...form, email: event.target.value })} placeholder="you@example.com" required type="email" value={form.email} />
-        <div>
-          <Input autoComplete="current-password" id={admin ? "admin-password" : employer ? "employer-password" : "password"} label="Password" onChange={(event) => setForm({ ...form, password: event.target.value })} placeholder="Enter your password" required type="password" value={form.password} />
-          {!admin && <div className="mt-2 text-right"><Link className="font-mono text-xs hover:underline" style={{ color: "var(--accent)" }} to="/forgot-password">Forgot password?</Link></div>}
-        </div>
-        {error && <Alert>{error}</Alert>}
-        <Button className="w-full" disabled={submitting} type="submit">{submitting ? "Signing in..." : "Sign in"}</Button>
-      </form>
+      {form_}
     </AuthShell>
   );
 }

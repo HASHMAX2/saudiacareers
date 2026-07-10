@@ -100,7 +100,7 @@ export function ManageJobs() {
           icon={SlidersHorizontal}
           value={filters.status}
           onChange={(e) => updateFilter("status", e.target.value)}
-          options={[{ value: "", label: "All statuses" }, { value: "ACTIVE", label: "ACTIVE" }, { value: "INACTIVE", label: "INACTIVE" }]}
+          options={[{ value: "", label: "All statuses" }, { value: "ACTIVE", label: "ACTIVE" }, { value: "INACTIVE", label: "INACTIVE" }, { value: "REJECTED", label: "REJECTED" }, { value: "DRAFT", label: "DRAFT" }, { value: "EXPIRED", label: "EXPIRED" }]}
         />
       </div>
 
@@ -267,18 +267,27 @@ function Actions({ job, load, anyBusy, markBusy, markDone }) {
     }
   }
 
+  const isEmployerJob = job.creator?.role === "EMPLOYER";
+
+  // Fixed width (not min-width) on every action button — so the column
+  // never reflows as labels change length (Activate/Deactivate,
+  // Activating…/Deactivating…, or Edit disappearing for employer jobs).
+  const ACTION_WIDTH = "w-[152px]";
+
   return (
     <div className="flex flex-wrap justify-end gap-1.5">
-      <Button size="sm" variant="secondary" disabled={anyBusy} onClick={() => navigate(`/admin/jobs/${job.id}/edit`)}>
-        Edit
-      </Button>
-      <Button size="sm" variant="secondary" className="min-w-[108px]" disabled={anyBusy} onClick={handleToggle}>
+      {!isEmployerJob && (
+        <Button size="sm" variant="secondary" className={ACTION_WIDTH} disabled={anyBusy} onClick={() => navigate(`/admin/jobs/${job.id}/edit`)}>
+          Edit
+        </Button>
+      )}
+      <Button size="sm" variant="secondary" className={ACTION_WIDTH} disabled={anyBusy} onClick={handleToggle}>
         {toggling
-          ? <><Loader2 size={12} className="animate-spin" />{job.status === "ACTIVE" ? "Deactivating…" : "Activating…"}</>
+          ? <><Loader2 size={12} className="animate-spin shrink-0" />{job.status === "ACTIVE" ? "Deactivating…" : "Activating…"}</>
           : job.status === "ACTIVE" ? "Deactivate" : "Activate"}
       </Button>
-      <Button size="sm" variant="danger" disabled={anyBusy} onClick={handleDelete}>
-        {deleting ? <><Loader2 size={12} className="animate-spin" />Deleting…</> : "Delete"}
+      <Button size="sm" variant="danger" className={ACTION_WIDTH} disabled={anyBusy} onClick={handleDelete}>
+        {deleting ? <><Loader2 size={12} className="animate-spin shrink-0" />Deleting…</> : "Delete"}
       </Button>
     </div>
   );

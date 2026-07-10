@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Banknote, Bookmark, BriefcaseBusiness, CalendarDays, Check, Clock3, Flag, MapPin, Share2, Users } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Banknote, Bookmark, BriefcaseBusiness, CalendarDays, Check, Clock3, Flag, MapPin, SearchX, Share2, Users } from "lucide-react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { applicationsApi } from "../../api/applications.js";
 import { jobsApi } from "../../api/jobs.js";
 import { profileApi } from "../../api/profile.js";
@@ -35,6 +35,7 @@ export function JobDetail() {
   const isCandidate = user?.role === "CANDIDATE";
   const alreadyApplied = isCandidate && isApplied(Number(id));
   const [job, setJob] = useState(null);
+  const [notFound, setNotFound] = useState(false);
   const [message, setMessage] = useState("");
   const [applying, setApplying] = useState(false);
   const [toast, setToast] = useState({ show: false, text: "", tone: "error" });
@@ -56,13 +57,38 @@ export function JobDetail() {
   useEffect(() => () => clearTimeout(timerRef.current), []);
 
   useEffect(() => {
-    jobsApi.get(id).then(({ data }) => setJob(data.data));
+    setJob(null);
+    setNotFound(false);
+    jobsApi.get(id)
+      .then(({ data }) => setJob(data.data))
+      .catch(() => setNotFound(true));
     if (user?.role === "CANDIDATE") {
       fetchIds();
       fetchAppliedIds();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, user]);
+
+  if (notFound) {
+    return (
+      <div className="grid min-h-72 place-items-center rounded-2xl p-8 text-center" style={{ border: "1.5px dashed var(--border-strong)" }}>
+        <div>
+          <SearchX className="mx-auto" size={30} style={{ color: "var(--text-tertiary)" }} />
+          <h2 className="mt-3 font-bold" style={{ color: "var(--text-primary)" }}>This job is no longer available</h2>
+          <p className="mt-1 text-sm" style={{ color: "var(--text-secondary)" }}>
+            It may have closed, been filled, or been removed by the employer.
+          </p>
+          <Link
+            to="/jobs"
+            className="btn-primary mt-5 inline-flex"
+            style={{ minHeight: "40px", padding: "0 20px", fontSize: "14px" }}
+          >
+            Browse open roles
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   if (!job) return <div className="grid min-h-72 place-items-center"><Spinner label="Loading job details" /></div>;
 

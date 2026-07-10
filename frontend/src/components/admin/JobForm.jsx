@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { forwardRef, useImperativeHandle, useState } from "react";
 import { Alert } from "../common/Alert.jsx";
 import { Button } from "../common/Button.jsx";
 import { Input } from "../common/Input.jsx";
 import { Select } from "../common/Select.jsx";
-import { SALARY_RANGES } from "../../utils/constants.js";
+import { EXPERIENCE_LEVELS, INDUSTRIES, SALARY_RANGES } from "../../utils/constants.js";
+import { isCompanyEmail } from "../../utils/validators.js";
+import { extractErrorMessage } from "../../utils/apiError.js";
 
 const GENDER_OPTIONS = ["Any", "Male", "Female"];
 const NATIONALITY_OPTIONS = ["Any Nationality", "Saudi", "Non-Saudi"];
@@ -49,15 +51,12 @@ function validateJob(form) {
   else if (location.length > 100) errors.location = "Location must be 100 characters or fewer.";
 
   if (!industry) errors.industry = "Industry is required.";
-  else if (industry.length < 2) errors.industry = "Industry must be at least 2 characters.";
-  else if (industry.length > 100) errors.industry = "Industry must be 100 characters or fewer.";
 
   if (!employmentType) errors.employmentType = "Employment type is required.";
   else if (employmentType.length < 2) errors.employmentType = "Employment type must be at least 2 characters.";
   else if (employmentType.length > 100) errors.employmentType = "Employment type must be 100 characters or fewer.";
 
   if (!experienceRequired) errors.experienceRequired = "Experience required is required.";
-  else if (experienceRequired.length > 100) errors.experienceRequired = "Experience required must be 100 characters or fewer.";
 
   if (!description) errors.description = "Job description is required.";
   else if (description.length < 20) errors.description = "Description must be at least 20 characters.";
@@ -68,6 +67,9 @@ function validateJob(form) {
 
   if (!hrEmail) errors.hrEmail = "HR email is required.";
   else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(hrEmail)) errors.hrEmail = "Enter a valid email address.";
+  else if (!isCompanyEmail(hrEmail)) {
+    errors.hrEmail = "Please enter a valid company email address. Personal email providers are not allowed.";
+  }
 
   if (salaryRange.length > 100) errors.salaryRange = "Salary range must be 100 characters or fewer.";
 
@@ -76,6 +78,8 @@ function validateJob(form) {
     errors.applyContact = form.applyMethod === "EMAIL"
       ? "Enter the email address applications should be sent to."
       : "Enter the URL candidates should be redirected to.";
+  } else if (form.applyMethod === "EMAIL" && applyContact && !isCompanyEmail(applyContact)) {
+    errors.applyContact = "Please enter a valid company email address. Personal email providers are not allowed.";
   }
 
   return errors;
@@ -91,7 +95,7 @@ function mergeWithDefaults(initialValue) {
   return merged;
 }
 
-export function JobForm({ initialValue, onSubmit, submitLabel, allowDraft }) {
+export const JobForm = forwardRef(function JobForm({ initialValue, onSubmit, submitLabel, allowDraft }, ref) {
   const [form, setForm] = useState(() => mergeWithDefaults(initialValue));
   const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState("");
@@ -103,12 +107,15 @@ export function JobForm({ initialValue, onSubmit, submitLabel, allowDraft }) {
     setFieldErrors((prev) => ({ ...prev, [key]: undefined }));
   };
 
+  // Returns true/false rather than throwing, so a caller driving many of these
+  // at once (e.g. a bulk "publish all") can tell which ones actually succeeded
+  // without each one aborting the batch.
   async function submit(event, asDraft = false) {
     event.preventDefault();
     const errors = validateJob(form);
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
-      return;
+      return false;
     }
     setFieldErrors({});
     setError("");
@@ -128,13 +135,22 @@ export function JobForm({ initialValue, onSubmit, submitLabel, allowDraft }) {
         listingDurationDays: Number(form.listingDurationDays) || 30,
         ...(allowDraft ? { saveAsDraft: asDraft } : {}),
       });
+      return true;
     } catch (requestError) {
-      setError(requestError.response?.data?.message ?? "Unable to save job");
+      setError(extractErrorMessage(requestError, "Unable to save job"));
+      return false;
     } finally {
       setSubmitting(false);
       setSavingDraft(false);
     }
   }
+
+  // Lets a parent (e.g. a "publish all" batch action) trigger this exact form's
+  // own validate → submit → error-display cycle programmatically, instead of
+  // re-implementing a parallel submit path that bypasses per-field validation.
+  useImperativeHandle(ref, () => ({
+    publish: () => submit({ preventDefault() {} }),
+  }));
 
   return (
     <form className="space-y-5" onSubmit={submit}>
@@ -145,9 +161,27 @@ export function JobForm({ initialValue, onSubmit, submitLabel, allowDraft }) {
           <Input id="title" label="Job title" required value={form.title} error={fieldErrors.title} onChange={update("title")} />
           <Input id="companyName" label="Company" required value={form.companyName} error={fieldErrors.companyName} onChange={update("companyName")} />
           <Input id="location" label="Location" required value={form.location} error={fieldErrors.location} onChange={update("location")} />
-          <Input id="industry" label="Industry" required value={form.industry} error={fieldErrors.industry} onChange={update("industry")} />
+          <Select
+            id="industry"
+            label="Industry"
+            required
+            value={form.industry}
+            error={fieldErrors.industry}
+            onChange={update("industry")}
+            options={INDUSTRIES}
+            placeholder="Select an industry"
+          />
           <Input id="employmentType" label="Employment type" required value={form.employmentType} error={fieldErrors.employmentType} onChange={update("employmentType")} />
-          <Input id="experienceRequired" label="Experience required" required value={form.experienceRequired} error={fieldErrors.experienceRequired} onChange={update("experienceRequired")} />
+          <Select
+            id="experienceRequired"
+            label="Experience required"
+            required
+            value={form.experienceRequired}
+            error={fieldErrors.experienceRequired}
+            onChange={update("experienceRequired")}
+            options={EXPERIENCE_LEVELS}
+            placeholder="Select experience level"
+          />
           <Select
             label="Salary range (optional)"
             value={form.salaryRange ?? ""}
@@ -252,4 +286,4 @@ export function JobForm({ initialValue, onSubmit, submitLabel, allowDraft }) {
       </div>
     </form>
   );
-}
+});

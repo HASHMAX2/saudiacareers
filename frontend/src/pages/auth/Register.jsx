@@ -1,8 +1,8 @@
+import { CheckCircle2, Rocket } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { Link, useNavigate } from "react-router-dom";
 import { authApi } from "../../api/auth.js";
-import { AuthShell } from "../../components/auth/AuthShell.jsx";
 import { Alert } from "../../components/common/Alert.jsx";
 import { Button } from "../../components/common/Button.jsx";
 import { Input } from "../../components/common/Input.jsx";
@@ -91,23 +91,77 @@ export function Register() {
   return (
     <>
     <Toast show={toast.show} message={toast.text} tone="success" duration={REDIRECT_DELAY} />
-    <AuthShell
-      title="Create your profile"
-      subtitle="Join SaudiaCareers and apply to opportunities with one professional profile."
-      footer={<p className="mt-6 text-center text-sm" style={{ color: "var(--text-secondary)" }}>Already have an account? <Link className="font-semibold hover:underline" style={{ color: "var(--accent)" }} to="/login">Log in</Link></p>}
+    <div
+      className="mx-auto grid max-w-6xl overflow-hidden rounded-3xl lg:min-h-[680px] lg:grid-cols-2"
+      style={{ border: "1px solid var(--border-default)", background: "var(--bg-white)" }}
     >
-      <form className="space-y-4" onSubmit={submit}>
-        <Input autoComplete="name" id="name" label="Full name" placeholder="Your full name" value={form.name} onChange={update("name")} required error={fieldErrors.name} />
-        <Input autoComplete="email" id="email" label="Email address" placeholder="you@example.com" type="email" value={form.email} onChange={update("email")} required error={fieldErrors.email} />
-        <PhoneInput id="mobile" label="Mobile" value={form.mobile} onChange={update("mobile")} required error={fieldErrors.mobile} />
-        <div>
-          <Input autoComplete="new-password" id="password" label="Password" placeholder="At least 8 characters" type="password" value={form.password} onChange={update("password")} required error={fieldErrors.password} />
-          <p className="mt-1.5 font-mono text-xs" style={{ color: "var(--text-tertiary)" }}>Use at least 8 characters with one uppercase letter and one number.</p>
+      {/* Left: form */}
+      <div className="p-6 sm:p-8 lg:p-12">
+        <div className="mb-7">
+          <h1
+            className="font-bold tracking-tight"
+            style={{ fontSize: "36px", letterSpacing: "-0.01em", color: "var(--text-primary)" }}
+          >
+            Create your profile
+          </h1>
+          <p className="mt-2 text-[15px] leading-6" style={{ color: "var(--text-secondary)" }}>
+            Join SaudiaCareers and apply to opportunities with one professional profile.
+          </p>
         </div>
-        {error && <Alert>{error}</Alert>}
-        <Button className="w-full" disabled={submitting} type="submit">{submitting ? "Creating account..." : "Create account"}</Button>
-      </form>
-    </AuthShell>
+
+        <form className="space-y-4" onSubmit={submit}>
+          <Input autoComplete="name" id="name" label="Full name" placeholder="Your full name" value={form.name} onChange={update("name")} required error={fieldErrors.name} />
+          <Input autoComplete="email" id="email" label="Email address" placeholder="you@example.com" type="email" value={form.email} onChange={update("email")} required error={fieldErrors.email} />
+          <PhoneInput id="mobile" label="Mobile" value={form.mobile} onChange={update("mobile")} required error={fieldErrors.mobile} />
+          <div>
+            <Input autoComplete="new-password" id="password" label="Password" placeholder="At least 8 characters" type="password" value={form.password} onChange={update("password")} required error={fieldErrors.password} />
+            <p className="mt-1.5 font-mono text-xs" style={{ color: "var(--text-tertiary)" }}>Use at least 8 characters with one uppercase letter and one number.</p>
+          </div>
+          {error && <Alert>{error}</Alert>}
+          <Button className="w-full" disabled={submitting} type="submit">{submitting ? "Creating account..." : "Create account"}</Button>
+        </form>
+
+        <p className="mt-6 text-center text-sm" style={{ color: "var(--text-secondary)" }}>
+          Already have an account? <Link className="font-semibold hover:underline" style={{ color: "var(--accent)" }} to="/login">Log in</Link>
+        </p>
+      </div>
+
+      {/* Right: premium image panel, hidden below lg */}
+      <div className="relative hidden lg:block">
+        <img
+          src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=900&q=80"
+          alt=""
+          className="h-full w-full object-cover"
+        />
+        <div
+          className="absolute inset-0"
+          style={{ background: "linear-gradient(180deg, rgba(20,20,20,0) 35%, rgba(20,20,20,0.82) 100%)" }}
+        />
+        <div className="absolute bottom-9 left-9 right-9 text-white">
+          <span className="grid h-11 w-11 place-items-center rounded-2xl" style={{ background: "rgba(255,255,255,0.15)" }}>
+            <Rocket size={20} />
+          </span>
+          <h2 className="mt-4 text-2xl font-bold leading-snug">
+            Start your career journey today.
+          </h2>
+          <p className="mt-2 max-w-sm text-[14px] leading-6" style={{ color: "rgba(255,255,255,0.75)" }}>
+            Create one profile and apply to verified roles across Saudi Arabia in minutes.
+          </p>
+          <ul className="mt-5 space-y-2">
+            {[
+              "Free forever for candidates",
+              "One profile, unlimited applications",
+              "Get matched with verified employers",
+            ].map((item) => (
+              <li key={item} className="flex items-center gap-2.5 text-[13.5px]" style={{ color: "rgba(255,255,255,0.85)" }}>
+                <CheckCircle2 size={15} className="shrink-0" style={{ color: "rgba(255,255,255,0.65)" }} />
+                {item}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
     </>
   );
 }

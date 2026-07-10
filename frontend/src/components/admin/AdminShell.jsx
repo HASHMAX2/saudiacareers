@@ -3,7 +3,7 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
   Briefcase, Building2, ChevronDown, ClipboardList, CreditCard, FileWarning,
   Import, Layers, LayoutDashboard, Loader2, LogOut, Menu, Receipt, RotateCcw,
-  Search, ShieldCheck, Wallet, X,
+  ShieldCheck, Wallet, X,
 } from "lucide-react";
 import { adminApi } from "../../api/admin.js";
 import { authApi } from "../../api/auth.js";
@@ -61,7 +61,6 @@ export function AdminShell() {
   const [counts, setCounts] = useState({});
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [search, setSearch] = useState("");
   const [loggingOut, setLoggingOut] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const menuRef = useRef(null);
@@ -73,12 +72,13 @@ export function AdminShell() {
     Promise.all([
       adminApi.pendingVerifications({ page: 1, limit: 1 }),
       adminApi.jobs({ status: "PENDING_REVIEW", page: 1, limit: 1 }),
+      adminApi.jobs({ status: "REVISION_PENDING_APPROVAL", page: 1, limit: 1 }),
       adminApi.flaggedJobs(),
       adminApi.invoices({ status: "REFUND_REQUESTED", page: 1, limit: 1 }),
-    ]).then(([verRes, reviewRes, flaggedRes, refundRes]) => {
+    ]).then(([verRes, reviewRes, revisionRes, flaggedRes, refundRes]) => {
       setCounts({
         pendingApprovals: verRes.data.data.pagination.total,
-        jobReviews: reviewRes.data.data.pagination.total,
+        jobReviews: reviewRes.data.data.pagination.total + revisionRes.data.data.pagination.total,
         flaggedJobs: flaggedRes.data.data.length,
         refunds: refundRes.data.data.pagination.total,
       });
@@ -118,13 +118,6 @@ export function AdminShell() {
       resetNotifications();
       setLoggingOut(false);
     }, LOGOUT_DELAY);
-  }
-
-  function handleSearch(e) {
-    e.preventDefault();
-    const q = search.trim();
-    navigate(q ? `/admin/employers?search=${encodeURIComponent(q)}` : "/admin/employers");
-    setSidebarOpen(false);
   }
 
   const initials = (user?.name ?? "A").split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
@@ -207,17 +200,6 @@ export function AdminShell() {
           <button className="rounded-lg p-2 md:hidden" onClick={() => setSidebarOpen(true)} aria-label="Open menu">
             <Menu size={20} style={{ color: "var(--text-primary)" }} />
           </button>
-
-          <form onSubmit={handleSearch} className="relative hidden max-w-md flex-1 md:block">
-            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: "var(--text-tertiary)" }} />
-            <input
-              className="w-full rounded-full py-2 pl-10 pr-4 text-sm outline-none"
-              style={{ border: "1px solid var(--border-default)", background: "var(--bg-elev)" }}
-              placeholder="Search employers, domains…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </form>
 
           <div className="ml-auto flex items-center gap-2">
             <NotificationBell accent={ACCENT} />

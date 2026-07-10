@@ -1,5 +1,8 @@
 import { ApplicationStatus, ApplyMethod, InvoiceStatus, JobStatus, PlanTier, VerificationStatus } from "@prisma/client";
 import { z } from "zod";
+import { isCompanyEmail } from "../utils/companyEmail.js";
+
+const COMPANY_EMAIL_MESSAGE = "Please enter a valid company email address. Personal email providers are not allowed.";
 
 const jobBody = z.object({
   title: z.string().trim().min(2).max(150),
@@ -11,7 +14,7 @@ const jobBody = z.object({
   salaryRange: z.string().trim().max(100).nullable().optional(),
   description: z.string().trim().min(20).max(20000),
   requiredSkills: z.string().trim().min(1).max(2000),
-  hrEmail: z.string().email(),
+  hrEmail: z.string().email().refine(isCompanyEmail, COMPANY_EMAIL_MESSAGE),
   gender: z.string().trim().max(50).nullable().optional(),
   nationality: z.string().trim().max(100).nullable().optional(),
   applicationDeadline: z.coerce.date().nullable().optional(),
@@ -25,12 +28,25 @@ const jobBody = z.object({
   saveAsDraft: z.boolean().optional(),
 });
 
+// Only checked when both fields are present in this particular request body —
+// applies equally to a full create and a partial update.
+function refineApplyContactEmail(body) {
+  if (body.applyMethod === "EMAIL" && body.applyContact) {
+    return isCompanyEmail(body.applyContact);
+  }
+  return true;
+}
+
 const envelope = (body, params = z.object({}).passthrough(), query = z.object({}).passthrough()) =>
   z.object({ body, params, query });
 
-export const createJobSchema = envelope(jobBody.strict());
+export const createJobSchema = envelope(
+  jobBody.strict().refine(refineApplyContactEmail, { message: COMPANY_EMAIL_MESSAGE, path: ["applyContact"] }),
+);
 export const updateJobSchema = envelope(
-  jobBody.partial().strict().refine((body) => Object.keys(body).length > 0),
+  jobBody.partial().strict()
+    .refine((body) => Object.keys(body).length > 0)
+    .refine(refineApplyContactEmail, { message: COMPANY_EMAIL_MESSAGE, path: ["applyContact"] }),
   z.object({ id: z.coerce.number().int().positive() }),
 );
 export const adminIdSchema = envelope(
