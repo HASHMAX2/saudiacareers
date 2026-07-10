@@ -19,11 +19,15 @@ export const employerApi = {
   updateAppStatus:       (id, data)     => api.patch(`/employer/applications/${id}/status`, data),
 
   getVerification:       ()             => api.get("/employer/verification"),
-  submitVerificationDoc: (file)         => {
+  uploadVerificationDoc: (documentType, file) => {
     const form = new FormData();
+    form.append("documentType", documentType);
     form.append("document", file);
-    return api.post("/employer/verification/document", form, { headers: { "Content-Type": "multipart/form-data" } });
+    return api.post("/employer/verification/documents", form, { headers: { "Content-Type": "multipart/form-data" } });
   },
+  deleteVerificationDoc: (id)           => api.delete(`/employer/verification/documents/${id}`),
+  submitVerification:    ()             => api.post("/employer/verification/submit"),
+  submitSupportRequest:  (data)         => api.post("/employer/support", data),
 
   getSubscription:       ()             => api.get("/employer/subscription"),
   listInvoices:          (params)       => api.get("/employer/invoices", { params }),

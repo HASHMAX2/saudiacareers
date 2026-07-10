@@ -97,3 +97,27 @@ export const enquirySchema = bodyOnly(
     message: z.string().trim().min(10).max(5000),
   }).strict(),
 );
+
+export const VERIFICATION_DOCUMENT_TYPES = [
+  "REGISTRATION_CERTIFICATE",
+  "TAX_REGISTRATION",
+  "AUTHORIZED_PERSON_ID",
+  "ADDRESS_PROOF",
+  "AUTHORIZATION_LETTER",
+];
+
+// multer parses the multipart body before this runs, so documentType arrives
+// as a normal req.body string field alongside req.file.
+export const verificationDocumentUploadSchema = bodyOnly(
+  z.object({
+    documentType: z.enum(VERIFICATION_DOCUMENT_TYPES),
+  }).strict(),
+);
+
+export const employerSupportRequestSchema = bodyOnly(
+  z.object({
+    category: z.enum(["VERIFICATION", "PROFILE", "DOCUMENTS", "ACCOUNT", "OTHER"]),
+    subject: z.string().trim().min(3).max(120),
+    message: z.string().trim().min(10).max(5000),
+  }).strict(),
+);

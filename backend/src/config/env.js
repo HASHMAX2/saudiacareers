@@ -17,6 +17,7 @@ const envSchema = z.object({
   SUPABASE_STORAGE_BUCKET: z.string().default("SaudiaCareers"),
   RESEND_API_KEY: z.string().optional(),
   RESEND_FROM_EMAIL: z.string().email().default("noreply@saudiacareers.com"),
+  ADMIN_EMAIL: z.string().email().default("admin@saudiacareers.com"),
 });
 
 const parsed = envSchema.safeParse(process.env);

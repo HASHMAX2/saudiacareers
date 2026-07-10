@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
-  Briefcase, Building2, ChevronDown, Clock3, LayoutDashboard, Loader2, LogOut,
+  AlertTriangle, BadgeCheck, Briefcase, Building2, ChevronDown, Clock3, LayoutDashboard, Loader2, LogOut,
   Menu, PlusCircle, Users, Wallet, X,
 } from "lucide-react";
 import { authApi } from "../../api/auth.js";
@@ -183,6 +183,15 @@ export function EmployerShell() {
           </button>
 
           <div className="ml-auto flex items-center gap-2">
+            {profile?.verificationStatus === "APPROVED" && (
+              <span
+                className="hidden items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold sm:inline-flex"
+                style={{ background: "var(--green-bg)", color: "var(--green)", border: "1px solid var(--green)" }}
+              >
+                <BadgeCheck size={14} />
+                Verified Employer
+              </span>
+            )}
             <NotificationBell accent={EMP} />
             <div className="relative" ref={menuRef}>
             <button
@@ -234,6 +243,23 @@ export function EmployerShell() {
             </div>
           </div>
         </header>
+
+        {profile && profile.verificationStatus !== "APPROVED" && (
+          <div
+            className="flex flex-wrap items-center justify-center gap-2 px-4 py-2.5 text-center text-[13px] font-semibold"
+            style={{ background: "var(--gold-bg)", color: "#8A5D10", borderBottom: "1px solid #F0D697" }}
+          >
+            <AlertTriangle size={15} className="shrink-0" />
+            <span>Your account has not been verified yet.</span>
+            <NavLink
+              to="/employer/verification"
+              className="font-extrabold underline underline-offset-2 hover:opacity-80"
+              style={{ color: "#8A5D10" }}
+            >
+              Verify Now
+            </NavLink>
+          </div>
+        )}
 
         <main className="px-4 py-6 sm:px-6 lg:px-8">
           <Outlet />

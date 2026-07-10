@@ -28,6 +28,7 @@ model User {
   refreshTokens      RefreshToken[]
   passwordResets     PasswordResetToken[]
   notifications      Notification[]
+  supportRequests    EmployerSupportRequest[]
 
   @@index([role])
   @@index([createdAt])
@@ -313,7 +314,6 @@ model EmployerProfile {
   companySize           String?
   contactDesignation    String?
   verificationStatus    VerificationStatus @default(PENDING)
-  verificationDocPath   String?
   verificationNote      String?
   verificationSubmittedAt DateTime?
   verifiedAt            DateTime?
@@ -326,8 +326,10 @@ model EmployerProfile {
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt
 
-  subscription EmployerSubscription?
-  invoices     Invoice[]
+  subscription          EmployerSubscription?
+  invoices               Invoice[]
+  verificationDocuments EmployerVerificationDocument[]
+  supportRequests       EmployerSupportRequest[]
 
   @@index([companyName])
 }
@@ -336,6 +338,54 @@ enum VerificationStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+// The five document types accepted for company verification. Each upload is
+// tagged with one of these so an employer can submit several documents
+// (registration, tax, ID, etc.) as one review package, matching how a real
+// KYB check needs more than a single file.
+enum VerificationDocumentType {
+  REGISTRATION_CERTIFICATE
+  TAX_REGISTRATION
+  AUTHORIZED_PERSON_ID
+  ADDRESS_PROOF
+  AUTHORIZATION_LETTER
+}
+
+model EmployerVerificationDocument {
+  id                Int                      @id @default(autoincrement())
+  employerProfileId Int
+  employerProfile   EmployerProfile          @relation(fields: [employerProfileId], references: [id], onDelete: Cascade)
+  documentType      VerificationDocumentType
+  filePath          String
+  fileName          String
+  fileSize          Int
+  createdAt         DateTime                 @default(now())
+
+  @@index([employerProfileId])
+}
+
+enum SupportRequestCategory {
+  VERIFICATION
+  PROFILE
+  DOCUMENTS
+  ACCOUNT
+  OTHER
+}
+
+model EmployerSupportRequest {
+  id                Int                     @id @default(autoincrement())
+  employerProfileId Int
+  employerProfile   EmployerProfile         @relation(fields: [employerProfileId], references: [id])
+  userId            Int
+  user              User                    @relation(fields: [userId], references: [id])
+  category          SupportRequestCategory
+  subject           String
+  message           String
+  createdAt         DateTime                @default(now())
+
+  @@index([employerProfileId])
+  @@index([userId])
 }
 
 model EmployerSubscription {

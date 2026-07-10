@@ -38,15 +38,17 @@ function applicationWhere(query) {
 }
 
 export async function dashboard(req, res) {
-  const [jobs, activeJobs, applications, candidates] = await prisma.$transaction([
+  const [jobs, activeJobs, applications, candidates, jobsByAdmin, jobsByEmployer] = await prisma.$transaction([
     prisma.job.count({ where: { isDeleted: false } }),
     prisma.job.count({ where: { isDeleted: false, status: "ACTIVE" } }),
     prisma.application.count(),
     prisma.user.count({ where: { role: "CANDIDATE" } }),
+    prisma.job.count({ where: { isDeleted: false, creator: { role: "ADMIN" } } }),
+    prisma.job.count({ where: { isDeleted: false, creator: { role: "EMPLOYER" } } }),
   ]);
   return sendSuccess(res, {
     message: "Dashboard metrics retrieved",
-    data: { jobs, activeJobs, applications, candidates },
+    data: { jobs, activeJobs, applications, candidates, jobsByAdmin, jobsByEmployer },
   });
 }
 

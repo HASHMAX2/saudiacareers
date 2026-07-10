@@ -60,3 +60,22 @@ export const RESUME_MIME_TYPES = [
   "application/msword",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ];
+
+export const MAX_VERIFICATION_DOC_SIZE_BYTES = 5 * 1024 * 1024;
+export const VERIFICATION_DOC_MIME_TYPES = ["application/pdf"];
+
+export const VERIFICATION_DOCUMENT_TYPES = [
+  { value: "REGISTRATION_CERTIFICATE", label: "Company Registration Certificate or equivalent Business Licence" },
+  { value: "TAX_REGISTRATION", label: "Company Tax Registration Document (PAN, GST, VAT, EIN, or TIN)" },
+  { value: "AUTHORIZED_PERSON_ID", label: "Authorized Person's Government-Issued ID" },
+  { value: "ADDRESS_PROOF", label: "Company Address Proof" },
+  { value: "AUTHORIZATION_LETTER", label: "Authorization Letter (required if the person submitting the verification is not the owner, director, or registered representative)" },
+];
+
+export const SUPPORT_REQUEST_CATEGORIES = [
+  { value: "VERIFICATION", label: "Company verification" },
+  { value: "PROFILE", label: "Company profile details" },
+  { value: "DOCUMENTS", label: "Document upload problem" },
+  { value: "ACCOUNT", label: "Employer account access" },
+  { value: "OTHER", label: "Other" },
+];

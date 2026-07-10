@@ -3,6 +3,7 @@ import {
   createEmployerJob,
   createJobRevision,
   deleteEmployerJob,
+  deleteVerificationDocument,
   getApplicationDetail,
   getEmployerDashboard,
   getEmployerJob,
@@ -12,11 +13,13 @@ import {
   listEmployerJobs,
   listEmployerPendingJobs,
   listJobApplications,
-  submitVerificationDocument,
+  submitEmployerSupportRequest,
+  submitVerification,
   updateApplicationStatus,
   updateEmployerJob,
   updateEmployerJobStatus,
   updateEmployerProfile,
+  uploadVerificationDocument,
 } from "../controllers/employerController.js";
 import { verificationDocUpload } from "../middleware/upload.js";
 import {
@@ -40,6 +43,8 @@ import {
   employerJobApplicationsQuerySchema,
   employerJobQuerySchema,
   employerProfileSchema,
+  employerSupportRequestSchema,
+  verificationDocumentUploadSchema,
 } from "../validation/employerSchemas.js";
 import {
   creditPurchaseSchema,
@@ -81,10 +86,15 @@ employerRouter.patch(
 
 employerRouter.get("/verification", asyncHandler(getVerification));
 employerRouter.post(
-  "/verification/document",
+  "/verification/documents",
   verificationDocUpload.single("document"),
-  asyncHandler(submitVerificationDocument),
+  validate(verificationDocumentUploadSchema),
+  asyncHandler(uploadVerificationDocument),
 );
+employerRouter.delete("/verification/documents/:id", validate(adminIdSchema), asyncHandler(deleteVerificationDocument));
+employerRouter.post("/verification/submit", asyncHandler(submitVerification));
+
+employerRouter.post("/support", validate(employerSupportRequestSchema), asyncHandler(submitEmployerSupportRequest));
 
 employerRouter.get("/subscription", asyncHandler(getSubscription));
 employerRouter.get("/invoices", validate(invoicesQuerySchema), asyncHandler(listInvoices));

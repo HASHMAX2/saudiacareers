@@ -109,7 +109,11 @@ export function EmployerRegister() {
   }
 
   const imagePanel = (
-    <div className="relative hidden lg:block">
+    // self-start + a fixed height (matching the card's lg:min-h-[680px]) keep this
+    // panel from stretching to match the form column's height — without it, CSS
+    // grid's default row-stretch behavior makes the image grow (and object-cover
+    // zoom/crop it) whenever a validation error adds a line of text on the left.
+    <div className="relative hidden self-start lg:block" style={{ height: "680px" }}>
       <img
         src="https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=900&q=80"
         alt=""

@@ -29,14 +29,14 @@ export const avatarUpload = multer({
   },
 });
 
-const VERIFICATION_DOC_MIME_TYPES = new Set(["application/pdf", "image/jpeg", "image/png"]);
-
+// Verification documents must be PDF only — no images or Word docs — so KYB
+// reviewers always see a consistent, non-editable format.
 export const verificationDocUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024, files: 1 },
   fileFilter(_req, file, callback) {
-    if (!VERIFICATION_DOC_MIME_TYPES.has(file.mimetype)) {
-      return callback(new ApiError(422, "Verification document must be a PDF, JPEG, or PNG file"));
+    if (file.mimetype !== "application/pdf") {
+      return callback(new ApiError(422, "Verification document must be a PDF file"));
     }
     return callback(null, true);
   },

@@ -6,6 +6,11 @@ import { Badge } from "../../components/common/Badge.jsx";
 import { Button } from "../../components/common/Button.jsx";
 import { Spinner } from "../../components/common/Spinner.jsx";
 import { formatDate } from "../../utils/formatDate.js";
+import { VERIFICATION_DOCUMENT_TYPES } from "../../utils/constants.js";
+
+function documentLabel(value) {
+  return VERIFICATION_DOCUMENT_TYPES.find((t) => t.value === value)?.label ?? value;
+}
 
 function SlaBadge({ sla }) {
   if (sla.breached) return <Badge tone="red">Breached</Badge>;
@@ -102,12 +107,26 @@ export function EmployerReviewDetail() {
             <SignalRow label="Company email domain match" detail="Compares the account email domain against the company website." passed={detail.signals.emailDomainMatches} />
             <SignalRow label="Website on file" detail="A live company website or official page." passed={detail.signals.hasWebsite} />
             <SignalRow label="LinkedIn company page" detail="Useful for verification but not always required." passed={detail.signals.hasLinkedIn} />
-            <SignalRow label="Registration document" detail="Required before approval." passed={detail.signals.hasDocument} />
+            <SignalRow label="Verification documents" detail="Required before approval." passed={detail.signals.hasDocument} />
           </div>
-          {detail.documentUrl && (
-            <a href={detail.documentUrl} target="_blank" rel="noreferrer" className="mt-3 inline-block">
-              <Button size="sm" variant="secondary">View submitted document</Button>
-            </a>
+          {detail.documents.length > 0 && (
+            <div className="mt-3 space-y-2">
+              {detail.documents.map((doc) => (
+                <a
+                  key={doc.id}
+                  href={doc.viewUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center justify-between gap-3 rounded-xl p-3 text-sm hover:bg-[var(--bg-elev)]"
+                  style={{ border: "1px solid var(--border-default)" }}
+                >
+                  <span className="truncate font-medium" style={{ color: "var(--text-primary)" }} title={documentLabel(doc.documentType)}>
+                    {documentLabel(doc.documentType)}
+                  </span>
+                  <span className="shrink-0 text-xs font-semibold" style={{ color: "var(--accent)" }}>View →</span>
+                </a>
+              ))}
+            </div>
           )}
 
           {detail.firstJob && (

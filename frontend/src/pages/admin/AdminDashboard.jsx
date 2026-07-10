@@ -7,6 +7,7 @@ import { Button } from "../../components/common/Button.jsx";
 import { Spinner } from "../../components/common/Spinner.jsx";
 import { formatDate } from "../../utils/formatDate.js";
 
+const CARD_KEYS = ["jobs", "activeJobs", "applications", "candidates"];
 const icons = { jobs: BriefcaseBusiness, activeJobs: Zap, applications: FileText, candidates: UserRound };
 const labels = { jobs: "Total jobs", activeJobs: "Active jobs", applications: "Applications", candidates: "Candidates" };
 
@@ -50,7 +51,7 @@ export function AdminDashboard() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {Object.entries(metrics).map(([key, value]) => {
+        {CARD_KEYS.map((key) => {
           const Icon = icons[key] ?? FileText;
           return (
             <article className="card-soft p-5" key={key}>
@@ -58,9 +59,14 @@ export function AdminDashboard() {
                 <span className="grid h-10 w-10 place-items-center rounded-full" style={{ background: "var(--accent-subtle)", color: "var(--accent)" }}>
                   <Icon size={19} />
                 </span>
-                <span className="text-3xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>{value}</span>
+                <span className="text-3xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>{metrics[key]}</span>
               </div>
               <p className="mt-5 font-mono text-xs uppercase tracking-wider" style={{ color: "var(--text-tertiary)" }}>{labels[key] ?? key}</p>
+              {key === "jobs" && (
+                <p className="mt-1.5 text-xs" style={{ color: "var(--text-tertiary)" }}>
+                  {metrics.jobsByAdmin} by admin · {metrics.jobsByEmployer} by employers
+                </p>
+              )}
             </article>
           );
         })}

@@ -41,8 +41,20 @@ function computeSignals(profile) {
     emailDomainMatches: Boolean(emailDomain && websiteDomain && emailDomain === websiteDomain),
     hasWebsite: Boolean(profile.website),
     hasLinkedIn: Boolean(profile.linkedinUrl),
-    hasDocument: Boolean(profile.verificationDocPath),
+    hasDocument: profile.verificationDocuments?.length > 0,
   };
+}
+
+async function withDocuments(profile) {
+  const documents = await Promise.all(
+    (profile.verificationDocuments ?? []).map(async (doc) => ({
+      id: doc.id,
+      documentType: doc.documentType,
+      fileName: doc.fileName,
+      viewUrl: await createSignedViewUrl(doc.filePath),
+    })),
+  );
+  return { ...profile, verificationDocuments: undefined, documents };
 }
 
 export async function listPendingVerifications(req, res) {
@@ -52,7 +64,10 @@ export async function listPendingVerifications(req, res) {
   const [profiles, total] = await prisma.$transaction([
     prisma.employerProfile.findMany({
       where,
-      include: { user: { select: { name: true, email: true } } },
+      include: {
+        user: { select: { name: true, email: true } },
+        verificationDocuments: { orderBy: { createdAt: "desc" } },
+      },
       orderBy: { verificationSubmittedAt: "asc" },
       skip: (page - 1) * limit,
       take: limit,
@@ -62,8 +77,7 @@ export async function listPendingVerifications(req, res) {
 
   const enriched = await Promise.all(
     profiles.map(async (p) => ({
-      ...p,
-      documentUrl: p.verificationDocPath ? await createSignedViewUrl(p.verificationDocPath) : null,
+      ...(await withDocuments(p)),
       sla: computeSlaStatus(p),
       signals: computeSignals(p),
     })),
@@ -79,7 +93,10 @@ export async function getVerificationDetail(req, res) {
   const { id } = req.validated.params;
   const profile = await prisma.employerProfile.findUnique({
     where: { id },
-    include: { user: { select: { name: true, email: true, mobile: true } } },
+    include: {
+      user: { select: { name: true, email: true, mobile: true } },
+      verificationDocuments: { orderBy: { createdAt: "desc" } },
+    },
   });
   if (!profile) throw new ApiError(404, "Employer profile not found");
 
@@ -91,8 +108,7 @@ export async function getVerificationDetail(req, res) {
   return sendSuccess(res, {
     message: "Employer verification detail retrieved",
     data: {
-      ...profile,
-      documentUrl: profile.verificationDocPath ? await createSignedViewUrl(profile.verificationDocPath) : null,
+      ...(await withDocuments(profile)),
       sla: computeSlaStatus(profile),
       signals: computeSignals(profile),
       firstJob,

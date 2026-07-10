@@ -94,8 +94,11 @@ export function Login({ admin = false, employer = false }) {
           {footer}
         </div>
 
-        {/* Right: premium image panel, hidden below lg */}
-        <div className="relative hidden lg:block">
+        {/* Right: premium image panel, hidden below lg. self-start + a fixed height
+            (matching lg:min-h-[680px]) stop this from stretching to the form's
+            height — otherwise a validation error growing the left column makes
+            this grow too, and object-cover zooms/crops the image. */}
+        <div className="relative hidden self-start lg:block" style={{ height: "680px" }}>
           <img
             src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=900&q=80"
             alt=""

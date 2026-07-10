@@ -1,9 +1,10 @@
 import crypto from "node:crypto";
-import path from "node:path";
 import { prisma } from "../config/prisma.js";
 import { sendEmail } from "../services/emailService.js";
 import { applicationStatusEmailTemplate } from "../services/emailTemplates/applicationStatus.js";
-import { createSignedDownloadUrl, uploadPrivateFile } from "../services/storageService.js";
+import { employerSupportRequestEmailTemplate } from "../services/emailTemplates/employerSupportRequest.js";
+import { createSignedDownloadUrl, createSignedViewUrl, removePrivateFile, uploadPrivateFile } from "../services/storageService.js";
+import { env } from "../config/env.js";
 import { consumeJobCredit, getOrCreateSubscription } from "../services/employerBillingService.js";
 import { checkJobLegitimacy } from "../services/jobLegitimacyService.js";
 import { expireOverdueJobs } from "../services/jobExpiryService.js";
@@ -47,28 +48,94 @@ export async function updateEmployerProfile(req, res) {
 export async function getVerification(req, res) {
   const profile = await prisma.employerProfile.findUnique({
     where: { userId: req.user.id },
-    select: { verificationStatus: true, verificationNote: true, verifiedAt: true, verificationDocPath: true },
+    select: {
+      verificationStatus: true,
+      verificationNote: true,
+      verifiedAt: true,
+      verificationSubmittedAt: true,
+      verificationDocuments: { orderBy: { createdAt: "desc" } },
+    },
   });
   if (!profile) throw new ApiError(404, "Employer profile not found");
+
+  const documents = await Promise.all(
+    profile.verificationDocuments.map(async (doc) => ({
+      id: doc.id,
+      documentType: doc.documentType,
+      fileName: doc.fileName,
+      fileSize: doc.fileSize,
+      createdAt: doc.createdAt,
+      viewUrl: await createSignedViewUrl(doc.filePath),
+    })),
+  );
+
   return sendSuccess(res, {
     message: "Verification status retrieved",
-    data: { ...profile, hasDocument: !!profile.verificationDocPath },
+    data: { ...profile, verificationDocuments: undefined, documents, hasDocument: documents.length > 0 },
   });
 }
 
-export async function submitVerificationDocument(req, res) {
-  if (!req.file) throw new ApiError(422, "Verification document is required");
+export async function uploadVerificationDocument(req, res) {
+  if (!req.file) throw new ApiError(422, "A document file is required");
+  const { documentType } = req.validated.body;
+
+  const profile = await prisma.employerProfile.findUnique({ where: { userId: req.user.id } });
+  if (!profile) throw new ApiError(404, "Employer profile not found");
+  if (profile.verificationStatus === "APPROVED") {
+    throw new ApiError(409, "This account is already verified — no need to submit more documents");
+  }
+
+  const docPath = `employer-verification/${profile.id}/${crypto.randomUUID()}.pdf`;
+  await uploadPrivateFile(docPath, req.file.buffer, req.file.mimetype);
+
+  const document = await prisma.employerVerificationDocument.create({
+    data: {
+      employerProfileId: profile.id,
+      documentType,
+      filePath: docPath,
+      fileName: req.file.originalname,
+      fileSize: req.file.size,
+    },
+  });
+
+  return sendSuccess(res, {
+    statusCode: 201,
+    message: "Document added",
+    data: { id: document.id, documentType, fileName: document.fileName, fileSize: document.fileSize },
+  });
+}
+
+export async function deleteVerificationDocument(req, res) {
+  const { id } = req.validated.params;
   const profile = await prisma.employerProfile.findUnique({ where: { userId: req.user.id } });
   if (!profile) throw new ApiError(404, "Employer profile not found");
 
-  const extension = path.extname(req.file.originalname).toLowerCase() || ".pdf";
-  const docPath = `employer-verification/${profile.id}/${crypto.randomUUID()}${extension}`;
-  await uploadPrivateFile(docPath, req.file.buffer, req.file.mimetype);
+  const document = await prisma.employerVerificationDocument.findFirst({
+    where: { id, employerProfileId: profile.id },
+  });
+  if (!document) throw new ApiError(404, "Document not found");
+
+  await removePrivateFile(document.filePath);
+  await prisma.employerVerificationDocument.delete({ where: { id } });
+  return sendSuccess(res, { message: "Document removed" });
+}
+
+export async function submitVerification(req, res) {
+  const profile = await prisma.employerProfile.findUnique({
+    where: { userId: req.user.id },
+    include: { _count: { select: { verificationDocuments: true } } },
+  });
+  if (!profile) throw new ApiError(404, "Employer profile not found");
+  if (profile.verificationStatus === "APPROVED") {
+    throw new ApiError(409, "This account is already verified");
+  }
+  if (profile._count.verificationDocuments === 0) {
+    throw new ApiError(422, "Add at least one verification document before submitting");
+  }
 
   const updated = await prisma.employerProfile.update({
     where: { userId: req.user.id },
     data: {
-      verificationDocPath: docPath,
       verificationStatus: "PENDING",
       verificationNote: null,
       verificationSubmittedAt: new Date(),
@@ -79,14 +146,48 @@ export async function submitVerificationDocument(req, res) {
   await notifyAdmins({
     type: "NEW_VERIFICATION_REQUEST",
     title: "New company verification request",
-    message: `${updated.companyName} submitted a verification document for review.`,
+    message: `${updated.companyName} submitted documents for verification review.`,
     link: "/admin/verifications",
   });
 
   return sendSuccess(res, {
-    message: "Verification document submitted — our team will review it shortly",
+    message: "Submitted for verification — our team will review it shortly",
     data: { verificationStatus: updated.verificationStatus },
   });
+}
+
+export async function submitEmployerSupportRequest(req, res) {
+  const { category, subject, message } = req.validated.body;
+
+  const profile = await prisma.employerProfile.findUnique({ where: { userId: req.user.id } });
+  if (!profile) throw new ApiError(404, "Employer profile not found");
+
+  await prisma.employerSupportRequest.create({
+    data: { employerProfileId: profile.id, userId: req.user.id, category, subject, message },
+  });
+
+  const template = employerSupportRequestEmailTemplate({
+    companyName: profile.companyName,
+    contactName: req.user.name,
+    contactEmail: req.user.email,
+    category,
+    subject,
+    message,
+  });
+  // Emailing the admin is best-effort — the in-app notification below is the
+  // reliable channel, so a Resend outage shouldn't fail the whole request.
+  await sendEmail({ to: env.ADMIN_EMAIL, subject: template.subject, html: template.html }).catch((error) => {
+    console.error("Failed to email admin about employer support request:", error.message);
+  });
+
+  await notifyAdmins({
+    type: "EMPLOYER_SUPPORT_REQUEST",
+    title: "New employer support request",
+    message: `${profile.companyName} submitted a support request: ${subject}`,
+    link: "/admin/employers",
+  });
+
+  return sendSuccess(res, { statusCode: 201, message: "Your support request has been sent to our team" });
 }
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
