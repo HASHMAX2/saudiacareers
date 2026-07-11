@@ -18,8 +18,10 @@ export function ChangePassword() {
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState({ show: false, text: "" });
   const timerRef = useRef(null);
+  const user = useAuthStore((state) => state.user);
   const setSession = useAuthStore((state) => state.setSession);
   const navigate = useNavigate();
+  const initials = (user?.name ?? "A").split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
 
   useEffect(() => () => clearTimeout(timerRef.current), []);
 
@@ -65,7 +67,23 @@ export function ChangePassword() {
   return (
     <>
     <Toast show={toast.show} message={toast.text} tone="success" duration={REDIRECT_DELAY} />
-    <div className="mx-auto max-w-lg">
+    <header
+      className="flex items-center gap-3 px-4 py-3 sm:px-6"
+      style={{ background: "var(--bg-white)", borderBottom: "1px solid var(--border-default)" }}
+    >
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-sm font-extrabold text-white" style={{ background: "var(--accent)" }}>S</span>
+      <div>
+        <p className="text-[14px] font-extrabold leading-tight" style={{ color: "var(--text-primary)" }}>SaudiaCareers</p>
+        <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>Admin console</p>
+      </div>
+      <div className="ml-auto flex items-center gap-2 rounded-full py-1 pl-1 pr-3" style={{ border: "1px solid var(--border-default)" }}>
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-xs font-extrabold text-white" style={{ background: "var(--accent)" }}>
+          {initials}
+        </span>
+        <span className="hidden text-[15px] font-semibold sm:inline" style={{ color: "var(--text-primary)" }}>{user?.name}</span>
+      </div>
+    </header>
+    <div className="mx-auto max-w-lg mt-8 px-4">
       <div className="card-soft p-6 sm:p-8">
         <span className="grid h-12 w-12 place-items-center rounded-full" style={{ background: "var(--accent-subtle)", color: "var(--accent)" }}>
           <LockKeyhole size={20} />

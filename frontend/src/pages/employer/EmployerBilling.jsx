@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CheckCircle2, Download, Loader2 } from "lucide-react";
 import { employerApi } from "../../api/employer.js";
 import { Alert } from "../../components/common/Alert.jsx";
@@ -6,10 +6,12 @@ import { Badge } from "../../components/common/Badge.jsx";
 import { Button } from "../../components/common/Button.jsx";
 import { Modal } from "../../components/common/Modal.jsx";
 import { Spinner } from "../../components/common/Spinner.jsx";
+import { Toast } from "../../components/common/Toast.jsx";
 import { formatDate } from "../../utils/formatDate.js";
 
 const EMP = "var(--accent)";
 const EMP_SUBTLE = "var(--accent-subtle)";
+const NOTICE_DURATION = 3500;
 
 const INVOICE_STATUS_TONES = { PENDING: "amber", PAID: "green", REFUND_REQUESTED: "blue", REFUNDED: "neutral" };
 const INVOICE_STATUS_LABELS = { PENDING: "Pending", PAID: "Paid", REFUND_REQUESTED: "Refund requested", REFUNDED: "Refunded" };
@@ -25,9 +27,20 @@ export function EmployerBilling() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [showNotice, setShowNotice] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showInvoicesModal, setShowInvoicesModal] = useState(false);
   const [downloadingInvoiceId, setDownloadingInvoiceId] = useState(null);
+  const noticeTimerRef = useRef(null);
+
+  useEffect(() => () => clearTimeout(noticeTimerRef.current), []);
+
+  function showToastNotice(message) {
+    clearTimeout(noticeTimerRef.current);
+    setNotice(message);
+    setShowNotice(true);
+    noticeTimerRef.current = setTimeout(() => setShowNotice(false), NOTICE_DURATION);
+  }
 
   async function load() {
     setLoading(true);
@@ -50,10 +63,9 @@ export function EmployerBilling() {
   async function run(action) {
     setBusy(true);
     setError("");
-    setNotice("");
     try {
       const { data } = await action();
-      setNotice(data.message);
+      showToastNotice(data.message);
       await load();
     } catch (requestError) {
       setError(requestError.response?.data?.message ?? "Something went wrong");
@@ -70,7 +82,7 @@ export function EmployerBilling() {
       const planName = plans.find((p) => p.tier === subscription.planTier)?.name ?? subscription.planTier;
       const dateStr = data.data?.renewsAt ? formatDate(data.data.renewsAt) : "the end of this period";
       setShowCancelModal(false);
-      setNotice(`Subscription cancellation scheduled. Your ${planName} Plan remains active until ${dateStr}. After this date, your account will move to the Free Plan.`);
+      showToastNotice(`Subscription cancellation scheduled. Your ${planName} Plan remains active until ${dateStr}. After this date, your account will move to the Free Plan.`);
       await load();
     } catch (requestError) {
       setError(requestError.response?.data?.message ?? "Unable to cancel subscription");
@@ -132,7 +144,7 @@ export function EmployerBilling() {
         </div>
       </div>
 
-      {notice && <Alert tone="success">{notice}</Alert>}
+      <Toast show={showNotice} message={notice} tone="success" duration={NOTICE_DURATION} />
       {error && <Alert>{error}</Alert>}
 
       <div className="grid gap-5 lg:grid-cols-[1.3fr_0.8fr]">

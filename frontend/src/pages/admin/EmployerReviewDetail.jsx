@@ -52,7 +52,16 @@ export function EmployerReviewDetail() {
     setDetail(data.data);
   }
 
-  useEffect(() => { load(); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Clear the previous employer's data before fetching the new one — otherwise,
+  // navigating from one employer's review page straight to another's (same
+  // route, different :id) leaves the old employer's document links rendered
+  // and clickable for the brief window before the new fetch resolves.
+  useEffect(() => {
+    setDetail(null);
+    setNote("");
+    setError("");
+    load();
+  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function run(action) {
     setBusy(true);
@@ -150,7 +159,7 @@ export function EmployerReviewDetail() {
           </div>
 
           <label className="mt-5 block">
-            <span className="field-label">Internal admin note</span>
+            <span className="field-label">Note to employer</span>
             <textarea
               className="field-box min-h-28 resize-y"
               value={note}
@@ -158,6 +167,9 @@ export function EmployerReviewDetail() {
               placeholder="Example: Domain verified, but registration document is missing."
             />
           </label>
+          <p className="mt-1.5 text-xs" style={{ color: "var(--text-tertiary)" }}>
+            Sent to the employer exactly as written, whether you request more info or reject.
+          </p>
 
           <div className="my-5 h-px" style={{ background: "var(--border-default)" }} />
           <Button

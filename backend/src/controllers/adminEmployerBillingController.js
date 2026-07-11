@@ -59,7 +59,11 @@ async function withDocuments(profile) {
 
 export async function listPendingVerifications(req, res) {
   const { page, limit } = req.validated.query;
-  const where = { verificationStatus: "PENDING" };
+  // verificationStatus defaults to PENDING the moment an employer registers,
+  // before they've submitted anything — only verificationSubmittedAt marks an
+  // actual review request. Without this check every not-yet-onboarded
+  // employer would clutter the approval queue.
+  const where = { verificationStatus: "PENDING", verificationSubmittedAt: { not: null } };
 
   const [profiles, total] = await prisma.$transaction([
     prisma.employerProfile.findMany({
@@ -164,6 +168,7 @@ export async function rejectVerification(req, res) {
 
 export async function requestMoreInfo(req, res) {
   const { id } = req.validated.params;
+  const { note } = req.validated.body;
   const profile = await prisma.employerProfile.findUnique({ where: { id } });
   if (!profile) throw new ApiError(404, "Employer profile not found");
 
@@ -171,8 +176,21 @@ export async function requestMoreInfo(req, res) {
     where: { id },
     data: {
       verificationStatus: "PENDING",
-      verificationNote: req.validated.body.note,
+      verificationNote: note,
+      // Clearing this un-locks the employer's document form (it's only locked
+      // while PENDING *and* submitted) — otherwise they'd see the note asking
+      // them to fix something but have no way to actually add/remove documents.
+      verificationSubmittedAt: null,
     },
+  });
+  // The message body is the admin's note verbatim — no prefix/wrapping — since
+  // it's the employer-facing explanation of what's missing or needs fixing.
+  await notify({
+    userId: updated.userId,
+    type: "VERIFICATION_INFO_REQUESTED",
+    title: "More information requested",
+    message: note,
+    link: "/employer/verification",
   });
   return sendSuccess(res, { message: "Requested more information from the employer", data: updated });
 }

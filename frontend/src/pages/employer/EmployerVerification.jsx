@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  CheckCircle2, Clock, FileText, HelpCircle, Loader2, Plus, ShieldCheck, Trash2, Upload, XCircle,
+  AlertTriangle, CheckCircle2, Clock, FileText, Loader2, ShieldCheck, Trash2, Upload, XCircle,
 } from "lucide-react";
 import { employerApi } from "../../api/employer.js";
 import { useAuthStore } from "../../store/authStore.js";
@@ -11,6 +11,7 @@ import { Input } from "../../components/common/Input.jsx";
 import { Modal } from "../../components/common/Modal.jsx";
 import { Select } from "../../components/common/Select.jsx";
 import { Spinner } from "../../components/common/Spinner.jsx";
+import { Toast } from "../../components/common/Toast.jsx";
 import {
   MAX_VERIFICATION_DOC_SIZE_BYTES, SUPPORT_REQUEST_CATEGORIES, VERIFICATION_DOCUMENT_TYPES, VERIFICATION_DOC_MIME_TYPES,
 } from "../../utils/constants.js";
@@ -24,6 +25,7 @@ const STATUS_META = {
 };
 
 const EMPTY_SUPPORT_FORM = { category: "VERIFICATION", subject: "", message: "" };
+const TOAST_DURATION = 3000;
 
 function documentLabel(value) {
   return VERIFICATION_DOCUMENT_TYPES.find((t) => t.value === value)?.label ?? value;
@@ -42,11 +44,21 @@ export function EmployerVerification() {
   const [form, setForm] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const toastTimerRef = useRef(null);
+
+  useEffect(() => () => clearTimeout(toastTimerRef.current), []);
+
+  function flashToast(message) {
+    clearTimeout(toastTimerRef.current);
+    setToastMessage(message);
+    setToastVisible(true);
+    toastTimerRef.current = setTimeout(() => setToastVisible(false), TOAST_DURATION);
+  }
 
   // Add-document flow
   const [docType, setDocType] = useState("");
-  const [docFile, setDocFile] = useState(null);
   const [docFieldErrors, setDocFieldErrors] = useState({});
   const [addingDoc, setAddingDoc] = useState(false);
   const [removingId, setRemovingId] = useState(null);
@@ -91,11 +103,15 @@ export function EmployerVerification() {
     e.preventDefault();
     setSaving(true);
     setError("");
-    setNotice("");
     try {
       await employerApi.updateProfile(form);
-      setNotice("Company profile updated");
+      // Reload first so the confirmation only appears once the page is
+      // actually showing the saved data, not a moment before it.
       await load();
+      // About Company is cleared after a successful save so the field is
+      // ready for a fresh entry rather than showing what was just submitted.
+      setForm((f) => ({ ...f, description: "" }));
+      flashToast("Your company profile has been updated.");
     } catch (requestError) {
       setError(requestError.response?.data?.message ?? "Unable to save company profile");
     } finally {
@@ -103,29 +119,38 @@ export function EmployerVerification() {
     }
   }
 
-  function validateDocument() {
-    const errors = {};
-    if (!docType) errors.docType = "Select a document type.";
-    if (!docFile) errors.docFile = "Choose a PDF file to upload.";
-    else if (!VERIFICATION_DOC_MIME_TYPES.includes(docFile.type)) errors.docFile = "Only PDF files are accepted.";
-    else if (docFile.size > MAX_VERIFICATION_DOC_SIZE_BYTES) errors.docFile = "File must be 5 MB or smaller.";
-    return errors;
-  }
+  // Selecting a file uploads it immediately — no separate "Add" step. If a
+  // document of this type already exists, the backend replaces it in place.
+  async function handleFileSelected(e) {
+    const file = e.target.files?.[0] ?? null;
+    setDocFieldErrors((p) => ({ ...p, docFile: undefined }));
+    if (!file) return;
 
-  async function handleAddDocument() {
-    const errors = validateDocument();
-    if (Object.keys(errors).length > 0) { setDocFieldErrors(errors); return; }
+    const errors = {};
+    if (!docType) errors.docType = "Select a document type first.";
+    else if (!VERIFICATION_DOC_MIME_TYPES.includes(file.type)) errors.docFile = "Only PDF files are accepted.";
+    else if (file.size > MAX_VERIFICATION_DOC_SIZE_BYTES) errors.docFile = "File must be 5 MB or smaller.";
+
+    if (Object.keys(errors).length > 0) {
+      setDocFieldErrors(errors);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
     setDocFieldErrors({});
     setError("");
     setAddingDoc(true);
     try {
-      await employerApi.uploadVerificationDoc(docType, docFile);
-      setDocType("");
-      setDocFile(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      await employerApi.uploadVerificationDoc(docType, file);
+      // Refresh first so the new document is already showing in the list
+      // by the time the type/file fields clear — otherwise the form goes
+      // blank for a beat before anything appears, which reads as broken.
       await refreshVerification();
+      setDocType("");
+      if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (requestError) {
       setError(requestError.response?.data?.message ?? "Unable to add document");
+      if (fileInputRef.current) fileInputRef.current.value = "";
     } finally {
       setAddingDoc(false);
     }
@@ -147,12 +172,14 @@ export function EmployerVerification() {
   async function handleSubmitVerification() {
     setSubmitting(true);
     setError("");
-    setNotice("");
     try {
       const { data } = await employerApi.submitVerification();
-      setNotice(data.message);
-      setDeclared(false);
+      // Refresh first — once the status flips to "awaiting review" the
+      // checklist/checkbox unmount entirely, so there's no visible moment
+      // where the box is on screen but unchecked before submission lands.
       await refreshVerification();
+      setDeclared(false);
+      flashToast(data.message);
     } catch (requestError) {
       setError(requestError.response?.data?.message ?? "Unable to submit for verification");
     } finally {
@@ -206,23 +233,25 @@ export function EmployerVerification() {
   const meta = STATUS_META[status.verificationStatus] ?? STATUS_META.PENDING;
   const Icon = meta.icon;
   const isApproved = status.verificationStatus === "APPROVED";
+  // PENDING covers two very different states: a fresh account that has never
+  // submitted anything, and one that already submitted and is awaiting an
+  // admin decision. Only the latter should lock the form — otherwise the
+  // add/remove/submit controls stay fully interactive even after submission,
+  // which is what let documents keep changing under an already-pending review.
+  const awaitingReview = status.verificationStatus === "PENDING" && !!status.verificationSubmittedAt;
+  const locked = isApproved || awaitingReview;
 
   return (
     <div>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl" style={{ color: "var(--text-primary)" }}>Company Profile</h1>
-          <p className="mt-2 mb-6 text-base" style={{ color: "var(--text-secondary)" }}>
-            Manage company details and submit documents for employer verification.
-          </p>
-        </div>
-        <Button variant="secondary" onClick={openSupport}>
-          <HelpCircle size={14} />
-          Contact support
-        </Button>
+      <Toast show={toastVisible} message={toastMessage} tone="success" duration={TOAST_DURATION} />
+
+      <div>
+        <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl" style={{ color: "var(--text-primary)" }}>Company Profile</h1>
+        <p className="mt-2 mb-6 text-base" style={{ color: "var(--text-secondary)" }}>
+          Manage company details and submit documents for employer verification.
+        </p>
       </div>
 
-      {notice && <Alert tone="success">{notice}</Alert>}
       {error && <Alert>{error}</Alert>}
 
       <div className="grid gap-5 lg:grid-cols-[1.3fr_0.8fr]">
@@ -257,11 +286,13 @@ export function EmployerVerification() {
               <p className="mt-1 text-sm" style={{ color: "var(--text-secondary)" }}>
                 {isApproved
                   ? "Your company is verified — no further documents are required."
-                  : "Add each required document (PDF only, max 5 MB) and submit the full set for review."}
+                  : awaitingReview
+                    ? "Your documents have been submitted and are locked while our team reviews them."
+                    : "Add each required document (PDF only, max 5 MB) and submit the full set for review."}
               </p>
             </div>
 
-            {!isApproved && (
+            {!locked && (
               <div className="p-6" style={{ borderBottom: "1px solid var(--border-default)" }}>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Select
@@ -282,17 +313,19 @@ export function EmployerVerification() {
                         id="ver-docFile"
                         type="file"
                         accept="application/pdf,.pdf"
-                        onChange={(e) => { setDocFile(e.target.files?.[0] ?? null); setDocFieldErrors((p) => ({ ...p, docFile: undefined })); }}
+                        disabled={addingDoc}
+                        onChange={handleFileSelected}
                         className="field-box"
                       />
                     </label>
                     {docFieldErrors.docFile && <span className="mt-1 block text-xs text-red-600">{docFieldErrors.docFile}</span>}
                   </div>
                 </div>
-                <Button type="button" className="mt-4" disabled={addingDoc} onClick={handleAddDocument} variant="secondary">
-                  {addingDoc ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
-                  Add document
-                </Button>
+                {addingDoc && (
+                  <p className="mt-3 flex items-center gap-2 text-sm" style={{ color: "var(--text-secondary)" }}>
+                    <Loader2 size={14} className="animate-spin" />Uploading…
+                  </p>
+                )}
               </div>
             )}
 
@@ -314,7 +347,7 @@ export function EmployerVerification() {
                         </a>
                         <p className="truncate text-xs" style={{ color: "var(--text-tertiary)" }}>{doc.fileName} · {formatBytes(doc.fileSize)}</p>
                       </div>
-                      {!isApproved && (
+                      {!locked && (
                         <button
                           type="button"
                           onClick={() => handleRemoveDocument(doc.id)}
@@ -331,7 +364,16 @@ export function EmployerVerification() {
                 </div>
               )}
 
-              {!isApproved && (
+              {awaitingReview && (
+                <div className="mt-5 flex items-start gap-2.5 rounded-xl p-3.5" style={{ background: "var(--bg-elev)", color: "var(--text-secondary)" }}>
+                  <Clock size={16} className="mt-0.5 shrink-0" style={{ color: "var(--text-tertiary)" }} />
+                  <p className="text-sm leading-relaxed">
+                    Submitted {status.verificationSubmittedAt ? new Date(status.verificationSubmittedAt).toLocaleDateString() : ""} — you&apos;ll be notified once it&apos;s reviewed. Contact support if you need to change something before then.
+                  </p>
+                </div>
+              )}
+
+              {!locked && !awaitingReview && (
                 <>
                   <label className="mt-5 flex cursor-pointer items-start gap-2.5 text-sm">
                     <input
@@ -374,9 +416,15 @@ export function EmployerVerification() {
             </div>
 
             {status.verificationStatus !== "APPROVED" && status.verificationNote && (
-              <p className="mt-4 text-sm" style={{ color: "var(--text-secondary)" }}>
-                <strong>{status.verificationStatus === "PENDING" ? "Admin requested:" : "Reviewer note:"}</strong> {status.verificationNote}
-              </p>
+              <div
+                className="mt-4 flex items-start gap-2.5 rounded-xl p-3.5"
+                style={{ background: "var(--gold-bg)", border: "1px solid #F0D697" }}
+              >
+                <AlertTriangle size={17} className="mt-0.5 shrink-0" style={{ color: "#8A5D10" }} />
+                <p className="text-sm leading-relaxed" style={{ color: "#8A5D10" }}>
+                  <strong>{status.verificationStatus === "PENDING" ? "Admin requested:" : "Reviewer note:"}</strong> {status.verificationNote}
+                </p>
+              </div>
             )}
 
             <h4 className="mt-5 mb-2.5 text-sm font-bold" style={{ color: "var(--text-primary)" }}>Verification status</h4>

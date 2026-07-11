@@ -75,6 +75,13 @@ export async function getVerification(req, res) {
   });
 }
 
+// PENDING covers both "never submitted" and "submitted, awaiting admin
+// review" — only the latter should block further document changes. Mirrors
+// the same distinction the frontend uses to lock its form.
+function isAwaitingReview(profile) {
+  return profile.verificationStatus === "PENDING" && !!profile.verificationSubmittedAt;
+}
+
 export async function uploadVerificationDocument(req, res) {
   if (!req.file) throw new ApiError(422, "A document file is required");
   const { documentType } = req.validated.body;
@@ -84,23 +91,42 @@ export async function uploadVerificationDocument(req, res) {
   if (profile.verificationStatus === "APPROVED") {
     throw new ApiError(409, "This account is already verified — no need to submit more documents");
   }
+  if (isAwaitingReview(profile)) {
+    throw new ApiError(409, "Your documents are already submitted and awaiting review");
+  }
+
+  // One document per type: re-uploading a type that's already on file (e.g. after
+  // an admin requests a replacement) must overwrite it, not sit alongside it —
+  // otherwise the stale copy keeps getting resubmitted unless manually deleted first.
+  const existingDocument = await prisma.employerVerificationDocument.findFirst({
+    where: { employerProfileId: profile.id, documentType },
+  });
 
   const docPath = `employer-verification/${profile.id}/${crypto.randomUUID()}.pdf`;
   await uploadPrivateFile(docPath, req.file.buffer, req.file.mimetype);
 
-  const document = await prisma.employerVerificationDocument.create({
-    data: {
-      employerProfileId: profile.id,
-      documentType,
-      filePath: docPath,
-      fileName: req.file.originalname,
-      fileSize: req.file.size,
-    },
-  });
+  let document;
+  if (existingDocument) {
+    await removePrivateFile(existingDocument.filePath);
+    document = await prisma.employerVerificationDocument.update({
+      where: { id: existingDocument.id },
+      data: { filePath: docPath, fileName: req.file.originalname, fileSize: req.file.size },
+    });
+  } else {
+    document = await prisma.employerVerificationDocument.create({
+      data: {
+        employerProfileId: profile.id,
+        documentType,
+        filePath: docPath,
+        fileName: req.file.originalname,
+        fileSize: req.file.size,
+      },
+    });
+  }
 
   return sendSuccess(res, {
-    statusCode: 201,
-    message: "Document added",
+    statusCode: existingDocument ? 200 : 201,
+    message: existingDocument ? "Document replaced" : "Document added",
     data: { id: document.id, documentType, fileName: document.fileName, fileSize: document.fileSize },
   });
 }
@@ -109,6 +135,9 @@ export async function deleteVerificationDocument(req, res) {
   const { id } = req.validated.params;
   const profile = await prisma.employerProfile.findUnique({ where: { userId: req.user.id } });
   if (!profile) throw new ApiError(404, "Employer profile not found");
+  if (isAwaitingReview(profile)) {
+    throw new ApiError(409, "Your documents are already submitted and awaiting review");
+  }
 
   const document = await prisma.employerVerificationDocument.findFirst({
     where: { id, employerProfileId: profile.id },
@@ -128,6 +157,9 @@ export async function submitVerification(req, res) {
   if (!profile) throw new ApiError(404, "Employer profile not found");
   if (profile.verificationStatus === "APPROVED") {
     throw new ApiError(409, "This account is already verified");
+  }
+  if (isAwaitingReview(profile)) {
+    throw new ApiError(409, "Your documents are already submitted and awaiting review");
   }
   if (profile._count.verificationDocuments === 0) {
     throw new ApiError(422, "Add at least one verification document before submitting");
