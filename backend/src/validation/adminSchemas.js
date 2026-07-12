@@ -94,6 +94,7 @@ export const updatePlanSchema = envelope(
     priceSar: z.coerce.number().int().min(0).optional(),
     paidCreditsGranted: z.coerce.number().int().min(0).optional(),
     features: z.array(z.string().trim().min(1).max(200)).min(1).optional(),
+    dodoProductId: z.string().trim().max(100).optional().or(z.literal("")),
   }).strict().refine((body) => Object.keys(body).length > 0),
   z.object({ id: z.coerce.number().int().positive() }),
 );
@@ -153,11 +154,6 @@ export const invoiceIdSchema = envelope(
 );
 
 export const rejectRefundSchema = envelope(
-  z.object({ reason: z.string().trim().min(3).max(500) }).strict(),
-  z.object({ id: z.coerce.number().int().positive() }),
-);
-
-export const markInvoiceFailedSchema = envelope(
   z.object({ reason: z.string().trim().min(3).max(500) }).strict(),
   z.object({ id: z.coerce.number().int().positive() }),
 );

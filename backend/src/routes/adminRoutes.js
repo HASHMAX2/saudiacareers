@@ -17,14 +17,12 @@ import {
   updateJobStatus,
 } from "../controllers/adminController.js";
 import {
+  approveRefund,
   approveVerification,
   getVerificationDetail,
   listBillingOverview,
   listInvoicesAdmin,
   listPendingVerifications,
-  markInvoiceFailed,
-  markInvoicePaid,
-  markInvoiceRefunded,
   rejectInvoiceRefund,
   rejectVerification,
   requestMoreInfo,
@@ -62,7 +60,6 @@ import {
   jobApprovalSchema,
   jobRejectionSchema,
   jobStatusSchema,
-  markInvoiceFailedSchema,
   pendingVerificationsQuerySchema,
   rejectRefundSchema,
   rejectVerificationSchema,
@@ -124,9 +121,7 @@ adminRouter.patch(
 
 adminRouter.get("/billing-overview", validate(billingOverviewQuerySchema), asyncHandler(listBillingOverview));
 adminRouter.get("/invoices", validate(adminInvoicesQuerySchema), asyncHandler(listInvoicesAdmin));
-adminRouter.patch("/invoices/:id/mark-paid", validate(invoiceIdSchema), asyncHandler(markInvoicePaid));
-adminRouter.patch("/invoices/:id/mark-failed", validate(markInvoiceFailedSchema), asyncHandler(markInvoiceFailed));
-adminRouter.patch("/invoices/:id/mark-refunded", validate(invoiceIdSchema), asyncHandler(markInvoiceRefunded));
+adminRouter.patch("/invoices/:id/approve-refund", validate(invoiceIdSchema), asyncHandler(approveRefund));
 adminRouter.patch("/invoices/:id/reject-refund", validate(rejectRefundSchema), asyncHandler(rejectInvoiceRefund));
 
 adminRouter.get("/employers", validate(adminEmployersQuerySchema), asyncHandler(listEmployers));

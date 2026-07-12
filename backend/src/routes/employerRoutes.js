@@ -24,13 +24,19 @@ import {
 import { verificationDocUpload } from "../middleware/upload.js";
 import {
   cancelSubscription,
+  changePlan,
+  downloadAllInvoicesZip,
   downloadInvoicePdf,
-  getSubscription,
+  getBillingSummary,
   listInvoices,
-  requestCreditPurchase,
-  requestPlanChange,
+  listTransactions,
+  payInvoiceNow,
+  previewPlanChange,
+  purchaseCredits,
   requestRefund,
   resumeSubscription,
+  updateBillingProfile,
+  updatePaymentMethod,
 } from "../controllers/employerBillingController.js";
 import { authenticate } from "../middleware/authenticate.js";
 import { authorizeEmployer } from "../middleware/authorizeAdmin.js";
@@ -47,11 +53,13 @@ import {
   verificationDocumentUploadSchema,
 } from "../validation/employerSchemas.js";
 import {
+  billingProfileSchema,
   creditPurchaseSchema,
   invoiceIdParamSchema,
   invoicesQuerySchema,
   planChangeSchema,
   refundRequestSchema,
+  transactionsQuerySchema,
 } from "../validation/employerBillingSchemas.js";
 
 export const employerRouter = Router();
@@ -96,11 +104,17 @@ employerRouter.post("/verification/submit", asyncHandler(submitVerification));
 
 employerRouter.post("/support", validate(employerSupportRequestSchema), asyncHandler(submitEmployerSupportRequest));
 
-employerRouter.get("/subscription", asyncHandler(getSubscription));
-employerRouter.get("/invoices", validate(invoicesQuerySchema), asyncHandler(listInvoices));
-employerRouter.get("/invoices/:id/pdf", validate(invoiceIdParamSchema), asyncHandler(downloadInvoicePdf));
-employerRouter.post("/invoices/credit-purchase", validate(creditPurchaseSchema), asyncHandler(requestCreditPurchase));
-employerRouter.post("/invoices/plan-change", validate(planChangeSchema), asyncHandler(requestPlanChange));
-employerRouter.post("/invoices/:id/refund-request", validate(refundRequestSchema), asyncHandler(requestRefund));
-employerRouter.post("/subscription/cancel", asyncHandler(cancelSubscription));
-employerRouter.post("/subscription/resume", asyncHandler(resumeSubscription));
+employerRouter.get("/billing/summary", asyncHandler(getBillingSummary));
+employerRouter.put("/billing/profile", validate(billingProfileSchema), asyncHandler(updateBillingProfile));
+employerRouter.get("/billing/invoices", validate(invoicesQuerySchema), asyncHandler(listInvoices));
+employerRouter.get("/billing/invoices/download-all", asyncHandler(downloadAllInvoicesZip));
+employerRouter.get("/billing/invoices/:id/pdf", validate(invoiceIdParamSchema), asyncHandler(downloadInvoicePdf));
+employerRouter.post("/billing/invoices/:id/pay", validate(invoiceIdParamSchema), asyncHandler(payInvoiceNow));
+employerRouter.post("/billing/invoices/:id/refund-request", validate(refundRequestSchema), asyncHandler(requestRefund));
+employerRouter.get("/billing/transactions", validate(transactionsQuerySchema), asyncHandler(listTransactions));
+employerRouter.post("/billing/credits/purchase", validate(creditPurchaseSchema), asyncHandler(purchaseCredits));
+employerRouter.post("/billing/plan/preview", validate(planChangeSchema), asyncHandler(previewPlanChange));
+employerRouter.post("/billing/plan/change", validate(planChangeSchema), asyncHandler(changePlan));
+employerRouter.post("/billing/payment-method", asyncHandler(updatePaymentMethod));
+employerRouter.post("/billing/subscription/cancel", asyncHandler(cancelSubscription));
+employerRouter.post("/billing/subscription/resume", asyncHandler(resumeSubscription));

@@ -18,6 +18,9 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().optional(),
   RESEND_FROM_EMAIL: z.string().email().default("noreply@saudiacareers.com"),
   ADMIN_EMAIL: z.string().email().default("admin@saudiacareers.com"),
+  DODO_PAYMENTS_API_KEY: z.string().optional(),
+  DODO_PAYMENTS_WEBHOOK_KEY: z.string().optional(),
+  DODO_PAYMENTS_ENVIRONMENT: z.enum(["test_mode", "live_mode"]).default("test_mode"),
 });
 
 const parsed = envSchema.safeParse(process.env);

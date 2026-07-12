@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { employerApi } from "../../api/employer.js";
+import { billingApi } from "../../api/billing.js";
 import { Badge } from "../../components/common/Badge.jsx";
 import { Button } from "../../components/common/Button.jsx";
 import { Spinner } from "../../components/common/Spinner.jsx";
@@ -39,13 +40,13 @@ export function EmployerDashboard() {
     Promise.all([
       employerApi.getProfile(),
       employerApi.getDashboard(),
-      employerApi.getSubscription(),
+      billingApi.getSummary(),
       employerApi.listJobs({ page: 1, limit: 5 }),
-    ]).then(([profileRes, dashRes, subRes, jobsRes]) => {
+    ]).then(([profileRes, dashRes, billingRes, jobsRes]) => {
       setData({
         profile: profileRes.data.data,
         metrics: dashRes.data.data,
-        subscription: subRes.data.data.subscription,
+        subscription: billingRes.data.data.subscription,
         jobs: jobsRes.data.data.jobs,
       });
     });

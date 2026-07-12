@@ -31,6 +31,7 @@ export function AdminPlans() {
       priceSar: String(plan.priceSar),
       paidCreditsGranted: String(plan.paidCreditsGranted),
       features: plan.features.join("\n"),
+      dodoProductId: plan.dodoProductId ?? "",
     });
     setError("");
   }
@@ -45,6 +46,7 @@ export function AdminPlans() {
         priceSar: Number(form.priceSar),
         paidCreditsGranted: Number(form.paidCreditsGranted),
         features: form.features.split("\n").map((f) => f.trim()).filter(Boolean),
+        dodoProductId: form.dodoProductId.trim(),
       });
       setEditing(null);
       await load();
@@ -75,6 +77,11 @@ export function AdminPlans() {
                 {plan.priceSar} <span className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>SAR/mo</span>
               </p>
               <p className="mt-1 text-xs" style={{ color: "var(--text-tertiary)" }}>{plan.paidCreditsGranted} paid credits granted</p>
+              {plan.priceSar > 0 && (
+                <p className="mt-1 text-xs" style={{ color: plan.dodoProductId ? "var(--green)" : "var(--gold-ink)" }}>
+                  {plan.dodoProductId ? `Linked to Dodo product ${plan.dodoProductId}` : "Not linked to a Dodo product yet"}
+                </p>
+              )}
               <ul className="mt-4 space-y-2 text-sm">
                 {plan.features.map((f) => (
                   <li key={f} className="flex items-start gap-2" style={{ color: "var(--text-secondary)" }}>
@@ -98,6 +105,13 @@ export function AdminPlans() {
               <span className="field-label">Features (one per line)</span>
               <textarea className="field-box min-h-32 resize-y" value={form.features} onChange={(e) => setForm((f) => ({ ...f, features: e.target.value }))} />
             </label>
+            <Input
+              id="plan-dodo-product-id"
+              label="Dodo product ID"
+              value={form.dodoProductId}
+              onChange={(e) => setForm((f) => ({ ...f, dodoProductId: e.target.value }))}
+              placeholder="pdt_..."
+            />
             {error && <Alert>{error}</Alert>}
             <div className="flex justify-end gap-2 pt-2">
               <Button type="button" variant="secondary" onClick={() => setEditing(null)}>Cancel</Button>

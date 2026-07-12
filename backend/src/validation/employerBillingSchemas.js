@@ -15,6 +15,8 @@ export const invoicesQuerySchema = envelope(
   }),
 );
 
+export const transactionsQuerySchema = invoicesQuerySchema;
+
 export const creditPurchaseSchema = bodyOnly(
   z.object({
     credits: z.coerce.number().int().min(1).max(100),
@@ -35,4 +37,17 @@ export const refundRequestSchema = envelope(
 export const invoiceIdParamSchema = envelope(
   z.object({}).passthrough(),
   z.object({ id: z.coerce.number().int().positive() }),
+);
+
+export const billingProfileSchema = bodyOnly(
+  z.object({
+    taxRegistrationNumber: z.string().trim().max(50).optional().or(z.literal("")),
+    billingEmail: z.string().trim().email().optional().or(z.literal("")),
+    billingAddressLine1: z.string().trim().max(200).optional().or(z.literal("")),
+    billingAddressLine2: z.string().trim().max(200).optional().or(z.literal("")),
+    billingCity: z.string().trim().max(100).optional().or(z.literal("")),
+    billingState: z.string().trim().max(100).optional().or(z.literal("")),
+    billingPostalCode: z.string().trim().max(20).optional().or(z.literal("")),
+    billingCountry: z.string().trim().length(2).optional().or(z.literal("")),
+  }).strict(),
 );

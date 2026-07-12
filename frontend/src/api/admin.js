@@ -32,9 +32,7 @@ export const adminApi = {
 
   billingOverview: (params) => api.get("/admin/billing-overview", { params }),
   invoices: (params) => api.get("/admin/invoices", { params }),
-  markInvoicePaid: (id) => api.patch(`/admin/invoices/${id}/mark-paid`),
-  markInvoiceFailed: (id, reason) => api.patch(`/admin/invoices/${id}/mark-failed`, { reason }),
-  markInvoiceRefunded: (id) => api.patch(`/admin/invoices/${id}/mark-refunded`),
+  approveRefund: (id) => api.patch(`/admin/invoices/${id}/approve-refund`),
   rejectInvoiceRefund: (id, reason) => api.patch(`/admin/invoices/${id}/reject-refund`, { reason }),
 
   employers: (params) => api.get("/admin/employers", { params }),

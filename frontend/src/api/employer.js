@@ -28,15 +28,6 @@ export const employerApi = {
   deleteVerificationDoc: (id)           => api.delete(`/employer/verification/documents/${id}`),
   submitVerification:    ()             => api.post("/employer/verification/submit"),
   submitSupportRequest:  (data)         => api.post("/employer/support", data),
-
-  getSubscription:       ()             => api.get("/employer/subscription"),
-  listInvoices:          (params)       => api.get("/employer/invoices", { params }),
-  requestCreditPurchase: (credits)      => api.post("/employer/invoices/credit-purchase", { credits }),
-  requestPlanChange:     (planTier)     => api.post("/employer/invoices/plan-change", { planTier }),
-  requestRefund:         (invoiceId, reason) => api.post(`/employer/invoices/${invoiceId}/refund-request`, { reason }),
-  cancelSubscription:    ()             => api.post("/employer/subscription/cancel"),
-  resumeSubscription:    ()             => api.post("/employer/subscription/resume"),
-  downloadInvoicePdf:    (id)           => api.get(`/employer/invoices/${id}/pdf`, { responseType: "blob" }),
 };
 
 export const enquiryApi = {

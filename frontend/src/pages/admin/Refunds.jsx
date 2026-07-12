@@ -31,7 +31,7 @@ export function Refunds() {
     setBusyId(id);
     setError("");
     try {
-      await adminApi.markInvoiceRefunded(id);
+      await adminApi.approveRefund(id);
       await load();
     } catch (requestError) {
       setError(requestError.response?.data?.message ?? "Unable to approve refund");
@@ -60,7 +60,7 @@ export function Refunds() {
       <p className="section-label">Admin</p>
       <h1 className="page-title text-3xl md:text-4xl">Refunds &amp; cancellations</h1>
       <p className="mt-2 mb-6 text-base" style={{ color: "var(--text-secondary)" }}>
-        Manual review before refund. Every decision is recorded on the invoice.
+        Manual review before refund. Approving issues a real refund through the payment gateway.
       </p>
 
       {error && <Alert>{error}</Alert>}

@@ -318,7 +318,12 @@ model EmployerProfile {
   verificationSubmittedAt DateTime?
   verifiedAt            DateTime?
   taxRegistrationNumber String?
-  billingAddress        String?
+  billingAddressLine1   String?
+  billingAddressLine2   String?
+  billingCity           String?
+  billingState          String?
+  billingPostalCode     String?
+  billingCountry        String?            @default("SA")
   billingEmail          String?
   isSuspended           Boolean            @default(false)
   suspendedReason       String?
@@ -328,6 +333,9 @@ model EmployerProfile {
 
   subscription          EmployerSubscription?
   invoices               Invoice[]
+  transactions          Transaction[]
+  paymentMethod         EmployerPaymentMethod?
+  resumeUnlocks         ResumeUnlockEvent[]
   verificationDocuments EmployerVerificationDocument[]
   supportRequests       EmployerSupportRequest[]
 
@@ -389,22 +397,26 @@ model EmployerSupportRequest {
 }
 
 model EmployerSubscription {
-  id                   Int             @id @default(autoincrement())
-  employerProfileId    Int             @unique
-  employerProfile      EmployerProfile @relation(fields: [employerProfileId], references: [id])
-  planTier             PlanTier        @default(FREE)
-  paidCreditsRemaining Int             @default(0)
-  freeJobUsedAt        DateTime?
-  renewsAt             DateTime?
-  cancelAtPeriodEnd    Boolean         @default(false)
-  createdAt            DateTime        @default(now())
-  updatedAt            DateTime        @updatedAt
+  id                    Int             @id @default(autoincrement())
+  employerProfileId     Int             @unique
+  employerProfile       EmployerProfile @relation(fields: [employerProfileId], references: [id])
+  planTier              PlanTier        @default(FREE)
+  paidCreditsRemaining  Int             @default(0)
+  freeJobUsedAt         DateTime?
+  currentPeriodStart    DateTime?
+  renewsAt              DateTime?
+  cancelAtPeriodEnd     Boolean         @default(false)
+  gatewayCustomerId     String?
+  gatewaySubscriptionId String?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
 }
 
 enum PlanTier {
   FREE
   STARTER
-  GROWTH
+  PROFESSIONAL
+  ENTERPRISE
 }
 
 model Plan {
@@ -414,6 +426,7 @@ model Plan {
   priceSar           Int
   paidCreditsGranted Int
   features           String[]
+  dodoProductId      String?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 }
@@ -429,6 +442,10 @@ model Invoice {
   note              String?
   issuedAt          DateTime        @default(now())
   paidAt            DateTime?
+  transactions      Transaction[]
+  refundsInvoiceId  Int?
+  refundsInvoice    Invoice?        @relation("InvoiceRefund", fields: [refundsInvoiceId], references: [id])
+  refundedBy        Invoice[]       @relation("InvoiceRefund")
 
   @@index([employerProfileId])
   @@index([status])
@@ -446,6 +463,58 @@ enum InvoiceStatus {
   FAILED
   REFUND_REQUESTED
   REFUNDED
+}
+
+model EmployerPaymentMethod {
+  id                     Int             @id @default(autoincrement())
+  employerProfileId      Int             @unique
+  employerProfile        EmployerProfile @relation(fields: [employerProfileId], references: [id])
+  gatewayPaymentMethodId String
+  cardBrand              String?
+  cardLast4              String?
+  expiryMonth            Int?
+  expiryYear             Int?
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
+}
+
+model Transaction {
+  id                Int             @id @default(autoincrement())
+  employerProfileId Int
+  employerProfile   EmployerProfile @relation(fields: [employerProfileId], references: [id])
+  invoiceId         Int?
+  invoice           Invoice?        @relation(fields: [invoiceId], references: [id])
+  type              TransactionType
+  amountSar         Int
+  status            String
+  gatewayRef        String?
+  createdAt         DateTime        @default(now())
+
+  @@index([employerProfileId])
+  @@index([createdAt])
+}
+
+enum TransactionType {
+  CHARGE
+  REFUND
+  FAILED_CHARGE
+}
+
+model DodoWebhookEvent {
+  id          String   @id
+  eventType   String
+  processedAt DateTime @default(now())
+}
+
+model ResumeUnlockEvent {
+  id                Int             @id @default(autoincrement())
+  employerProfileId Int
+  employerProfile   EmployerProfile @relation(fields: [employerProfileId], references: [id])
+  applicationId     Int
+  createdAt         DateTime        @default(now())
+
+  @@unique([employerProfileId, applicationId])
+  @@index([employerProfileId, createdAt])
 }
 
 model Enquiry {

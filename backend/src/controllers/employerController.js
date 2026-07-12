@@ -657,6 +657,18 @@ export async function getApplicationDetail(req, res) {
   let resumeUrl = null;
   if (application.user.profile?.resumePath) {
     resumeUrl = await createSignedDownloadUrl(application.user.profile.resumePath);
+
+    const employerProfile = await prisma.employerProfile.findUnique({
+      where: { userId: req.user.id },
+      select: { id: true },
+    });
+    if (employerProfile) {
+      await prisma.resumeUnlockEvent.upsert({
+        where: { employerProfileId_applicationId: { employerProfileId: employerProfile.id, applicationId: id } },
+        create: { employerProfileId: employerProfile.id, applicationId: id },
+        update: {},
+      });
+    }
   }
 
   return sendSuccess(res, { message: "Application retrieved", data: { ...application, resumeUrl } });

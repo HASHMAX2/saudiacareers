@@ -1,8 +1,7 @@
 import { prisma } from "../config/prisma.js";
-import { PRICE_PER_CREDIT_SAR } from "../config/plans.js";
-import { getOrCreateSubscription } from "../services/employerBillingService.js";
 import { createSignedViewUrl } from "../services/storageService.js";
-import { notify, notifyAdmins } from "../services/notificationService.js";
+import * as dodoService from "../services/dodoService.js";
+import { notify } from "../services/notificationService.js";
 import { ApiError } from "../utils/ApiError.js";
 import { sendSuccess } from "../utils/ApiResponse.js";
 
@@ -259,95 +258,42 @@ export async function listInvoicesAdmin(req, res) {
   });
 }
 
-export async function markInvoicePaid(req, res) {
+// Payment confirmation is no longer a human clicking "mark paid" — the Dodo
+// webhook handler (dodoWebhookController.js) is the sole source of truth for
+// invoice/subscription state now that a real gateway is wired in.
+
+export async function approveRefund(req, res) {
   const { id } = req.validated.params;
-  const invoice = await prisma.invoice.findUnique({ where: { id } });
-  if (!invoice) throw new ApiError(404, "Invoice not found");
-  if (invoice.status !== "PENDING") throw new ApiError(400, "Only pending invoices can be marked paid");
-
-  const employerProfile = await prisma.employerProfile.findUnique({ where: { id: invoice.employerProfileId } });
-  const subscription = await getOrCreateSubscription(invoice.employerProfileId);
-  const now = new Date();
-
-  if (invoice.type === "SUBSCRIPTION") {
-    const plan = await prisma.plan.findFirst({ where: { priceSar: invoice.amountSar } });
-    if (!plan) throw new ApiError(400, "Could not match invoice amount to a known plan");
-    const renewsAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-    await prisma.employerSubscription.update({
-      where: { id: subscription.id },
-      data: { planTier: plan.tier, renewsAt, cancelAtPeriodEnd: false },
-    });
-    await notify({
-      userId: employerProfile.userId,
-      type: "SUBSCRIPTION_ACTIVATED",
-      title: "Subscription activated",
-      message: `Your ${plan.name} plan is now active.`,
-      link: "/employer/billing",
-    });
-  } else if (invoice.type === "CREDIT_PACK") {
-    const credits = Math.round(invoice.amountSar / PRICE_PER_CREDIT_SAR);
-    await prisma.employerSubscription.update({
-      where: { id: subscription.id },
-      data: { paidCreditsRemaining: { increment: credits } },
-    });
-  } else {
-    throw new ApiError(400, "Refund invoices cannot be marked paid — use mark-refunded instead");
-  }
-
-  const updated = await prisma.invoice.update({ where: { id }, data: { status: "PAID", paidAt: now } });
-  await notify({
-    userId: employerProfile.userId,
-    type: "PAYMENT_SUCCESSFUL",
-    title: "Payment successful",
-    message: `Payment of ${invoice.amountSar} SAR for invoice #${invoice.id} was confirmed.`,
-    link: "/employer/billing",
-  });
-  return sendSuccess(res, { message: "Invoice marked paid", data: updated });
-}
-
-export async function markInvoiceFailed(req, res) {
-  const { id } = req.validated.params;
-  const { reason } = req.validated.body;
-  const invoice = await prisma.invoice.findUnique({ where: { id } });
-  if (!invoice) throw new ApiError(404, "Invoice not found");
-  if (invoice.status !== "PENDING") throw new ApiError(400, "Only pending invoices can be marked failed");
-
-  const employerProfile = await prisma.employerProfile.findUnique({ where: { id: invoice.employerProfileId } });
-  const updated = await prisma.invoice.update({
+  const invoice = await prisma.invoice.findUnique({
     where: { id },
-    data: { status: "FAILED", note: `Payment failed: ${reason}` },
+    include: { refundsInvoice: true, employerProfile: true },
   });
-
-  await notify({
-    userId: employerProfile.userId,
-    type: "PAYMENT_FAILED",
-    title: "Payment failed",
-    message: `Your payment of ${invoice.amountSar} SAR for invoice #${invoice.id} could not be confirmed: ${reason}`,
-    link: "/employer/billing",
-  });
-  await notifyAdmins({
-    type: "PAYMENT_FAILED_FOR_COMPANY",
-    title: "Payment failed for company",
-    message: `${employerProfile.companyName}'s payment for invoice #${invoice.id} failed: ${reason}`,
-    link: "/admin/invoices",
-  });
-
-  return sendSuccess(res, { message: "Invoice marked failed", data: updated });
-}
-
-export async function markInvoiceRefunded(req, res) {
-  const { id } = req.validated.params;
-  const invoice = await prisma.invoice.findUnique({ where: { id } });
   if (!invoice) throw new ApiError(404, "Invoice not found");
   if (invoice.type !== "REFUND" || invoice.status !== "REFUND_REQUESTED") {
-    throw new ApiError(400, "Only requested refunds can be marked refunded");
+    throw new ApiError(400, "Only requested refunds can be approved");
+  }
+  if (!invoice.refundsInvoice?.gatewayRef) {
+    throw new ApiError(409, "No gateway payment reference found for the original invoice — cannot issue a refund");
   }
 
-  const updated = await prisma.invoice.update({
-    where: { id },
-    data: { status: "REFUNDED", paidAt: new Date() },
+  await dodoService.createRefund({
+    paymentGatewayRef: invoice.refundsInvoice.gatewayRef,
+    reason: invoice.note,
+    metadata: { employerProfileId: String(invoice.employerProfileId), invoiceId: String(invoice.id) },
   });
-  return sendSuccess(res, { message: "Refund marked complete", data: updated });
+
+  await notify({
+    userId: invoice.employerProfile.userId,
+    type: "REFUND_APPROVED",
+    title: "Refund approved",
+    message: `Your refund for invoice #${invoice.refundsInvoiceId} has been submitted and will be confirmed shortly.`,
+    link: "/employer/billing",
+  });
+
+  return sendSuccess(res, {
+    message: "Refund submitted to the payment gateway — it will be confirmed shortly",
+    data: invoice,
+  });
 }
 
 export async function rejectInvoiceRefund(req, res) {
