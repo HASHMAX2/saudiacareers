@@ -116,7 +116,15 @@ export function Navbar() {
         className="nav-header sticky top-0 z-40 flex items-center"
         style={{ background: "var(--bg-base)", height: "64px" }}
       >
-        <div className="mx-auto flex w-full max-w-7xl items-center gap-6 px-4 sm:px-6 lg:px-8">
+        <div className="relative mx-auto flex w-full max-w-7xl items-center gap-6 px-4 sm:px-6 lg:px-8">
+          {user?.role === "ADMIN" && (
+            <span
+              className="absolute left-1/2 hidden -translate-x-1/2 rounded-full px-4 py-1.5 text-[13px] font-semibold uppercase tracking-[0.06em] md:inline-flex"
+              style={{ background: "var(--accent-subtle)", color: "var(--accent)" }}
+            >
+              Welcome, Admin
+            </span>
+          )}
           <Link
             className="flex items-center gap-2.5 shrink-0"
             onClick={() => setIsOpen(false)}
@@ -156,14 +164,16 @@ export function Navbar() {
             } absolute inset-x-4 top-[4.25rem] flex-col gap-1 rounded-2xl bg-white p-3 shadow-xl md:static md:ml-auto md:flex md:flex-row md:items-center md:gap-10 md:bg-transparent md:p-0 md:shadow-none`}
             style={{ border: isOpen ? "1px solid var(--border-default)" : "none" }}
           >
-            <NavLink
-              className={navLinkClass}
-              style={navLinkStyle}
-              onClick={() => setIsOpen(false)}
-              to="/jobs"
-            >
-              Browse
-            </NavLink>
+            {(!user || isCandidate) && (
+              <NavLink
+                className={navLinkClass}
+                style={navLinkStyle}
+                onClick={() => setIsOpen(false)}
+                to="/jobs"
+              >
+                Browse
+              </NavLink>
+            )}
 
             {user ? (
               <>

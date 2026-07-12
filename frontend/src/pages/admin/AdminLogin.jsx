@@ -1,5 +1,5 @@
 import { CheckCircle2, ShieldCheck } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { authApi } from "../../api/auth.js";
 import { Alert } from "../../components/common/Alert.jsx";
@@ -8,14 +8,21 @@ import { Input } from "../../components/common/Input.jsx";
 import { useAuthStore } from "../../store/authStore.js";
 
 const ACCENT = "var(--accent)";
+const REMEMBER_KEY = "admin_remember_email";
 
 export function AdminLogin() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [fieldErrors, setFE] = useState({});
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const setSession = useAuthStore((s) => s.setSession);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const saved = localStorage.getItem(REMEMBER_KEY);
+    if (saved) setForm((f) => ({ ...f, email: saved }));
+  }, []);
 
   const update = (key) => (e) => {
     setForm((f) => ({ ...f, [key]: e.target.value }));
@@ -39,6 +46,8 @@ export function AdminLogin() {
         await authApi.logout();
         throw new Error("This login is for administrators only.");
       }
+      if (rememberMe) localStorage.setItem(REMEMBER_KEY, form.email);
+      else localStorage.removeItem(REMEMBER_KEY);
       setSession(session);
       navigate(session.user.mustChangePassword ? "/admin/change-password" : "/admin/dashboard", { replace: true });
     } catch (err) {
@@ -97,6 +106,17 @@ export function AdminLogin() {
             error={fieldErrors.password}
             required
           />
+
+          <label className="flex cursor-pointer items-center gap-2 text-sm" style={{ color: "var(--text-secondary)" }}>
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="h-4 w-4 rounded"
+              style={{ accentColor: ACCENT }}
+            />
+            Remember me
+          </label>
 
           {error && <Alert>{error}</Alert>}
 

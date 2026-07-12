@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
   Briefcase, Building2, ChevronDown, ClipboardList, CreditCard, FileWarning,
   Import, Layers, LayoutDashboard, Loader2, LogOut, Menu, Receipt, RotateCcw,
@@ -141,11 +141,13 @@ export function AdminShell() {
         style={{ background: "var(--bg-white)", borderRight: "1px solid var(--border-default)" }}
       >
         <div className="flex items-center gap-3 border-b pb-4" style={{ borderColor: "var(--border-default)" }}>
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-sm font-extrabold text-white" style={{ background: ACCENT }}>S</span>
-          <div>
-            <p className="text-[15px] font-extrabold leading-tight" style={{ color: "var(--text-primary)" }}>SaudiaCareers</p>
-            <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>Admin console</p>
-          </div>
+          <Link to="/" className="flex items-center gap-3" onClick={() => setSidebarOpen(false)}>
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-sm font-extrabold text-white" style={{ background: ACCENT }}>S</span>
+            <div>
+              <p className="text-[15px] font-extrabold leading-tight" style={{ color: "var(--text-primary)" }}>SaudiaCareers</p>
+              <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>Admin console</p>
+            </div>
+          </Link>
           <button className="ml-auto rounded-lg p-1.5 md:hidden" onClick={() => setSidebarOpen(false)} aria-label="Close menu">
             <X size={18} style={{ color: "var(--text-tertiary)" }} />
           </button>

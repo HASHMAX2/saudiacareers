@@ -33,3 +33,4 @@ postgres-data/
 .postgres-data/
 backend/prisma/*.db
 backend/prisma/*.db-journal
+supabase credentials.txt

@@ -242,7 +242,7 @@ export function EmployerVerification() {
   const locked = isApproved || awaitingReview;
 
   return (
-    <div>
+    <div className="w-full lg:w-[85%]">
       <Toast show={toastVisible} message={toastMessage} tone="success" duration={TOAST_DURATION} />
 
       <div>

@@ -1,5 +1,5 @@
 import { CheckCircle2, Sparkles } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { authApi } from "../../api/auth.js";
 import { AuthShell } from "../../components/auth/AuthShell.jsx";
@@ -8,13 +8,22 @@ import { Button } from "../../components/common/Button.jsx";
 import { Input } from "../../components/common/Input.jsx";
 import { useAuthStore } from "../../store/authStore.js";
 
+const REMEMBER_KEY = "candidate_remember_email";
+
 export function Login({ admin = false, employer = false }) {
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const setSession = useAuthStore((state) => state.setSession);
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    if (admin || employer) return;
+    const saved = localStorage.getItem(REMEMBER_KEY);
+    if (saved) setForm((f) => ({ ...f, email: saved }));
+  }, [admin, employer]);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -23,6 +32,10 @@ export function Login({ admin = false, employer = false }) {
     try {
       const { data } = await authApi.login(form);
       const session = data.data;
+      if (!admin && !employer) {
+        if (rememberMe) localStorage.setItem(REMEMBER_KEY, form.email);
+        else localStorage.removeItem(REMEMBER_KEY);
+      }
       if (admin && session.user.role !== "ADMIN") {
         await authApi.logout();
         throw new Error("This login is for administrators only");
@@ -64,7 +77,23 @@ export function Login({ admin = false, employer = false }) {
       <Input autoComplete="email" id={admin ? "admin-email" : employer ? "employer-email" : "email"} label="Email address" onChange={(event) => setForm({ ...form, email: event.target.value })} placeholder="you@example.com" required type="email" value={form.email} />
       <div>
         <Input autoComplete="current-password" id={admin ? "admin-password" : employer ? "employer-password" : "password"} label="Password" onChange={(event) => setForm({ ...form, password: event.target.value })} placeholder="Enter your password" required type="password" value={form.password} />
-        {!admin && <div className="mt-2 text-right"><Link className="font-mono text-xs hover:underline" style={{ color: "var(--accent)" }} to="/forgot-password">Forgot password?</Link></div>}
+        {!admin && (
+          <div className="mt-2 flex items-center justify-between">
+            {!employer && (
+              <label className="flex cursor-pointer items-center gap-2 text-sm" style={{ color: "var(--text-secondary)" }}>
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(event) => setRememberMe(event.target.checked)}
+                  className="h-4 w-4 rounded"
+                  style={{ accentColor: "var(--accent)" }}
+                />
+                Remember me
+              </label>
+            )}
+            <Link className="ml-auto font-mono text-xs hover:underline" style={{ color: "var(--accent)" }} to="/forgot-password">Forgot password?</Link>
+          </div>
+        )}
       </div>
       {error && <Alert>{error}</Alert>}
       <Button className="w-full" disabled={submitting} type="submit">{submitting ? "Signing in..." : "Sign in"}</Button>
