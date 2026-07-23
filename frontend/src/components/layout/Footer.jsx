@@ -46,8 +46,8 @@ export function Footer() {
           <div>
             <p className="section-label">For Employers</p>
             <ul className="space-y-3" style={{ color: "var(--text-secondary)" }}>
-              <li><Link className={linkCls} to="/admin/login">Admin login</Link></li>
-              <li><Link className={linkCls} to="/admin/jobs/create">Post a role</Link></li>
+              <li><Link className={linkCls} to="/employer/register">Post a role</Link></li>
+              <li><Link className={linkCls} to="/employer/login">Employer login</Link></li>
             </ul>
           </div>
         </div>

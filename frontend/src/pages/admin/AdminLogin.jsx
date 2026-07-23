@@ -44,7 +44,9 @@ export function AdminLogin() {
       const session = data.data;
       if (session.user.role !== "ADMIN") {
         await authApi.logout();
-        throw new Error("This login is for administrators only.");
+        throw new Error(
+          `This login is for administrators only. ${session.user.email} is registered as ${session.user.role.toLowerCase()} — check that your browser didn't autofill the wrong account.`,
+        );
       }
       if (rememberMe) localStorage.setItem(REMEMBER_KEY, form.email);
       else localStorage.removeItem(REMEMBER_KEY);
@@ -85,9 +87,10 @@ export function AdminLogin() {
         <form className="space-y-4" onSubmit={handleSubmit}>
           <Input
             id="admin-email"
+            name="admin-email"
             label="Email address"
             type="email"
-            autoComplete="email"
+            autoComplete="username"
             placeholder="you@saudiacareers.com"
             value={form.email}
             onChange={update("email")}
@@ -97,6 +100,7 @@ export function AdminLogin() {
 
           <Input
             id="admin-password"
+            name="admin-password"
             label="Password"
             type="password"
             autoComplete="current-password"

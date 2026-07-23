@@ -51,7 +51,9 @@ export function EmployerLogin() {
       const session  = data.data;
       if (session.user.role !== "EMPLOYER") {
         await authApi.logout();
-        throw new Error("This portal is for employers only.");
+        throw new Error(
+          `This portal is for employers only. ${session.user.email} is registered as ${session.user.role.toLowerCase()} — check that your browser didn't autofill the wrong account.`,
+        );
       }
       if (rememberMe) localStorage.setItem(REMEMBER_KEY, form.email);
       else localStorage.removeItem(REMEMBER_KEY);
@@ -97,8 +99,9 @@ export function EmployerLogin() {
             </span>
             <input
               id="emp-login-email"
+              name="employer-email"
               type="email"
-              autoComplete="email"
+              autoComplete="username"
               placeholder="you@company.com"
               value={form.email}
               onChange={update("email")}
@@ -120,6 +123,7 @@ export function EmployerLogin() {
             <div className="relative">
               <input
                 id="emp-login-password"
+                name="employer-password"
                 type={showPw ? "text" : "password"}
                 autoComplete="current-password"
                 placeholder="Enter your password"

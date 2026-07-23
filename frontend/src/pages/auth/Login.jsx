@@ -38,11 +38,15 @@ export function Login({ admin = false, employer = false }) {
       }
       if (admin && session.user.role !== "ADMIN") {
         await authApi.logout();
-        throw new Error("This login is for administrators only");
+        throw new Error(
+          `This login is for administrators only. ${session.user.email} is registered as ${session.user.role.toLowerCase()} — check that your browser didn't autofill the wrong account.`,
+        );
       }
       if (employer && session.user.role !== "EMPLOYER") {
         await authApi.logout();
-        throw new Error("This login is for employers only");
+        throw new Error(
+          `This login is for employers only. ${session.user.email} is registered as ${session.user.role.toLowerCase()} — check that your browser didn't autofill the wrong account.`,
+        );
       }
       if (!admin && !employer && (session.user.role === "ADMIN" || session.user.role === "EMPLOYER")) {
         await authApi.logout();
@@ -74,9 +78,9 @@ export function Login({ admin = false, employer = false }) {
 
   const form_ = (
     <form className="space-y-4" onSubmit={handleSubmit}>
-      <Input autoComplete="email" id={admin ? "admin-email" : employer ? "employer-email" : "email"} label="Email address" onChange={(event) => setForm({ ...form, email: event.target.value })} placeholder="you@example.com" required type="email" value={form.email} />
+      <Input autoComplete="username" id={admin ? "admin-email" : employer ? "employer-email" : "email"} name={admin ? "admin-email" : employer ? "employer-email" : "candidate-email"} label="Email address" onChange={(event) => setForm({ ...form, email: event.target.value })} placeholder="you@example.com" required type="email" value={form.email} />
       <div>
-        <Input autoComplete="current-password" id={admin ? "admin-password" : employer ? "employer-password" : "password"} label="Password" onChange={(event) => setForm({ ...form, password: event.target.value })} placeholder="Enter your password" required type="password" value={form.password} />
+        <Input autoComplete="current-password" id={admin ? "admin-password" : employer ? "employer-password" : "password"} name={admin ? "admin-password" : employer ? "employer-password" : "candidate-password"} label="Password" onChange={(event) => setForm({ ...form, password: event.target.value })} placeholder="Enter your password" required type="password" value={form.password} />
         {!admin && (
           <div className="mt-2 flex items-center justify-between">
             {!employer && (
