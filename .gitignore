@@ -37,3 +37,4 @@ supabase credentials.txt
 
 .vercel
 .env*
+.render_envvars_backup.env.json

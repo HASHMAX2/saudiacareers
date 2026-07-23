@@ -1,38 +1,44 @@
 # SaudiaCareers Project Progress
 
-Last updated: July 9, 2026 (job legitimacy flagging + employer billing controls + full admin console rebuild)
+Last updated: July 23, 2026 (cross-portal auth fixes, route lazy-loading, and a full production infra migration to Frankfurt)
 
 Future sessions must read both `CLAUDE.md` and this file before coding.
 
 ## Current Checkpoint
 
-Current branch: `employer-v2` (branched from `candidateloginpage` tip `474cfd4`, which is itself branched from `employer`).
+Current branch: `billing_and_payment` (branched from `employer-v2` tip `74badd2`).
 
-- `candidateloginpage` is pushed to GitHub, up to date, and has two extra local-history commits beyond `2629732`: `042d4d1` (session-restore flash fix + phone country-code picker fix) and `8caf52b` (employer dropdown click-to-open, dashboard coming-soon labels, landing tagline tweak) — both pushed.
-- A checkpoint tag `stable-2026-07-09-candidateloginpage` and backup branch `candidateloginpage-stable-backup` were created at commit `474cfd4` in case future work needs to roll back.
-- `employer-v2` branch is **pushed to GitHub and up to date**, four commits ahead of `candidateloginpage`: `5ecd83e` (employer portal visual rebuild + billing/credits/verification system), `29fcc6c` (employer job-editing fix, form null-value fix, applicants-page loading flash fix), and `92fde0d` (job legitimacy flagging, employer billing controls, full admin console rebuild — see new session section at the bottom of this file for details).
-- All work described below is **implemented, manually verified end-to-end (backend via direct HTTP/Prisma checks, frontend via Playwright), and committed/pushed** — no uncommitted work outstanding on this branch.
-- Left over in the database from testing (harmless, not cleaned up): test admin `jobreviewtest-admin@example.com` / `TestAdmin1`, test employers `buttontest+jobs1@testco-example.com`, `nowebsite+test@example.com`, `suspendtest@example.com`, and test candidate `zock131+admintest@gmail.com` (all password `Testpass1`).
+- Pushed to GitHub, up to date with `origin/billing_and_payment`.
+- Commits on this branch beyond `employer-v2`: `8e75f4b` (employer job-revision workflow, AI import improvements, admin/auth UI fixes), `7a8cebe` (employer verification banner, multi-document upload, support requests), `13b06f8` (employer verification queue, document replace, admin nav fixes), `640489b` (employer billing rebuild with real Dodo Payments integration), `399410b` (nav polish, remember-me on all logins), `db118e8` (this session's cross-portal auth fixes + lazy loading — see session section below).
+- `main` is **behind** this branch and does not have any of the employer-v2, billing, or this-session work — `main`'s Vercel/Render deployments (if still referenced anywhere) are stale relative to what's actually live now (see Live URLs below, which are **not** the `main`-branch deployments).
+- Not yet independently verified this session: the Dodo Payments integration internals (`640489b`) — inherited from a prior session, not re-audited here.
 
-The database has been wiped clean and reseeded with only the default admin account. Admin account: `admin@saudiacareers.com` / `Admin@1234` (must change password on first login — `mustChangePassword` is still `true`).
+## Live URLs — READ THIS BEFORE ASSUMING ANYTHING IS STALE
 
-## Live URLs
+Production infrastructure was migrated **today** from Oregon (Render) + Sydney (Supabase) to **Frankfurt** for both, after discovering the original combination added 2-6 seconds of latency per database query. Old resources are paused, not deleted, as a rollback buffer.
 
-| Service | URL |
-|---|---|
-| Frontend (Vercel) | `https://saudiacareers-frontend.vercel.app` |
-| Backend (Render) | `https://saudiacareers-1.onrender.com` |
-| Health check | `https://saudiacareers-1.onrender.com/api/health` |
-| Custom domain (pending DNS) | `https://saudiacareers.com` |
+| Service | Current (live) | Old (paused, not deleted) |
+|---|---|---|
+| Backend (Render) | `https://saudiacareers-frankfurt.onrender.com` (Frankfurt) | `https://saudiacareers-1.onrender.com` (Oregon) — **suspended** |
+| Database + Storage (Supabase) | project ref `jywlkcaovyasgkgxkdun`, region `eu-central-1` (Frankfurt) | project ref `slrqzvqwqrskbglptasj`, region `ap-southeast-2` (Sydney) — **paused** |
+| Frontend — candidate (Vercel) | `https://saudiacareers-frontend.vercel.app` | — |
+| Frontend — employer (Vercel) | `https://saudiacareers-employer.vercel.app` (new project this session) | — |
+| Frontend — admin (Vercel) | `https://saudiacareers-admin.vercel.app` (new project this session) | — |
+| Custom domain | Not yet configured (Hostinger DNS still pending — unchanged from before) | — |
+
+All three Vercel projects share the same codebase (`frontend/`, root directory) and the same Render backend via `VITE_API_URL` — they are **not** separate frontend builds, just three deployments of one app with a client-side hostname check (`frontend/src/routes/PortalHome.jsx`) that redirects each domain's `/` to the right starting page. See this session's notes below for the full reasoning and what's still manual (DNS, full app-per-portal code split) vs. done.
+
+**Old Supabase project org is on the free tier** — pausing was chosen over deleting specifically so the old data/schema can still be inspected if anything looks wrong with the migration; delete it once you're confident (was explicitly deferred by user request, not a technical blocker).
 
 ## Deployment Status
 
-- Backend deployed to Render (free tier, Singapore region, spins down after inactivity)
-- Frontend deployed to Vercel with `vercel.json` SPA rewrite rules
-- Production database: Supabase PostgreSQL — migration `20260619180000_init` applied, admin seeded
-- Supabase Storage bucket `SaudiaCareers` — private, verified working
-- Resend API key configured — domain `saudiacareers.com` verification still pending
-- DNS (Hostinger → Vercel/Render) not yet configured — using Vercel/Render default URLs for now
+- Backend: Render, Frankfurt region, free tier — **not yet upgraded off free tier**, so it will still sleep after ~15 min of inactivity and cold-start 30-60s on the next request. This was explicitly flagged as a pre-launch blocker and deferred due to budget, not forgotten.
+- Frontend: 3 Vercel projects (see table above), all building from `frontend/` with `vercel.json` SPA rewrite rules, all auto-deploying from `billing_and_payment` on push.
+- Database: Supabase Postgres, Frankfurt, all migrations through `20260712180000_add_invoice_refund_link` applied. Local `backend/.env` also points at Frankfurt now (updated this session) — local dev and production use the same database.
+- Supabase Storage bucket `SaudiaCareers` — private, migrated to the new Frankfurt project, verified working (25/25 files copied successfully, byte-identical).
+- DNS (Hostinger → Vercel/Render) still not configured — using platform default URLs. See this session's "subdomain strategy" notes below for the recommended plan when this happens (candidate on root domain, `employer.` and `admin.` subdomains).
+- Resend API key configured — domain `saudiacareers.com` verification still pending (unchanged from prior sessions).
+- **53 job listings in the database are seeded test data**, not real postings (see this session's notes — added specifically for UI text-overflow testing, spanning all industries/statuses). Flag to the user before treating job counts as real usage data, and consider cleaning them out before a real launch.
 
 ## Completed
 
@@ -1344,3 +1350,91 @@ PATCH  /api/notifications/read-all         Mark all read
 
 PATCH  /api/admin/invoices/:id/mark-failed Mark a pending invoice as payment-failed (requires reason)
 ```
+
+---
+
+## Session: Cross-Portal Auth Fixes, Route Lazy-Loading, and Frankfurt Infra Migration (July 23, 2026)
+
+Branch: `billing_and_payment`. Two commits: `db118e8` (code fixes, pushed) plus a large amount of **infrastructure work done via API** (Vercel/Render/Supabase CLIs and Management APIs) that has no corresponding git diff but materially changes what "the deployed app" means — see Live URLs above.
+
+### Bug reports investigated and fixed
+
+- **Employer login failing with "This portal is for employers only" after switching from Admin.** Root cause was **not** the frontend leaking admin role into the login request (verified: `POST /auth/login` only ever sends `email`/`password`, and the backend ignores any `Authorization` header for login, using only body credentials). The real cause is almost certainly the browser's own password manager autofilling the wrong saved account, since all three portals lived at the same origin with generic `autoComplete` hints and no `name` attributes. Fixed by giving each portal's email/password fields distinct `name` attributes and `autoComplete="username"`, and — more importantly — making the error message name the actual matched account: *"This portal is for employers only. `x@y.com` is registered as admin — check that your browser didn't autofill the wrong account."* Applied to `AdminLogin.jsx`, `EmployerLogin.jsx`, and the (currently unrouted) admin/employer paths of `Login.jsx`.
+- **A second, real bug found in the process:** `frontend/src/routes/PublicOnlyRoute.jsx` silently redirected an already-authenticated user straight to their own portal's dashboard when they landed on a *different* portal's login page, with zero explanation. Replaced with an interstitial ("You're signed in as Administrator — log out to sign in to the Employer portal instead, or continue to your current dashboard") with explicit Log out / Go to dashboard actions, instead of a silent bounce.
+- **"Remember me" cross-portal contamination** — investigated and found to already be fixed by an earlier commit (`399410b`, before this session): `AdminLogin.jsx`, `EmployerLogin.jsx`, and `Login.jsx` each read/write their own separate `localStorage` key (`admin_remember_email`, `emp_remember_email`, `candidate_remember_email`). What the user was actually seeing is native browser/password-manager autofill (see above), which the app's own "remember me" was never the cause of.
+- **Public "Admin login" link in the site footer** (`Footer.jsx`, "For Employers" column) — removed entirely; admins should reach `/admin/login` via a direct/bookmarked URL, not a link every anonymous visitor and bot can see. Found and fixed a second, unrelated bug in the same two lines: "Post a role" was linking to `/admin/jobs/create` (an admin-only route) instead of `/employer/register` — a prospective employer clicking it would have been bounced to the admin login page.
+
+### Root cause of the underlying autofill issue — architectural, not a quick fix
+
+Diagnosed that browser/password-manager autofill is scoped by **origin** (scheme+host), not by URL path. Since `/admin/login`, `/employer/login`, and `/login` all lived on the same origin, no amount of frontend `autoComplete`/`name` tuning can fully prevent a saved credential from one portal being offered on another's login form — the interstitial + "this account is registered as X" error message are the practical mitigations; genuinely fixing it requires separate subdomains per portal (see below).
+
+### Route-level lazy loading (`App.jsx`)
+
+Converted every page-level import from static `import` to `React.lazy()` + a single top-level `<Suspense>` boundary around the route tree. Shared/structural components (layouts, route guards) stayed static. Result: main entry bundle dropped from **640KB → 261KB** (170KB → 85KB gzipped), verified via a clean production build with no warnings. All routes across all three portals re-tested with Playwright after the change — no broken navigation, no console errors beyond the expected pre-login 401.
+
+### `PortalHome.jsx` — host-aware landing page
+
+New component (`frontend/src/routes/PortalHome.jsx`), wired as the `index` route in `App.jsx`. Reads `window.location.hostname` against a small allowlist (`admin.saudiacareers.com` / `saudiacareers-admin.vercel.app` → admin login/dashboard; same pattern for employer) and redirects accordingly; anything else falls through to the normal candidate `Landing` page. This only affects the root `/` path — every other route (e.g. `saudiacareers-admin.vercel.app/jobs`) is still reachable and renders exactly as it would on the candidate domain, since all three Vercel projects ship the identical bundle. This is a convenience/UX layer only — it is **not** a security boundary; actual role-based access is still enforced by `AdminRoute`/`EmployerRoute`/`PrivateRoute` client-side and by `authorizeAdmin`/`authorizeEmployer` middleware server-side, unchanged.
+
+### Numbered pagination (`Pagination.jsx`)
+
+Replaced the Previous/Next-only pagination (which had never actually had page numbers, in any commit, on any branch — checked full git history before building this) with real clickable page numbers, ellipsis-truncated for long lists (`1 2 … 19 20` style, verified via a standalone logic test: `page 10 of 20` → `1 2 … 9 10 11 … 19 20`). Single shared component, so this automatically applies everywhere it's used: public Jobs listing, admin Manage Jobs / Employers / Billing, and employer Jobs / Applications / Applicants — 7 call sites, no call-site changes needed since the prop interface (`page`/`totalPages`/`onPageChange`) didn't change.
+
+### 53 test jobs seeded (`backend/seedFiftyTestJobs.mjs`, left in the repo, untracked)
+
+Populated the (previously **empty** — there were zero real job listings before this) database with 53 jobs spanning all 14 `INDUSTRIES` categories and a mix of statuses (33 `ACTIVE`, plus `INACTIVE`/`PENDING_REVIEW`/`DRAFT`/`EXPIRED`), specifically to stress-test UI text handling: a 108-char title, a ~100-char company name containing one long unbroken string with no spaces, a full Arabic title/company/description mixed with English, and a minimal one-word title/company at the other extreme. Verified via Playwright screenshots across the public job card, public job detail, admin job table, and admin edit form — no overflow or layout breakage found anywhere; the app's existing `word-break`/`overflow-wrap` handling was already solid. Arabic text renders left-aligned (not RTL-aware), which matches `CLAUDE.md`'s explicit "Arabic/RTL out of scope for MVP," not a bug.
+
+### Infrastructure: 3-domain Vercel split (autofill fix, in production)
+
+Given credentials for Vercel, Render, and Supabase this session (user-provided CLI/API tokens), executed the "lighter" version of a subdomain-isolation strategy: rather than a full monorepo split into three separate app bundles (estimated 3-5 days of work, real regression risk on a codebase with live billing), deployed the **same, unmodified codebase** to three separate Vercel projects (`saudiacareers-frontend` already existed; `saudiacareers-employer` and `saudiacareers-admin` created this session), each independently connected to the same GitHub repo/branch. This gives genuine origin-level separation (fixes the autofill root cause) without the cost/risk of a full code split. One mistake made and immediately corrected: the first `vercel link --yes` auto-created an unwanted duplicate empty project (`frontend`) instead of linking the existing one — caught immediately, deleted (zero data loss, it was empty), and re-linked correctly with an explicit `--project` flag.
+
+**Known limitation, deliberately accepted for now:** because all three Vercel projects call the same backend host, the refresh-token cookie is scoped to that host regardless of which frontend triggered the request — so a session can still silently "leak" across portals at the cookie level (though **not** a security hole, since backend role checks still gate everything; the `PublicOnlyRoute` interstitial handles the UX gracefully). Full isolation would need per-portal API hostnames pointed at the same backend with host-only cookies — noted as a future option, not done.
+
+### Infrastructure: Frankfurt region migration (biggest piece of work this session)
+
+**Why:** user asked why localhost felt slow loading the candidate dashboard/jobs despite the lazy-loading work. Diagnosed via direct Prisma benchmarking, not guesswork: a single `job.findMany()` query was taking **1.5–6 seconds**. Traced to Render's backend running in **Oregon** while Supabase's database was in **`ap-southeast-2` (Sydney)** — about as geographically far apart as two points on Earth can be. Checked Render's and Supabase's full region lists via their docs/APIs; found Render's 5 regions (Oregon, Ohio, Virginia, Frankfurt, Singapore) each have an exact-name match on Supabase's 16 AWS regions. Given the app's actual target market is Saudi Arabia/GCC (not the US), **Frankfurt** was chosen over Oregon deliberately — better MENA connectivity than any US region, not just "wherever Render happened to default to."
+
+**What was done, end to end, this session:**
+1. New Supabase project created in `eu-central-1` (Frankfurt) via the Management API (Personal Access Token, not a project-scoped key — those are different things, documented for future reference: project API keys ≠ account-level PAT needed for platform actions like creating projects).
+2. Schema applied via `prisma migrate deploy` (all 18 migrations).
+3. New Render web service created in Frankfurt, same repo/branch/build config as production.
+4. **Real bug hit and fixed:** new Render service failed to boot with `FATAL: (ENOTFOUND) tenant/user ... not found`. Root cause was **not** Supabase-side flakiness (initially suspected) — it was a wrong pooler shard hostname (`aws-1-eu-central-1` assumed by copying the pattern from an earlier Oregon test, instead of re-fetching from the API; the actual shard was `aws-0-eu-central-1`). Pooler shard numbers are per-project/region assignments, not a fixed constant — always fetch via `GET /v1/projects/{ref}/config/database/pooler` rather than assuming.
+5. **Data migration:** no `pg_dump`/`psql` available locally, so wrote a Node script (`backend/migrateToFrankfurt.mjs`, deleted after use) using two `PrismaClient` instances (source/dest) instead. Used `SET session_replication_role = replica` on the destination during load to sidestep FK-ordering and self-referential edge cases (`Job.revisesJobId`, `Invoice.refundsInvoiceId`) rather than hand-computing insert order. All 24 real data rows across every table migrated with **exact row-count and spot-checked content matches** (verified `Invoice` records — the most sensitive table — byte-for-byte identical including IDs and timestamps). Sequences reset to `MAX(id)` afterward, confirmed correct (ID gaps preserved on both sides).
+6. **Storage migration:** 25 files (avatars, resumes, employer verification documents) copied via direct Storage REST API calls (`backend/migrateStorage.mjs`, deleted after use) — download from Sydney, upload to Frankfurt, all 25/25 succeeded, counts verified matching on both sides. Note: DB shows all *current* candidate resumePath/profilePhotoPath/employer logoPath as `null` — the resume/avatar files that exist in storage are orphaned from deleted test accounts, not live data. The 6 `employer-verification/*` files **are** live (referenced by current `EmployerProfile` records) and were the ones that actually mattered here.
+7. **Cutover:** updated `VITE_API_URL` on all 3 Vercel projects to the new Frankfurt backend URL, redeployed all 3, verified via checking the actual shipped JS bundles that they reference the new backend host. Updated backend `ALLOWED_ORIGINS` on the new Frankfurt Render service (copied from the old service — origins didn't change, only the backend did). Updated local `backend/.env` to the new Frankfurt connection strings too, so local dev and production now share one database.
+8. **Verified end-to-end** post-cutover: public jobs listing on the live `saudiacareers-frontend.vercel.app` correctly shows "33 roles found" (real migrated data), admin login on `saudiacareers-admin.vercel.app` succeeds and lands on `/admin/dashboard` — full auth flow confirmed working against the new stack.
+9. **Measured improvement:** old Oregon→Sydney path averaged ~2.4s per request; new Frankfurt→Frankfurt averaged ~0.4s. Real side-by-side curl timing, not estimated.
+10. **Old resources paused, not deleted** (explicit user request — wanted a rollback buffer before committing to deletion): old Render service (`srv-d8t4djmq1p3s738vbj7g`, Oregon) suspended via API; old Supabase project (`slrqzvqwqrskbglptasj`, Sydney) paused via API. Both can be resumed if something is later found to be missing from the migration, and deleted later once confidence is high.
+
+**Also diagnosed but explicitly deferred (per user, low on funds):** Render's free tier sleeps the service after ~15 min idle, causing 30-60s cold-start on the next request — flagged as a real pre-launch blocker, separate from the region question, not yet addressed.
+
+**Also diagnosed but not yet acted on:** Prisma's connection through Supabase's PgBouncer transaction-mode pooler showed roughly 1 second of overhead per query versus a direct connection on the *same* database in local testing — but this may be confounded by the local test machine's own network routing (a raw TCP-connect-only benchmark showed inconsistent, non-geography-matching latency to different pooler hostnames from this specific machine, so it isn't fully trustworthy as a proxy for what Render's own network experiences). Since Render runs a single persistent process (not serverless), it likely doesn't need transaction-mode pooling at all — session-mode or a tuned direct connection may be more appropriate. Explicitly deferred by user request ("revisit pooling strategy later") — worth a fresh look once the free-tier upgrade happens, since testing it properly needs to happen from Render itself, not from a local machine.
+
+### Verification performed this session
+
+Real end-to-end testing throughout, not just code review: Playwright browser automation against both local dev servers and live production URLs (login flows across all three portals with disposable test accounts created and cleaned up afterward), direct Prisma/SQL benchmarking for the latency diagnosis, curl-based CORS preflight and timing checks, and manual row-count/content verification after the data migration. All temporary test accounts (`portal_test_admin@test.com`, `portal_test_employer@test.com`, `ui_test_admin@test.com`, `cutover_test_admin@test.com`) were created and deleted within this session — none left behind.
+
+### New/changed files this session
+
+```text
+frontend/src/routes/PublicOnlyRoute.jsx     Interstitial instead of silent cross-portal redirect
+frontend/src/routes/PortalHome.jsx           New — host-aware landing redirect
+frontend/src/pages/admin/AdminLogin.jsx      name/autoComplete fix, error message names matched account
+frontend/src/pages/employer/EmployerLogin.jsx  Same
+frontend/src/pages/auth/Login.jsx            Same (admin/employer paths, currently unrouted)
+frontend/src/components/layout/Footer.jsx    Removed public Admin login link, fixed Post-a-role link
+frontend/src/components/common/Pagination.jsx  Numbered pagination with ellipsis truncation
+frontend/src/App.jsx                          All page imports converted to React.lazy()
+backend/seedFiftyTestJobs.mjs                 Left in repo (untracked) — 53 test jobs, reusable
+```
+
+### Not done / left for a future session
+
+- Full app-per-portal code split (3 separate bundles) — deliberately not pursued; the lighter 3-domain-same-bundle approach already fixes the actual autofill problem.
+- Per-portal API hostnames for true cookie-level session isolation — noted as an option, not built.
+- Hostinger DNS / custom domain setup — still entirely manual, needs the user's Hostinger login.
+- Render free-tier upgrade — flagged as a real pre-launch blocker, deferred due to budget.
+- Pooling strategy reassessment (session-mode vs. transaction-mode PgBouncer) — deferred per user request.
+- Deleting (vs. pausing) the old Oregon Render service and Sydney Supabase project.
+- The 53 seeded test jobs should probably be cleared out before a real launch.
+- A second, apparently-unused Render service (`saudiacareers`, `saudiacareers.onrender.com`) was noticed but never investigated or touched — may be stale/leftover from earlier setup.
