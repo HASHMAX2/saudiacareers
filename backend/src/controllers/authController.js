@@ -123,18 +123,6 @@ export async function login(req, res) {
     throw new ApiError(401, "Invalid email or password");
   }
 
-  if (user.role === Role.EMPLOYER) {
-    const employerProfile = await prisma.employerProfile.findUnique({
-      where: { userId: user.id },
-      select: { isSuspended: true, suspendedReason: true },
-    });
-    if (employerProfile?.isSuspended) {
-      throw new ApiError(403, employerProfile.suspendedReason
-        ? `This account has been suspended: ${employerProfile.suspendedReason}`
-        : "This account has been suspended. Contact support for details.");
-    }
-  }
-
   const accessToken = await establishSession(res, user);
   return sendSuccess(res, {
     message: "Login successful",

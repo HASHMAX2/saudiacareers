@@ -246,7 +246,17 @@ export function EmployerShell() {
           </div>
         </header>
 
-        {profile && profile.verificationStatus !== "APPROVED" && (
+        {profile?.isSuspended ? (
+          <div
+            className="flex flex-wrap items-center justify-center gap-2 px-4 py-2.5 text-center text-[13px] font-semibold"
+            style={{ background: "#FDECEC", color: "#B91C1C", borderBottom: "1px solid #F5C2C2" }}
+          >
+            <AlertTriangle size={15} className="shrink-0" />
+            <span>
+              Your account is suspended{profile.suspendedReason ? `: ${profile.suspendedReason}` : "."} You can browse your dashboard but can't post or publish jobs.
+            </span>
+          </div>
+        ) : profile && profile.verificationStatus !== "APPROVED" && (
           <div
             className="flex flex-wrap items-center justify-center gap-2 px-4 py-2.5 text-center text-[13px] font-semibold"
             style={{ background: "var(--gold-bg)", color: "#8A5D10", borderBottom: "1px solid #F0D697" }}

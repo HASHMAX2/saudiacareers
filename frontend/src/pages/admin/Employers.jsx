@@ -195,7 +195,7 @@ export function Employers() {
 
       <Modal isOpen={!!suspendTarget} title={`Suspend ${suspendTarget?.companyName ?? ""}?`} onClose={() => setSuspendTarget(null)}>
         <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-          Suspended employers cannot log in, post, or renew until reinstated. This reason will be shown to the employer.
+          Suspended employers can still log in and view their dashboard, but cannot post or publish jobs until reinstated. This reason will be shown to the employer.
         </p>
         <label className="mt-3 block">
           <span className="field-label">Reason</span>

@@ -1,6 +1,6 @@
 # SaudiaCareers Project Progress
 
-Last updated: July 23, 2026 (cross-portal auth fixes, route lazy-loading, and a full production infra migration to Frankfurt)
+Last updated: July 24, 2026 (suspended-employer login/post behavior change)
 
 Future sessions must read both `CLAUDE.md` and this file before coding.
 
@@ -9,7 +9,7 @@ Future sessions must read both `CLAUDE.md` and this file before coding.
 Current branch: `billing_and_payment` (branched from `employer-v2` tip `74badd2`).
 
 - Pushed to GitHub, up to date with `origin/billing_and_payment`.
-- Commits on this branch beyond `employer-v2`: `8e75f4b` (employer job-revision workflow, AI import improvements, admin/auth UI fixes), `7a8cebe` (employer verification banner, multi-document upload, support requests), `13b06f8` (employer verification queue, document replace, admin nav fixes), `640489b` (employer billing rebuild with real Dodo Payments integration), `399410b` (nav polish, remember-me on all logins), `db118e8` (this session's cross-portal auth fixes + lazy loading — see session section below).
+- Commits on this branch beyond `employer-v2`: `8e75f4b` (employer job-revision workflow, AI import improvements, admin/auth UI fixes), `7a8cebe` (employer verification banner, multi-document upload, support requests), `13b06f8` (employer verification queue, document replace, admin nav fixes), `640489b` (employer billing rebuild with real Dodo Payments integration), `399410b` (nav polish, remember-me on all logins), `db118e8` (cross-portal auth fixes + lazy loading), `d525e9f` (numbered pagination, seed test jobs), plus this session's suspended-employer login/post change — see session section at the bottom of this file.
 - `main` is **behind** this branch and does not have any of the employer-v2, billing, or this-session work — `main`'s Vercel/Render deployments (if still referenced anywhere) are stale relative to what's actually live now (see Live URLs below, which are **not** the `main`-branch deployments).
 - Not yet independently verified this session: the Dodo Payments integration internals (`640489b`) — inherited from a prior session, not re-audited here.
 
@@ -1438,3 +1438,26 @@ backend/seedFiftyTestJobs.mjs                 Left in repo (untracked) — 53 te
 - Deleting (vs. pausing) the old Oregon Render service and Sydney Supabase project.
 - The 53 seeded test jobs should probably be cleared out before a real launch.
 - A second, apparently-unused Render service (`saudiacareers`, `saudiacareers.onrender.com`) was noticed but never investigated or touched — may be stale/leftover from earlier setup.
+
+---
+
+## Session: Suspended Employer Login/Post Behavior Change (July 24, 2026)
+
+Branch: `billing_and_payment`. Triggered by the user reporting a confusing message — "This account has been suspended: trtyrt" — shown to an employer right after an admin suspended their account. Investigated and confirmed this was not a bug: `trtyrt` was literally the suspension reason an admin had typed into the Suspend modal's free-text "Reason" field, which was then interpolated verbatim into the **login-blocking** 403 error (`authController.js` `login()` previously threw 403 for any suspended employer before a session was ever established).
+
+### Business rule change requested by the user
+Suspended employers should still be able to log in and see their account (to understand why they were suspended and what to do about it) — only job posting/publishing should be blocked, not access to the account itself.
+
+### Backend
+- `backend/src/controllers/authController.js` — removed the `isSuspended` check entirely from `login()`. Suspended employers now authenticate normally like any other user.
+- No change needed to job creation/publishing — `employerController.js` already independently blocks `createEmployerJob` (line ~351) and the ACTIVE-transition path of `updateEmployerJobStatus` (line ~470) with `isSuspended` checks scoped to those actions, not to login. This was already correct and is unchanged.
+
+### Frontend
+- `frontend/src/components/employer/EmployerShell.jsx` — added a persistent red suspension banner (shown across every employer-portal page, not just the dashboard) displaying `suspendedReason`, replacing the existing verification-pending banner when suspended (suspension takes priority).
+- `frontend/src/pages/employer/EmployerDashboard.jsx` — added a suspension notice card with the reason and guidance text; the "Post a job" button is hidden entirely when `profile.isSuspended` is true.
+- `frontend/src/pages/employer/EmployerCreateJob.jsx` — added a client-side guard: navigating directly to `/employer/jobs/create` while suspended now renders a message instead of the job form (defense in depth; the backend 403 was already the real enforcement).
+- `frontend/src/pages/admin/Employers.jsx` — corrected the Suspend confirmation modal's copy, which previously (inaccurately) said "Suspended employers cannot log in, post, or renew" — now says they can still log in and view their dashboard, only posting/publishing is blocked.
+
+### Not done / explicitly out of scope for this change
+- No suspension check was added to billing/credit-purchase actions (`employerBillingController.js`) — only job creation/publishing is blocked, matching the user's stated intent ("they need to access the account to manage it"). If the user later wants suspended employers blocked from buying credits too, that's a separate, small addition to that controller.
+- Did not touch the `Job.status` ACTIVE-transition suspension check or any other already-correct backend enforcement — only the login-time block was removed.

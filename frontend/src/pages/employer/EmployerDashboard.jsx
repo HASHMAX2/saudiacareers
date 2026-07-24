@@ -71,9 +71,34 @@ export function EmployerDashboard() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Link to="/employer/jobs"><Button variant="secondary">View jobs</Button></Link>
-          <Link to="/employer/jobs/create"><Button style={{ background: EMP, borderColor: EMP }}>Post a job</Button></Link>
+          {!profile.isSuspended && (
+            <Link to="/employer/jobs/create"><Button style={{ background: EMP, borderColor: EMP }}>Post a job</Button></Link>
+          )}
         </div>
       </div>
+
+      {profile.isSuspended && (
+        <div
+          className="mb-6 rounded-2xl p-5"
+          style={{ border: "1px solid #F5C2C2", background: "#FDECEC" }}
+        >
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="font-bold" style={{ color: "var(--text-primary)" }}>Your account has been suspended</h2>
+              <p className="mt-1 text-sm" style={{ color: "var(--text-secondary)" }}>
+                {profile.suspendedReason
+                  ? `Reason: ${profile.suspendedReason}`
+                  : "No reason was provided. Contact support for details."}
+              </p>
+              <p className="mt-2 text-sm" style={{ color: "var(--text-secondary)" }}>
+                You can still view your dashboard, jobs, and applications, but you can't post or publish new jobs until this is resolved.
+                Please reach out to support to find out what needs to be corrected.
+              </p>
+            </div>
+            <Badge tone="red">Suspended</Badge>
+          </div>
+        </div>
+      )}
 
       <div
         className="mb-6 flex flex-col gap-3 rounded-2xl p-5 sm:flex-row sm:items-center sm:justify-between"

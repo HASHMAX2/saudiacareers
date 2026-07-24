@@ -36,6 +36,17 @@ export function EmployerCreateJob() {
 
   if (!profile) return <div className="grid min-h-64 place-items-center"><Spinner label="Loading" /></div>;
 
+  if (profile.isSuspended) {
+    return (
+      <div className="rounded-2xl p-5 text-sm" style={{ border: "1px solid #F5C2C2", background: "#FDECEC", color: "var(--text-primary)" }}>
+        <p className="font-bold">Your account is suspended</p>
+        <p className="mt-1" style={{ color: "var(--text-secondary)" }}>
+          {profile.suspendedReason ? `Reason: ${profile.suspendedReason}` : "Contact support for details."} You can't post new jobs until this is resolved.
+        </p>
+      </div>
+    );
+  }
+
   const defaults = {
     companyName: profile.companyName ?? "",
     hrEmail: user?.email ?? "",
