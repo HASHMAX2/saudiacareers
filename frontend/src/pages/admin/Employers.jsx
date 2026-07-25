@@ -29,17 +29,23 @@ export function Employers() {
   const [planTier, setPlanTier] = useState("");
   const [busyId, setBusyId] = useState(null);
   const [error, setError] = useState("");
+  const [loadError, setLoadError] = useState("");
   const [suspendTarget, setSuspendTarget] = useState(null);
   const [reason, setReason] = useState("");
 
   async function load(p = page, q = search, st = status, plan = planTier) {
-    const { data: res } = await adminApi.employers({
-      page: p, limit: 20,
-      ...(q ? { search: q } : {}),
-      ...(st ? { status: st } : {}),
-      ...(plan ? { planTier: plan } : {}),
-    });
-    setData(res.data);
+    try {
+      const { data: res } = await adminApi.employers({
+        page: p, limit: 20,
+        ...(q ? { search: q } : {}),
+        ...(st ? { status: st } : {}),
+        ...(plan ? { planTier: plan } : {}),
+      });
+      setData(res.data);
+      setLoadError("");
+    } catch (requestError) {
+      setLoadError(requestError.response?.data?.message ?? "Unable to load employers");
+    }
   }
 
   useEffect(() => { load(1, search, status, planTier); }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -133,8 +139,17 @@ export function Employers() {
         </button>
       </form>
 
+      {loadError && employers && <Alert>{loadError}</Alert>}
+
       {!employers ? (
-        <div className="grid min-h-64 place-items-center"><Spinner label="Loading employers" /></div>
+        loadError ? (
+          <div className="rounded-2xl p-8 text-center" style={{ border: "1px solid var(--border-default)", background: "var(--bg-white)" }}>
+            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{loadError}</p>
+            <Button className="mt-4" variant="secondary" onClick={() => load()}>Retry</Button>
+          </div>
+        ) : (
+          <div className="grid min-h-64 place-items-center"><Spinner label="Loading employers" /></div>
+        )
       ) : !employers.length ? (
         <div className="rounded-2xl p-8 text-center" style={{ border: "1px solid var(--border-default)", background: "var(--bg-white)" }}>
           <Building2 className="mx-auto" size={28} style={{ color: "var(--text-tertiary)" }} />

@@ -49,4 +49,9 @@ export const adminApi = {
 
   plans: () => api.get("/admin/plans"),
   updatePlan: (id, payload) => api.patch(`/admin/plans/${id}`, payload),
+
+  candidates: (params) => api.get("/admin/candidates", { params }),
+  candidate: (id) => api.get(`/admin/candidates/${id}`),
+  sendCandidateFeedback: (id, comments) => api.post(`/admin/candidates/${id}/feedback`, { comments }),
+  calculateCandidateAIScore: (id) => api.post(`/admin/candidates/${id}/ai-score`),
 };

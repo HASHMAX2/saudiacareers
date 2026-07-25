@@ -17,7 +17,7 @@ const PENDING_STATUSES = ["PENDING_REVIEW", "REVISION_PENDING_APPROVAL"];
 const PENDING_REVIEW_MESSAGE = "Pending review jobs can only be managed through the Job Review workflow.";
 
 const applicationInclude = {
-  user: { include: { profile: true } },
+  user: { include: { profile: true }, omit: { passwordHash: true } },
   job: true,
 };
 

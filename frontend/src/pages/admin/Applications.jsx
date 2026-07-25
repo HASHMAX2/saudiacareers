@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Download, FileText, SlidersHorizontal } from "lucide-react";
 import { Link } from "react-router-dom";
 import { adminApi } from "../../api/admin.js";
+import { Alert } from "../../components/common/Alert.jsx";
 import { Badge } from "../../components/common/Badge.jsx";
 import { Button } from "../../components/common/Button.jsx";
 import { Input } from "../../components/common/Input.jsx";
@@ -15,7 +16,18 @@ const emailTone = { PENDING: "amber", SENT: "green", FAILED: "red" };
 export function Applications() {
   const [applications, setApplications] = useState(null);
   const [filters, setFilters] = useState({ search: "", status: "", hrEmailStatus: "" });
-  useEffect(() => { adminApi.applications(Object.fromEntries(Object.entries(filters).filter(([, value]) => value))).then(({ data }) => setApplications(data.data.applications)); }, [filters]);
+  const [error, setError] = useState("");
+
+  async function load() {
+    try {
+      const { data } = await adminApi.applications(Object.fromEntries(Object.entries(filters).filter(([, value]) => value)));
+      setApplications(data.data.applications);
+      setError("");
+    } catch (requestError) {
+      setError(requestError.response?.data?.message ?? "Unable to load applications");
+    }
+  }
+  useEffect(() => { load(); }, [filters]); // eslint-disable-line react-hooks/exhaustive-deps
   async function exportCsv() {
     const response = await adminApi.exportApplications(Object.fromEntries(Object.entries(filters).filter(([, value]) => value)));
     const url = URL.createObjectURL(response.data);
@@ -48,8 +60,19 @@ export function Applications() {
           options={[{ value: "", label: "All email statuses" }, "PENDING", "SENT", "FAILED"]}
         />
       </div>
+      {error && applications && <Alert>{error}</Alert>}
+
       {!applications ? (
-        <div className="grid min-h-64 place-items-center"><Spinner label="Loading applications" /></div>
+        error ? (
+          <div className="mt-6 grid min-h-56 place-items-center rounded-2xl p-8 text-center" style={{ border: "1.5px dashed var(--border-strong)" }}>
+            <div>
+              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{error}</p>
+              <Button className="mt-4" variant="secondary" onClick={load}>Retry</Button>
+            </div>
+          </div>
+        ) : (
+          <div className="grid min-h-64 place-items-center"><Spinner label="Loading applications" /></div>
+        )
       ) : applications.length ? (
         <>
           <div className="card-soft hidden lg:block overflow-hidden">

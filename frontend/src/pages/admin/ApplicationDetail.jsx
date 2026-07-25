@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Download, FileText, Mail, MapPin, Phone, UserRound } from "lucide-react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { adminApi } from "../../api/admin.js";
 import { Badge } from "../../components/common/Badge.jsx";
 import { Button } from "../../components/common/Button.jsx";
@@ -30,9 +30,14 @@ export function ApplicationDetail() {
       <div className="grid gap-5 xl:grid-cols-[1fr_20rem]">
         <div className="space-y-5">
           <section className="card-soft p-5 sm:p-6">
-            <h2 className="flex items-center gap-2 font-semibold" style={{ color: "var(--text-primary)" }}>
-              <UserRound size={17} style={{ color: "var(--accent)" }} />Candidate information
-            </h2>
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="flex items-center gap-2 font-semibold" style={{ color: "var(--text-primary)" }}>
+                <UserRound size={17} style={{ color: "var(--accent)" }} />Candidate information
+              </h2>
+              <Link to={`/admin/candidates/${application.user.id}`} className="shrink-0 text-xs font-semibold" style={{ color: "var(--accent)" }}>
+                View full profile →
+              </Link>
+            </div>
             <div className="mt-5 grid gap-4 text-sm sm:grid-cols-2">
               <Info icon={Mail} label="Email" value={application.user.email} />
               <Info icon={Phone} label="Mobile" value={application.user.mobile} />

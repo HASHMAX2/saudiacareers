@@ -3,7 +3,7 @@ import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
   Briefcase, Building2, ChevronDown, ClipboardList, CreditCard, FileWarning,
   Import, Layers, LayoutDashboard, Loader2, LogOut, Menu, Receipt, RotateCcw,
-  ShieldCheck, Wallet, X,
+  ShieldCheck, Users, Wallet, X,
 } from "lucide-react";
 import { adminApi } from "../../api/admin.js";
 import { authApi } from "../../api/auth.js";
@@ -21,6 +21,7 @@ const NAV_GROUPS = [
     label: "Core",
     items: [
       { label: "Dashboard", to: "/admin/dashboard", icon: LayoutDashboard, end: true },
+      { label: "Candidates", to: "/admin/candidates", icon: Users },
       { label: "Employer approvals", icon: ShieldCheck, to: "/admin/verifications", countKey: "pendingApprovals" },
       { label: "Employers", to: "/admin/employers", icon: Building2 },
     ],

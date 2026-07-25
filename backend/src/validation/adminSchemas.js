@@ -88,6 +88,21 @@ export const suspendEmployerSchema = envelope(
   z.object({ id: z.coerce.number().int().positive() }),
 );
 
+export const adminCandidatesQuerySchema = envelope(
+  z.object({}).passthrough(),
+  z.object({}).passthrough(),
+  z.object({
+    page: z.coerce.number().int().positive().default(1),
+    limit: z.coerce.number().int().min(1).max(100).default(20),
+    search: z.string().trim().max(100).optional(),
+  }),
+);
+
+export const candidateFeedbackSchema = envelope(
+  z.object({ comments: z.string().trim().min(3).max(5000) }).strict(),
+  z.object({ id: z.coerce.number().int().positive() }),
+);
+
 export const updatePlanSchema = envelope(
   z.object({
     name: z.string().trim().min(2).max(100).optional(),

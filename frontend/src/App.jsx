@@ -18,6 +18,8 @@ const AdminLogin = lazy(() => import("./pages/admin/AdminLogin.jsx").then((m) =>
 const AdminPlans = lazy(() => import("./pages/admin/AdminPlans.jsx").then((m) => ({ default: m.AdminPlans })));
 const ApplicationDetail = lazy(() => import("./pages/admin/ApplicationDetail.jsx").then((m) => ({ default: m.ApplicationDetail })));
 const Applications = lazy(() => import("./pages/admin/Applications.jsx").then((m) => ({ default: m.Applications })));
+const CandidateProfile = lazy(() => import("./pages/admin/CandidateProfile.jsx").then((m) => ({ default: m.CandidateProfile })));
+const Candidates = lazy(() => import("./pages/admin/Candidates.jsx").then((m) => ({ default: m.Candidates })));
 const ChangePassword = lazy(() => import("./pages/admin/ChangePassword.jsx").then((m) => ({ default: m.ChangePassword })));
 const CreateJob = lazy(() => import("./pages/admin/CreateJob.jsx").then((m) => ({ default: m.CreateJob })));
 const EditJob = lazy(() => import("./pages/admin/EditJob.jsx").then((m) => ({ default: m.EditJob })));
@@ -145,6 +147,8 @@ export default function App() {
           <Route path="admin/change-password" element={<ChangePassword />} />
           <Route element={<AdminShell />}>
             <Route path="admin/dashboard" element={<AdminDashboard />} />
+            <Route path="admin/candidates" element={<Candidates />} />
+            <Route path="admin/candidates/:id" element={<CandidateProfile />} />
             <Route path="admin/employers" element={<Employers />} />
             <Route path="admin/verifications" element={<EmployerVerifications />} />
             <Route path="admin/verifications/:id" element={<EmployerReviewDetail />} />

@@ -560,7 +560,7 @@ export async function listAllApplications(req, res) {
   const [applications, total] = await prisma.$transaction([
     prisma.application.findMany({
       where,
-      include: { user: { include: { profile: true } }, job: { select: { id: true, title: true } } },
+      include: { user: { include: { profile: true }, omit: { passwordHash: true } }, job: { select: { id: true, title: true } } },
       orderBy: { appliedAt: "desc" },
       skip: (page - 1) * limit,
       take: limit,
@@ -600,7 +600,7 @@ export async function listJobApplications(req, res) {
   const [applications, total] = await prisma.$transaction([
     prisma.application.findMany({
       where,
-      include: { user: { include: { profile: true } } },
+      include: { user: { include: { profile: true }, omit: { passwordHash: true } } },
       orderBy: { appliedAt: "desc" },
       skip: (page - 1) * limit,
       take: limit,
@@ -650,7 +650,7 @@ export async function getApplicationDetail(req, res) {
   const { id } = req.validated.params;
   const application = await prisma.application.findFirst({
     where: { id, job: { createdBy: req.user.id } },
-    include: { user: { include: { profile: true } }, job: true },
+    include: { user: { include: { profile: true }, omit: { passwordHash: true } }, job: true },
   });
   if (!application) throw new ApiError(404, "Application not found");
 

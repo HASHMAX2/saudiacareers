@@ -32,6 +32,12 @@ import {
   suspendEmployer,
   unsuspendEmployer,
 } from "../controllers/adminEmployersController.js";
+import {
+  calculateCandidateAIScore,
+  getCandidate,
+  listCandidates,
+  sendCandidateFeedback,
+} from "../controllers/adminCandidatesController.js";
 import { parseImport } from "../controllers/importController.js";
 import { listPlansAdmin, updatePlan } from "../controllers/adminPlansController.js";
 import {
@@ -49,12 +55,14 @@ import { validate } from "../middleware/validate.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import {
   adminApplicationsQuerySchema,
+  adminCandidatesQuerySchema,
   adminEmployersQuerySchema,
   adminIdSchema,
   adminInvoicesQuerySchema,
   adminJobsQuerySchema,
   applicationStatusSchema,
   billingOverviewQuerySchema,
+  candidateFeedbackSchema,
   createJobSchema,
   invoiceIdSchema,
   jobApprovalSchema,
@@ -92,6 +100,11 @@ adminRouter.get("/applications", validate(adminApplicationsQuerySchema), asyncHa
 adminRouter.get("/applications/:id", validate(adminIdSchema), asyncHandler(getApplication));
 adminRouter.patch("/applications/:id/status", validate(applicationStatusSchema), asyncHandler(updateApplicationStatus));
 adminRouter.post("/import/parse", asyncHandler(parseImport));
+
+adminRouter.get("/candidates", validate(adminCandidatesQuerySchema), asyncHandler(listCandidates));
+adminRouter.get("/candidates/:id", validate(adminIdSchema), asyncHandler(getCandidate));
+adminRouter.post("/candidates/:id/feedback", validate(candidateFeedbackSchema), asyncHandler(sendCandidateFeedback));
+adminRouter.post("/candidates/:id/ai-score", validate(adminIdSchema), asyncHandler(calculateCandidateAIScore));
 
 adminRouter.get(
   "/employer-verifications",
