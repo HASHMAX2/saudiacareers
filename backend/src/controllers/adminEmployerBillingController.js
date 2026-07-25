@@ -276,6 +276,17 @@ export async function approveRefund(req, res) {
     throw new ApiError(409, "No gateway payment reference found for the original invoice — cannot issue a refund");
   }
 
+  // Guard against approving two separate refund-request rows that both point
+  // at the same original invoice (e.g. an employer submitted duplicate
+  // requests before this was blocked at request time) — never issue a second
+  // gateway refund against a payment already refunded.
+  const alreadyRefunded = await prisma.invoice.findFirst({
+    where: { refundsInvoiceId: invoice.refundsInvoiceId, status: "REFUNDED", id: { not: invoice.id } },
+  });
+  if (alreadyRefunded) {
+    throw new ApiError(409, "This original invoice has already been refunded via a different request");
+  }
+
   await dodoService.createRefund({
     paymentGatewayRef: invoice.refundsInvoice.gatewayRef,
     reason: invoice.note,

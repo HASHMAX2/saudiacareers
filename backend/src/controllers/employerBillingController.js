@@ -406,6 +406,16 @@ export async function requestRefund(req, res) {
   });
   if (!original) throw new ApiError(404, "Paid invoice not found");
 
+  // Prevent submitting more than one open/completed refund against the same
+  // original invoice — without this, an employer could spam refund-request
+  // and rely on an admin not noticing the duplicates share a refundsInvoiceId.
+  const existingRefund = await prisma.invoice.findFirst({
+    where: { refundsInvoiceId: original.id, status: { in: ["REFUND_REQUESTED", "REFUNDED"] } },
+  });
+  if (existingRefund) {
+    throw new ApiError(409, "A refund for this invoice has already been requested or completed");
+  }
+
   const refund = await prisma.invoice.create({
     data: {
       employerProfileId: employerProfile.id,

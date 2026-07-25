@@ -46,33 +46,44 @@ export async function consumeJobCredit(subscription, actor) {
   const freeJobAvailable = !subscription.freeJobUsedAt || !isSameCalendarMonth(subscription.freeJobUsedAt, now);
 
   if (freeJobAvailable) {
-    await prisma.employerSubscription.update({
-      where: { id: subscription.id },
+    // Optimistic-concurrency claim: only succeeds if freeJobUsedAt still matches
+    // what we just read. If a concurrent request already claimed it, count is 0
+    // and we fall through to the paid-credit check below instead of granting a
+    // second free slot.
+    const claimed = await prisma.employerSubscription.updateMany({
+      where: { id: subscription.id, freeJobUsedAt: subscription.freeJobUsedAt },
       data: { freeJobUsedAt: now },
     });
-    if (actor?.userId) {
-      await notify({
-        userId: actor.userId,
-        type: "FREE_JOB_LIMIT_USED",
-        title: "Free job limit used",
-        message: "You've used your free job posting for this month. Additional postings will use paid credits.",
-        link: "/employer/billing",
-      });
-      await notifyAdmins({
-        type: "EMPLOYER_FREE_JOB_LIMIT",
-        title: "Employer hit free job limit",
-        message: `${actor.companyName ?? "An employer"} has used their free monthly job post.`,
-        link: "/admin/billing",
-      });
+    if (claimed.count === 1) {
+      if (actor?.userId) {
+        await notify({
+          userId: actor.userId,
+          type: "FREE_JOB_LIMIT_USED",
+          title: "Free job limit used",
+          message: "You've used your free job posting for this month. Additional postings will use paid credits.",
+          link: "/employer/billing",
+        });
+        await notifyAdmins({
+          type: "EMPLOYER_FREE_JOB_LIMIT",
+          title: "Employer hit free job limit",
+          message: `${actor.companyName ?? "An employer"} has used their free monthly job post.`,
+          link: "/admin/billing",
+        });
+      }
+      return "FREE";
     }
-    return "FREE";
+    subscription = await prisma.employerSubscription.findUniqueOrThrow({ where: { id: subscription.id } });
   }
 
-  if (subscription.paidCreditsRemaining > 0) {
-    await prisma.employerSubscription.update({
-      where: { id: subscription.id },
-      data: { paidCreditsRemaining: { decrement: 1 } },
-    });
+  // Conditional decrement: the `paidCreditsRemaining: { gt: 0 }` guard makes this
+  // atomic at the database level, so two concurrent requests can never both
+  // decrement off the same last credit (previously a read-then-write race let
+  // that happen — see SA-02 in security-audit/04-findings.md).
+  const claimedPaid = await prisma.employerSubscription.updateMany({
+    where: { id: subscription.id, paidCreditsRemaining: { gt: 0 } },
+    data: { paidCreditsRemaining: { decrement: 1 } },
+  });
+  if (claimedPaid.count === 1) {
     return "PAID";
   }
 
