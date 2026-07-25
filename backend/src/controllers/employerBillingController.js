@@ -1,5 +1,6 @@
 import { ZipArchive } from "archiver";
 import PDFDocument from "pdfkit";
+import { Prisma } from "@prisma/client";
 import { prisma } from "../config/prisma.js";
 import { env } from "../config/env.js";
 import { CREDIT_PACK_DODO_PRODUCT_ID, PRICE_PER_CREDIT_SAR } from "../config/plans.js";
@@ -416,16 +417,29 @@ export async function requestRefund(req, res) {
     throw new ApiError(409, "A refund for this invoice has already been requested or completed");
   }
 
-  const refund = await prisma.invoice.create({
-    data: {
-      employerProfileId: employerProfile.id,
-      type: "REFUND",
-      amountSar: original.amountSar,
-      status: "REFUND_REQUESTED",
-      note: reason || `Refund request for invoice #${original.id}`,
-      refundsInvoiceId: original.id,
-    },
-  });
+  // The check above is read-then-create and not atomic, so it's still possible
+  // for two concurrent requests to both pass it. The partial unique index on
+  // (refundsInvoiceId) WHERE status IN (REFUND_REQUESTED, REFUNDED) is the real
+  // guarantee — this catch turns the resulting constraint violation into the
+  // same clean 409 instead of a generic one from the global error handler.
+  let refund;
+  try {
+    refund = await prisma.invoice.create({
+      data: {
+        employerProfileId: employerProfile.id,
+        type: "REFUND",
+        amountSar: original.amountSar,
+        status: "REFUND_REQUESTED",
+        note: reason || `Refund request for invoice #${original.id}`,
+        refundsInvoiceId: original.id,
+      },
+    });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      throw new ApiError(409, "A refund for this invoice has already been requested or completed");
+    }
+    throw error;
+  }
   await notifyAdmins({
     type: "REFUND_REQUESTED",
     title: "Refund request",
