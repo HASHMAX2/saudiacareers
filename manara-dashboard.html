@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manara — My Home</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4F7FB; --card:#FFFFFF;
+  --navy:#0A2540; --ink:#12263B; --muted:#5B6B7C; --faint:#8A98A6;
+  --line:#E4EAF1; --line-soft:#EEF2F7;
+  --blue:#0B5FD0; --blue-bright:#2C7BF0; --blue-deep:#083E8C;
+  --sky:#EAF2FE; --sky-2:#DDEBFD;
+  --gold:#D9992B; --gold-ink:#8A5D10; --gold-bg:#FBF1DA;
+  --green:#1E9E6A; --green-bg:#E4F5EC;
+  --pink-bg:#FCEAF0; --pink-ink:#B03A63;
+  --purple-bg:#EEEBFB; --purple-ink:#5B4AB8;
+  --r-card:16px; --r-ctrl:11px; --r-pill:999px;
+  --sh-1:0 1px 2px rgba(10,37,64,.05);
+  --sh-2:0 4px 18px rgba(10,37,64,.07);
+  --sh-3:0 14px 34px rgba(10,37,64,.12);
+  --wrap:1200px;
+  --font-d:'Plus Jakarta Sans',system-ui,sans-serif;
+  --font-b:'Inter',system-ui,sans-serif;
+  --font-m:'IBM Plex Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-b);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:pointer}
+.num{font-family:var(--font-m);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.wrap{max-width:var(--wrap);margin:0 auto;padding:0 22px}
+h1,h2,h3,h4{font-family:var(--font-d);color:var(--navy);margin:0;font-weight:700;letter-spacing:-.01em}
+:focus-visible{outline:2.5px solid var(--blue-bright);outline-offset:2px;border-radius:6px}
+
+/* ---------- NAV ---------- */
+.nav{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.92);backdrop-filter:saturate(1.4) blur(8px);border-bottom:1px solid var(--line)}
+.nav-in{display:flex;align-items:center;gap:20px;height:64px}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--font-d);font-weight:800;font-size:20px;color:var(--navy);letter-spacing:-.02em}
+.beacon{width:30px;height:30px;flex:none;display:block}
+.nav-links{display:flex;align-items:center;gap:4px;margin-left:8px}
+.nav-links a{padding:8px 12px;border-radius:8px;font-size:13.5px;font-weight:600;color:var(--muted);letter-spacing:.02em}
+.nav-links a:hover{background:var(--sky);color:var(--blue)}
+.nav-links a.active{color:var(--navy)}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:6px}
+.lang{font-family:var(--font-d);font-weight:600;font-size:13px;color:var(--muted);padding:8px 12px;border-radius:8px;border:1px solid var(--line)}
+.lang:hover{color:var(--blue);border-color:var(--sky-2)}
+.icon-btn{position:relative;width:40px;height:40px;border:1px solid var(--line);background:#fff;border-radius:10px;display:grid;place-items:center;color:var(--muted)}
+.icon-btn:hover{color:var(--blue);border-color:var(--sky-2);background:var(--sky)}
+.icon-btn svg{width:19px;height:19px}
+.badge-dot{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;padding:0 5px;background:#E5484D;color:#fff;border-radius:999px;font-family:var(--font-m);font-size:10px;font-weight:600;display:grid;place-items:center;border:2px solid #fff}
+.pill-user{display:flex;align-items:center;gap:9px;padding:5px 12px 5px 5px;border:1px solid var(--line);border-radius:var(--r-pill);background:#fff}
+.pill-user:hover{border-color:var(--sky-2);background:var(--sky)}
+.ava{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--blue-bright));color:#fff;display:grid;place-items:center;font-family:var(--font-d);font-weight:700;font-size:12px;flex:none}
+.pill-user .who{font-weight:600;font-size:13px;color:var(--navy);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pill-user svg{width:15px;height:15px;color:var(--faint)}
+.hamb{display:none;width:40px;height:40px;border:1px solid var(--line);background:#fff;border-radius:10px;place-items:center;color:var(--navy)}
+.hamb svg{width:20px;height:20px}
+
+/* ---------- HERO ---------- */
+.hero{position:relative;background:linear-gradient(135deg,#0B4FB8 0%,#0B5FD0 45%,#1E74EA 100%);overflow:hidden}
+.hero-rings{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.hero-rings svg{position:absolute;right:-140px;top:50%;transform:translateY(-50%);width:620px;height:620px;opacity:.9}
+.ring{fill:none;stroke:rgba(255,255,255,.16);stroke-width:1.5}
+.ring-glow{fill:rgba(255,255,255,.05)}
+.beam{position:absolute;right:6%;top:-10%;width:340px;height:150%;background:linear-gradient(180deg,rgba(255,255,255,.10),transparent 70%);transform:rotate(18deg);filter:blur(6px);pointer-events:none}
+.hero-in{position:relative;padding:52px 0 118px}
+.hero h1{color:#fff;font-size:34px;font-weight:800;letter-spacing:-.02em}
+.hero .sub{color:rgba(255,255,255,.82);font-size:15px;margin-top:6px;max-width:520px}
+.search{margin-top:26px;max-width:660px;display:flex;align-items:center;gap:8px;background:#fff;border-radius:var(--r-pill);padding:8px 8px 8px 20px;box-shadow:var(--sh-3)}
+.search svg.s-ico{width:20px;height:20px;color:var(--faint);flex:none}
+.search input{flex:1;border:0;outline:0;font-size:15.5px;font-family:var(--font-b);color:var(--ink);background:transparent;min-width:0}
+.search input::placeholder{color:var(--faint)}
+.btn-search{border:0;background:var(--blue);color:#fff;font-family:var(--font-d);font-weight:700;font-size:14.5px;padding:13px 26px;border-radius:var(--r-pill)}
+.btn-search:hover{background:var(--blue-deep)}
+.chips{margin-top:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.chips .lbl{color:rgba(255,255,255,.7);font-size:12.5px;font-weight:500}
+.chip{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);color:#fff;padding:6px 12px;border-radius:var(--r-pill);font-size:13px;font-weight:600}
+.chip .ct{background:rgba(255,255,255,.9);color:var(--blue-deep);font-family:var(--font-m);font-size:11px;font-weight:600;padding:1px 7px;border-radius:999px}
+.chip:hover{background:rgba(255,255,255,.22)}
+
+/* ---------- LAYOUT ---------- */
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 348px;gap:22px;margin-top:-84px;position:relative;z-index:5;padding-bottom:8px}
+.stack{display:flex;flex-direction:column;gap:22px}
+.side{display:flex;flex-direction:column;gap:18px}
+
+/* ---------- CARD PRIMITIVES ---------- */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-2)}
+.pad{padding:20px 22px}
+.sec-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+.sec-head h2{font-size:18px}
+.sec-head h3{font-size:16px}
+.view-all{font-weight:600;font-size:13px;color:var(--blue);display:inline-flex;align-items:center;gap:4px}
+.view-all:hover{color:var(--blue-deep)}
+.view-all svg{width:14px;height:14px}
+.eyebrow{font-family:var(--font-d);font-weight:700;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+
+/* ---------- TABS + JOB RAIL ---------- */
+.tabs{display:flex;gap:6px;background:var(--line-soft);padding:5px;border-radius:12px;margin-bottom:16px}
+.tab{flex:1;border:0;background:transparent;padding:9px 10px;border-radius:9px;font-family:var(--font-d);font-weight:600;font-size:13.5px;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:7px}
+.tab .cnt{font-family:var(--font-m);font-size:11.5px;background:#fff;color:var(--muted);padding:1px 7px;border-radius:999px;border:1px solid var(--line)}
+.tab.is-active{background:#fff;color:var(--navy);box-shadow:var(--sh-1)}
+.tab.is-active .cnt{background:var(--sky);color:var(--blue);border-color:transparent}
+
+.rail-wrap{position:relative}
+.rail{display:flex;gap:14px;overflow-x:auto;scroll-behavior:smooth;scroll-snap-type:x mandatory;padding:4px 2px 8px;margin:0 -2px;scrollbar-width:none}
+.rail::-webkit-scrollbar{display:none}
+.rail-btn{position:absolute;top:50%;transform:translateY(-50%);width:38px;height:38px;border-radius:50%;background:#fff;border:1px solid var(--line);box-shadow:var(--sh-2);display:grid;place-items:center;color:var(--navy);z-index:4}
+.rail-btn:hover{color:var(--blue);border-color:var(--sky-2)}
+.rail-btn svg{width:18px;height:18px}
+.rail-btn[data-dir="prev"]{left:-14px}
+.rail-btn[data-dir="next"]{right:-14px}
+.rail-btn:disabled{opacity:0;pointer-events:none}
+
+.job{flex:0 0 268px;scroll-snap-align:start;border:1px solid var(--line);border-radius:14px;padding:16px;background:#fff;display:flex;flex-direction:column;transition:box-shadow .18s,transform .18s,border-color .18s}
+.job:hover{box-shadow:var(--sh-3);transform:translateY(-3px);border-color:var(--sky-2)}
+.job .logo{width:46px;height:46px;border-radius:11px;display:grid;place-items:center;font-family:var(--font-d);font-weight:700;font-size:15px;margin-bottom:12px}
+.job .title{font-family:var(--font-d);font-weight:700;font-size:15px;color:var(--navy);line-height:1.3;min-height:39px}
+.job:hover .title{color:var(--blue)}
+.job .org{color:var(--muted);font-size:13px;font-weight:500;margin-top:3px}
+.job .meta{margin-top:12px;display:flex;flex-direction:column;gap:7px}
+.job .meta .row{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12.5px}
+.job .meta svg{width:15px;height:15px;color:var(--faint);flex:none}
+.job .foot{margin-top:14px;padding-top:12px;border-top:1px solid var(--line-soft);display:flex;align-items:center;justify-content:space-between}
+.job .posted{font-family:var(--font-m);font-size:11px;color:var(--faint)}
+.tag-featured{font-size:10.5px;font-family:var(--font-d);font-weight:700;letter-spacing:.04em;color:var(--gold-ink);background:var(--gold-bg);padding:2px 8px;border-radius:999px}
+.job .save{color:var(--faint);display:grid;place-items:center}
+.job .save:hover{color:var(--blue)}
+.job .save svg{width:17px;height:17px}
+
+.empty{padding:34px 20px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px}
+.empty .ei{width:52px;height:52px;border-radius:14px;background:var(--sky);color:var(--blue);display:grid;place-items:center}
+.empty .ei svg{width:24px;height:24px}
+.empty h4{font-size:15px}
+.empty p{color:var(--muted);font-size:13.5px;max-width:340px;margin:0}
+.empty .lnk{margin-top:4px;font-weight:600;color:var(--blue);font-size:13.5px}
+
+/* ---------- ACTION CARDS ---------- */
+.actions{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.act{display:flex;align-items:center;gap:13px;padding:16px 18px;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh-2);transition:box-shadow .18s,transform .18s}
+.act:hover{box-shadow:var(--sh-3);transform:translateY(-2px)}
+.act .ci{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;flex:none}
+.act .ci svg{width:21px;height:21px}
+.act .txt small{display:block;color:var(--muted);font-size:12px;font-weight:500}
+.act .txt .big{font-family:var(--font-d);font-weight:700;color:var(--navy);font-size:15px;display:flex;align-items:baseline;gap:6px}
+.act .txt .big .n{font-family:var(--font-m);font-size:15px}
+.act .txt .go{color:var(--blue);font-weight:600;font-size:13.5px}
+.ci-blue{background:var(--sky);color:var(--blue)}
+.ci-gold{background:var(--gold-bg);color:var(--gold-ink)}
+.ci-green{background:var(--green-bg);color:var(--green)}
+
+/* ---------- EMPLOYER GRID ---------- */
+.emp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.emp{border:1px solid var(--line);border-radius:12px;height:74px;display:grid;place-items:center;padding:10px;transition:box-shadow .16s,border-color .16s,transform .16s;background:#fff}
+.emp:hover{box-shadow:var(--sh-2);border-color:var(--sky-2);transform:translateY(-2px)}
+.emp .mono{font-family:var(--font-d);font-weight:800;font-size:14px;letter-spacing:-.01em;text-align:center;line-height:1.15}
+
+/* ---------- CAREER POSTS ---------- */
+.post{flex:0 0 280px;scroll-snap-align:start;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fff;display:flex;flex-direction:column;transition:box-shadow .18s,transform .18s}
+.post:hover{box-shadow:var(--sh-3);transform:translateY(-3px)}
+.post .ph{height:120px;position:relative;display:grid;place-items:center;overflow:hidden}
+.post .ph .tagline{position:relative;font-family:var(--font-d);font-weight:800;color:#fff;font-size:15px;opacity:.95;padding:0 16px;text-align:center;letter-spacing:-.01em}
+.post .pb{padding:14px 15px 16px;display:flex;flex-direction:column;flex:1}
+.post .pt{font-family:var(--font-d);font-weight:700;font-size:14.5px;color:var(--navy);line-height:1.35}
+.post:hover .pt{color:var(--blue)}
+.post .px{color:var(--muted);font-size:12.5px;margin-top:6px;line-height:1.5;flex:1}
+.post .pf{margin-top:12px;display:flex;align-items:center;justify-content:space-between;color:var(--faint);font-size:11px}
+.post .pf .rm{color:var(--blue);font-weight:600;font-size:12.5px}
+.post .pf .mn{font-family:var(--font-m);display:flex;align-items:center;gap:5px}
+.post .pf .mn svg{width:13px;height:13px}
+
+/* ---------- COMPANIES HIRING ---------- */
+.co{flex:0 0 250px;scroll-snap-align:start;border:1px solid var(--line);border-radius:14px;padding:18px;background:#fff;display:flex;flex-direction:column;align-items:flex-start;transition:box-shadow .18s,transform .18s}
+.co:hover{box-shadow:var(--sh-3);transform:translateY(-3px)}
+.co .logo{width:52px;height:52px;border-radius:13px;display:grid;place-items:center;font-family:var(--font-d);font-weight:800;font-size:17px;margin-bottom:12px}
+.co .cn{font-family:var(--font-d);font-weight:700;font-size:15px;color:var(--navy)}
+.co .ctags{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 14px}
+.co .ctag{font-size:11.5px;font-weight:500;color:var(--muted);background:var(--line-soft);padding:3px 9px;border-radius:999px}
+.co .cbtn{margin-top:auto;width:100%;text-align:center;border:1px solid var(--sky-2);background:var(--sky);color:var(--blue);font-family:var(--font-d);font-weight:700;font-size:13.5px;padding:9px;border-radius:10px}
+.co .cbtn:hover{background:var(--blue);color:#fff;border-color:var(--blue)}
+
+/* ---------- FEATURED LISTS ---------- */
+.two{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.flist{display:flex;flex-direction:column}
+.flist a.item{display:flex;align-items:center;gap:10px;padding:11px 4px;border-bottom:1px solid var(--line-soft);font-size:13.5px;font-weight:500;color:var(--ink)}
+.flist a.item:last-child{border-bottom:0}
+.flist a.item:hover{color:var(--blue)}
+.flist .dot{width:7px;height:7px;border-radius:50%;background:var(--sky-2);flex:none}
+.flist a.item:hover .dot{background:var(--blue)}
+
+/* ---------- REMINDER BANNER ---------- */
+.remind{display:flex;align-items:center;gap:14px;padding:16px 20px;background:linear-gradient(90deg,var(--green-bg),#fff);border:1px solid #CDEBD C;border-color:#CFEBDC;border-radius:14px}
+.remind .ri{width:40px;height:40px;border-radius:11px;background:#fff;color:var(--green);display:grid;place-items:center;flex:none;box-shadow:var(--sh-1)}
+.remind .ri svg{width:20px;height:20px}
+.remind .rt{font-size:13.5px;color:var(--ink)}
+.remind .rl{margin-left:auto;color:var(--blue);font-weight:600;font-size:13.5px;white-space:nowrap}
+
+/* ---------- BOOST ---------- */
+.boost{margin-top:22px;background:linear-gradient(120deg,#EAF2FE,#F4F8FF 60%,#FBF3DD);border:1px solid var(--line);border-radius:var(--r-card);padding:26px;display:grid;grid-template-columns:1fr 1.2fr;gap:26px;align-items:center;box-shadow:var(--sh-2)}
+.boost .bl{display:flex;flex-direction:column;gap:6px}
+.boost .rocket{width:56px;height:56px;border-radius:15px;background:#fff;display:grid;place-items:center;box-shadow:var(--sh-2);margin-bottom:6px}
+.boost .rocket svg{width:28px;height:28px;color:var(--gold)}
+.boost h2{font-size:22px}
+.boost .bl p{color:var(--muted);font-size:14px;max-width:320px;margin:0}
+.svc{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.svc .s{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:8px;box-shadow:var(--sh-1)}
+.svc .s .si{width:38px;height:38px;border-radius:10px;display:grid;place-items:center}
+.svc .s .si svg{width:19px;height:19px}
+.svc .s h4{font-size:14.5px}
+.svc .s p{color:var(--muted);font-size:12.5px;margin:0;flex:1}
+.svc .s .know{color:var(--blue);font-weight:600;font-size:13px}
+
+/* ---------- APP DOWNLOAD ---------- */
+.appdl{margin-top:22px;background:linear-gradient(120deg,#0B4FB8,#0B5FD0 55%,#1E74EA);border-radius:var(--r-card);padding:34px;position:relative;overflow:hidden;display:grid;grid-template-columns:1.3fr 1fr;gap:24px;align-items:center;box-shadow:var(--sh-3)}
+.appdl .rings2{position:absolute;left:-80px;bottom:-120px;width:360px;height:360px;opacity:.5;pointer-events:none}
+.appdl h2{color:#fff;font-size:24px;max-width:420px}
+.appdl .asub{color:rgba(255,255,255,.82);font-size:14px;margin:8px 0 22px;max-width:380px}
+.dl-row{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.qr{width:96px;height:96px;background:#fff;border-radius:14px;padding:9px;flex:none;box-shadow:var(--sh-2)}
+.qr .qcap{display:block;text-align:center}
+.stores{display:flex;flex-direction:column;gap:10px}
+.store{display:flex;align-items:center;gap:11px;background:#0A2540;color:#fff;border:1px solid rgba(255,255,255,.14);border-radius:11px;padding:9px 16px;min-width:190px}
+.store:hover{background:#08305c}
+.store svg{width:22px;height:22px;flex:none}
+.store .st{line-height:1.15}
+.store .st small{display:block;font-size:10px;color:rgba(255,255,255,.7);letter-spacing:.02em}
+.store .st b{font-family:var(--font-d);font-weight:700;font-size:15px}
+.phone-wrap{position:relative;display:grid;place-items:center;min-height:190px}
+.phone{width:170px;height:250px;background:#0A2540;border-radius:26px;padding:9px;transform:rotate(7deg);box-shadow:var(--sh-3);border:1px solid rgba(255,255,255,.15)}
+.phone .screen{background:#F4F7FB;border-radius:19px;height:100%;padding:12px;overflow:hidden}
+.phone .pnav{height:8px;width:44px;background:var(--line);border-radius:9px;margin:2px auto 12px}
+.phone .mini{background:#fff;border:1px solid var(--line);border-radius:11px;padding:10px;margin-bottom:9px}
+.phone .mini .mlogo{width:26px;height:26px;border-radius:8px;background:var(--sky);margin-bottom:8px}
+.phone .mini .l1{height:7px;width:78%;background:#D8E1EC;border-radius:6px;margin-bottom:6px}
+.phone .mini .l2{height:6px;width:52%;background:#E4EAF1;border-radius:6px}
+
+/* ---------- SIDEBAR: PROFILE ---------- */
+.pcard{background:#fff;border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-3);overflow:hidden}
+.pcard .ptop{padding:20px 20px 18px;display:flex;flex-direction:column;align-items:center;text-align:center;background:linear-gradient(180deg,var(--sky),#fff)}
+.pcard .avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--blue-bright));color:#fff;display:grid;place-items:center;font-family:var(--font-d);font-weight:800;font-size:26px;box-shadow:0 6px 16px rgba(11,95,208,.3);border:3px solid #fff}
+.pcard .pname{font-family:var(--font-d);font-weight:700;font-size:17px;color:var(--navy);margin-top:12px}
+.pcard .pdes{color:var(--muted);font-size:12.5px;margin-top:2px}
+.pcard .pbody{padding:16px 20px 20px}
+.pc-row{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px}
+.pc-row .pct{font-family:var(--font-d);font-weight:700;font-size:14px;color:var(--navy)}
+.pc-row .pct .n{font-family:var(--font-m);color:var(--blue)}
+.pc-row .upd{font-family:var(--font-m);font-size:10.5px;color:var(--faint)}
+.bar{height:8px;background:var(--line-soft);border-radius:99px;overflow:hidden}
+.bar > i{display:block;height:100%;width:64%;background:linear-gradient(90deg,var(--gold),#EBB752);border-radius:99px}
+.improve{margin-top:16px;display:flex;flex-direction:column;gap:8px}
+.imp{display:flex;align-items:center;gap:11px;padding:10px 12px;border:1px solid var(--line);border-radius:11px}
+.imp .ii{width:32px;height:32px;border-radius:9px;background:var(--sky);color:var(--blue);display:grid;place-items:center;flex:none}
+.imp .ii svg{width:16px;height:16px}
+.imp .il{font-weight:600;font-size:13px;color:var(--navy)}
+.imp .il small{display:block;font-family:var(--font-m);font-weight:500;font-size:10.5px;color:var(--green)}
+.imp .add{margin-left:auto;color:var(--blue);font-weight:600;font-size:12.5px}
+.btn-primary{display:block;width:100%;text-align:center;margin-top:16px;background:var(--blue);color:#fff;font-family:var(--font-d);font-weight:700;font-size:14.5px;padding:13px;border-radius:12px;border:0}
+.btn-primary:hover{background:var(--blue-deep)}
+
+/* ---------- VISIBILITY ---------- */
+.vis .vstats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.vstat{background:var(--bg);border-radius:12px;padding:13px 14px;border:1px solid var(--line-soft)}
+.vstat .vn{font-family:var(--font-m);font-weight:600;font-size:24px;color:var(--navy);line-height:1}
+.vstat .vl{color:var(--muted);font-size:11.5px;margin-top:5px}
+.chart{position:relative}
+.chart svg{width:100%;height:auto;display:block}
+.xaxis{display:flex;justify-content:space-between;margin-top:6px}
+.xaxis span{font-family:var(--font-m);font-size:9.5px;color:var(--faint)}
+
+/* ---------- FAQ ---------- */
+.faq a{display:flex;align-items:flex-start;gap:12px;padding:12px 6px;border-bottom:1px solid var(--line-soft)}
+.faq a:last-child{border-bottom:0}
+.faq .fi{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;flex:none}
+.faq .fi svg{width:19px;height:19px}
+.faq .ft{font-family:var(--font-d);font-weight:700;font-size:13.5px;color:var(--navy)}
+.faq .fx{color:var(--muted);font-size:12px;margin-top:2px;line-height:1.45}
+.faq a:hover .ft{color:var(--blue)}
+
+/* ---------- POLL ---------- */
+.poll .peyebrow{color:var(--gold-ink);background:var(--gold-bg);display:inline-block;font-family:var(--font-d);font-weight:700;font-size:10.5px;letter-spacing:.1em;padding:4px 10px;border-radius:999px}
+.poll .pq{font-family:var(--font-d);font-weight:700;font-size:15.5px;color:var(--navy);margin:12px 0 14px;line-height:1.35}
+.poll .opt{display:flex;align-items:center;gap:11px;padding:12px 14px;border:1px solid var(--line);border-radius:11px;margin-bottom:9px;cursor:pointer;position:relative;overflow:hidden;transition:border-color .15s,background .15s}
+.poll .opt:hover{border-color:var(--sky-2);background:var(--sky)}
+.poll .opt input{position:absolute;opacity:0;pointer-events:none}
+.poll .opt .rd{width:18px;height:18px;border-radius:50%;border:2px solid var(--line);flex:none;display:grid;place-items:center}
+.poll .opt .rd::after{content:"";width:9px;height:9px;border-radius:50%;background:var(--blue);transform:scale(0)}
+.poll .opt input:checked ~ .rd{border-color:var(--blue)}
+.poll .opt input:checked ~ .rd::after{transform:scale(1)}
+.poll .opt input:checked ~ .ol{color:var(--navy);font-weight:600}
+.poll .opt .ol{font-size:13.5px;color:var(--ink);z-index:1}
+.poll .fill{position:absolute;left:0;top:0;height:100%;width:0;background:var(--sky);z-index:0;transition:width .6s cubic-bezier(.2,.7,.2,1)}
+.poll .opt .pct{margin-left:auto;font-family:var(--font-m);font-size:12px;color:var(--blue);font-weight:600;z-index:1;opacity:0;transition:opacity .3s}
+.poll.voted .fill{}
+.poll.voted .opt{cursor:default}
+.poll.voted .opt .pct{opacity:1}
+.poll .pfoot{display:flex;align-items:center;justify-content:space-between;margin-top:14px}
+.poll .votes{font-family:var(--font-m);font-size:11.5px;color:var(--muted)}
+.btn-vote{border:0;background:var(--blue);color:#fff;font-family:var(--font-d);font-weight:700;font-size:13px;padding:9px 20px;border-radius:10px}
+.btn-vote:disabled{background:var(--sky-2);color:#fff;cursor:not-allowed}
+.poll .thanks{display:none;align-items:center;gap:7px;color:var(--green);font-weight:600;font-size:13px}
+.poll .thanks svg{width:17px;height:17px}
+.poll.voted .btn-vote{display:none}
+.poll.voted .thanks{display:flex}
+
+/* ---------- FOOTER ---------- */
+.footer{margin-top:40px;background:var(--navy);color:#fff}
+.footer-in{padding:44px 0 26px;display:grid;grid-template-columns:1.4fr 1fr 1fr 1.2fr;gap:34px}
+.footer .brand{color:#fff;margin-bottom:14px}
+.footer .fdesc{color:rgba(255,255,255,.6);font-size:13px;max-width:240px;line-height:1.6}
+.socials{display:flex;gap:9px;margin-top:16px}
+.socials a{width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.08);display:grid;place-items:center;color:rgba(255,255,255,.85)}
+.socials a:hover{background:var(--blue)}
+.socials svg{width:17px;height:17px}
+.fcol h4{color:#fff;font-size:13px;font-family:var(--font-d);font-weight:700;letter-spacing:.04em;margin-bottom:14px;text-transform:uppercase;opacity:.9}
+.fcol a{display:block;color:rgba(255,255,255,.62);font-size:13px;padding:6px 0}
+.fcol a:hover{color:#fff}
+.fapp{display:flex;flex-direction:column;gap:10px;margin-top:2px}
+.footer-bar{border-top:1px solid rgba(255,255,255,.1);padding:18px 0;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.footer-bar .cp{color:rgba(255,255,255,.5);font-size:12px}
+.footer-bar .partners{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.footer-bar .partners span{color:rgba(255,255,255,.4);font-size:11px;margin-right:4px}
+.footer-bar .partners a{font-family:var(--font-d);font-weight:700;font-size:12px;color:rgba(255,255,255,.7);padding:5px 11px;border:1px solid rgba(255,255,255,.14);border-radius:8px}
+.footer-bar .partners a:hover{color:#fff;border-color:rgba(255,255,255,.3)}
+
+/* ---------- TOAST ---------- */
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:var(--navy);color:#fff;padding:12px 20px;border-radius:12px;font-size:13.5px;font-weight:500;box-shadow:var(--sh-3);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:99;display:flex;align-items:center;gap:9px}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast svg{width:17px;height:17px;color:#6FB6FF}
+
+/* ---------- MOBILE MENU ---------- */
+.mobile-menu{display:none;flex-direction:column;padding:8px 22px 16px;border-bottom:1px solid var(--line);background:#fff;gap:2px}
+.mobile-menu a{padding:11px 8px;font-weight:600;font-size:14px;color:var(--navy);border-radius:8px}
+.mobile-menu a:hover{background:var(--sky);color:var(--blue)}
+.mobile-menu.open{display:flex}
+
+/* ---------- RESPONSIVE ---------- */
+@media (max-width:1024px){
+  .grid{grid-template-columns:minmax(0,1fr);margin-top:-84px}
+  .side{order:2}
+  .stack{order:1}
+  .emp-grid{grid-template-columns:repeat(3,1fr)}
+  .appdl{grid-template-columns:1fr}
+  .appdl .phone-wrap{display:none}
+  .boost{grid-template-columns:1fr}
+}
+@media (max-width:860px){
+  .nav-links{display:none}
+  .hamb{display:grid}
+  .lang{display:none}
+}
+@media (max-width:680px){
+  .wrap{padding:0 16px}
+  .hero-in{padding:38px 0 108px}
+  .hero h1{font-size:26px}
+  .actions{grid-template-columns:1fr}
+  .two{grid-template-columns:1fr}
+  .svc{grid-template-columns:1fr}
+  .emp-grid{grid-template-columns:repeat(2,1fr)}
+  .pill-user .who{display:none}
+  .btn-search{padding:12px 18px}
+  .appdl,.boost{padding:22px}
+  .remind{flex-wrap:wrap}
+  .remind .rl{margin-left:52px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.rise{animation:rise .5s cubic-bezier(.2,.7,.2,1) both}
+.d1{animation-delay:.05s}.d2{animation-delay:.12s}.d3{animation-delay:.19s}
+@keyframes pulse{0%,100%{opacity:.9}50%{opacity:.55}}
+.hero-rings svg{animation:pulse 6s ease-in-out infinite}
+</style>
+</head>
+<body>
+
+<!-- icon sprite -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10.5 20a2 2 0 0 0 3 0"/></symbol>
+  <symbol id="i-chev-d" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-chev-l" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></symbol>
+  <symbol id="i-chev-r" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></symbol>
+  <symbol id="i-arr-r" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.3 7-11a7 7 0 1 0-14 0c0 4.7 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+  <symbol id="i-bag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 12h18"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9h18M8 2.5v4M16 2.5v4"/></symbol>
+  <symbol id="i-bookmark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4V3Z"/></symbol>
+  <symbol id="i-bell2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10.5 20a2 2 0 0 0 3 0"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></symbol>
+  <symbol id="i-check-doc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 3v5h5"/><path d="m9 14 2 2 3-3.5"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-rocket" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 15c-1.5 1.3-2 4.5-2 4.5s3.2-.5 4.5-2M9 11a10 10 0 0 1 8-6c2 0 3 1 3 3a10 10 0 0 1-6 8l-2.5 1L8 13.5Z"/><circle cx="14.5" cy="9.5" r="1.4"/></symbol>
+  <symbol id="i-pen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/></symbol>
+  <symbol id="i-photo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="m3 17 5-4 4 3 3-2 6 5"/></symbol>
+  <symbol id="i-id" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M6 16c.6-1.5 4.4-1.5 5 0M15 10h4M15 13h3"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v5c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6Z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24" fill="currentColor"><path d="M4 3.5 20 12 4 20.5Z"/></symbol>
+  <symbol id="i-apple" viewBox="0 0 24 24" fill="currentColor"><path d="M16 12.5c0-2.2 1.7-3.2 1.8-3.3-1-1.5-2.5-1.6-3-1.7-1.3-.1-2.5.8-3.1.8-.6 0-1.6-.7-2.7-.7-1.4 0-2.7.8-3.4 2-1.4 2.5-.4 6.3 1 8.4.7 1 1.5 2.1 2.5 2.1 1 0 1.4-.6 2.6-.6 1.2 0 1.6.6 2.6.6 1.1 0 1.8-1 2.5-2 .8-1.1 1.1-2.2 1.1-2.3-.1 0-2.4-.9-2.4-3.6ZM14 5.8c.5-.7.9-1.6.8-2.6-.8 0-1.8.6-2.4 1.2-.5.6-1 1.5-.8 2.4.9.1 1.8-.4 2.4-1Z"/></symbol>
+  <symbol id="i-fb" viewBox="0 0 24 24" fill="currentColor"><path d="M14 9V7c0-.8.2-1 1-1h2V3h-3c-2.2 0-4 1.5-4 4v2H8v3h2v9h4v-9h2.5l.5-3Z"/></symbol>
+  <symbol id="i-in" viewBox="0 0 24 24" fill="currentColor"><path d="M6.5 8H3.5v12h3V8ZM5 3.5A1.8 1.8 0 1 0 5 7a1.8 1.8 0 0 0 0-3.5ZM20.5 20h-3v-6.3c0-1.6-.6-2.3-1.7-2.3-1.2 0-1.8.8-1.8 2.3V20h-3V8h2.9v1.3c.6-.9 1.6-1.6 3-1.6 2.2 0 3.5 1.4 3.5 4.3V20Z"/></symbol>
+  <symbol id="i-ig" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17" cy="7" r="1" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-yt" viewBox="0 0 24 24" fill="currentColor"><path d="M22 12s0-3-.4-4.3c-.2-.8-.9-1.4-1.7-1.6C18.4 5.7 12 5.7 12 5.7s-6.4 0-7.9.4c-.8.2-1.5.8-1.7 1.6C2 9 2 12 2 12s0 3 .4 4.3c.2.8.9 1.4 1.7 1.6 1.5.4 7.9.4 7.9.4s6.4 0 7.9-.4c.8-.2 1.5-.8 1.7-1.6C22 15 22 12 22 12ZM10 15V9l5 3Z"/></symbol>
+</svg>
+
+<!-- NAV -->
+<header class="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="#" aria-label="Manara home">
+      <svg class="beacon" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+        <path d="M11 13h10l-1.4 14H12.4L11 13Z" fill="#0B5FD0"/>
+        <path d="M11 13h10l-.4 4h-9.2L11 13Z" fill="#083E8C"/>
+        <rect x="13" y="9" width="6" height="4" rx="1" fill="#0A2540"/>
+        <circle cx="16" cy="6.5" r="2.4" fill="#D9992B"/>
+        <path d="M16 6.5 25 3M16 6.5 7 3M16 6.5l7.5 6M16 6.5 8.5 12.5" stroke="#D9992B" stroke-width="1.3" stroke-linecap="round" opacity=".8"/>
+      </svg>
+      Manara
+    </a>
+    <nav class="nav-links" aria-label="Primary">
+      <a href="#" class="active">Home</a>
+      <a href="#">Jobs</a>
+      <a href="#">Services</a>
+      <a href="#">Explore</a>
+    </nav>
+    <div class="nav-right">
+      <button class="lang">العربية</button>
+      <button class="icon-btn" aria-label="Search"><svg><use href="#i-search"/></svg></button>
+      <button class="icon-btn" aria-label="Notifications"><svg><use href="#i-bell"/></svg><span class="badge-dot num">3</span></button>
+      <button class="pill-user" aria-label="Account menu">
+        <span class="ava">AH</span>
+        <span class="who">Abdullah H.</span>
+        <svg><use href="#i-chev-d"/></svg>
+      </button>
+      <button class="hamb" id="hamb" aria-label="Menu"><svg><use href="#i-menu"/></svg></button>
+    </div>
+  </div>
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="#">Home</a><a href="#">Jobs</a><a href="#">Services</a><a href="#">Explore</a><a href="#">العربية</a>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-rings" aria-hidden="true">
+    <svg viewBox="0 0 600 600">
+      <circle class="ring-glow" cx="300" cy="300" r="290"/>
+      <circle class="ring" cx="300" cy="300" r="230"/>
+      <circle class="ring" cx="300" cy="300" r="170"/>
+      <circle class="ring" cx="300" cy="300" r="110"/>
+      <circle class="ring" cx="300" cy="300" r="52"/>
+    </svg>
+  </div>
+  <div class="beam" aria-hidden="true"></div>
+  <div class="wrap hero-in">
+    <h1 class="rise">Welcome back!</h1>
+    <p class="sub rise d1">Pick up where you left off — new roles across the Gulf are waiting.</p>
+    <div class="search rise d1" role="search">
+      <svg class="s-ico"><use href="#i-search"/></svg>
+      <input id="searchInput" type="text" placeholder="Enter skills, designations or company names" aria-label="Search jobs">
+      <button class="btn-search" id="searchBtn">Search jobs</button>
+    </div>
+    <div class="chips rise d2">
+      <span class="lbl">Recent search</span>
+      <a class="chip" href="#">presales <span class="ct num">322 new</span></a>
+    </div>
+  </div>
+</section>
+
+<!-- MAIN -->
+<div class="wrap">
+  <div class="grid">
+
+    <!-- LEFT COLUMN -->
+    <main class="stack">
+
+      <!-- 1. JOBS BASED ON -->
+      <section class="card pad jobs-card" id="jobsCard">
+        <div class="sec-head">
+          <h2>Jobs based on your profile</h2>
+          <a class="view-all" href="#">View all <svg><use href="#i-arr-r"/></svg></a>
+        </div>
+        <div class="tabs" role="tablist" aria-label="Job sources">
+          <button class="tab" role="tab" data-panel="panelApplies">Applies <span class="cnt num">0</span></button>
+          <button class="tab is-active" role="tab" aria-selected="true" data-panel="panelProfile">Profile <span class="cnt num">50</span></button>
+          <button class="tab" role="tab" data-panel="panelAlerts">Alerts <span class="cnt num">0</span></button>
+        </div>
+
+        <div class="tabpanel" id="panelProfile" role="tabpanel">
+          <div class="rail-wrap">
+            <button class="rail-btn" data-dir="prev" aria-label="Scroll left"><svg><use href="#i-chev-l"/></svg></button>
+            <div class="rail" id="jobRail"></div>
+            <button class="rail-btn" data-dir="next" aria-label="Scroll right"><svg><use href="#i-chev-r"/></svg></button>
+          </div>
+        </div>
+
+        <div class="tabpanel" id="panelApplies" role="tabpanel" hidden>
+          <div class="empty">
+            <div class="ei"><svg><use href="#i-check-doc"/></svg></div>
+            <h4>No applications yet</h4>
+            <p>When you apply to a job, it shows up here so you can track its status.</p>
+            <a class="lnk" href="#">Browse jobs to apply →</a>
+          </div>
+        </div>
+
+        <div class="tabpanel" id="panelAlerts" role="tabpanel" hidden>
+          <div class="empty">
+            <div class="ei"><svg><use href="#i-bell2"/></svg></div>
+            <h4>No job alerts yet</h4>
+            <p>Create an alert and we'll send matching Gulf roles straight to your inbox.</p>
+            <a class="lnk" href="#">Create your first alert →</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. ACTION CARDS -->
+      <section class="actions">
+        <a class="act" href="#">
+          <span class="ci ci-blue"><svg><use href="#i-bell2"/></svg></span>
+          <span class="txt"><small>Looking for a specific job?</small><span class="go">Create job alert</span></span>
+        </a>
+        <a class="act" href="#">
+          <span class="ci ci-gold"><svg><use href="#i-mail"/></svg></span>
+          <span class="txt"><span class="big"><span class="n">00</span> Messages</span><small>from employers</small></span>
+        </a>
+        <a class="act" href="#">
+          <span class="ci ci-green"><svg><use href="#i-check-doc"/></svg></span>
+          <span class="txt"><span class="big"><span class="n">00</span> Applied</span><small>jobs so far</small></span>
+        </a>
+      </section>
+
+      <!-- 3. TOP EMPLOYERS -->
+      <section class="card pad">
+        <div class="sec-head"><h2>Jobs by top employers</h2></div>
+        <div class="emp-grid" id="empGrid"></div>
+      </section>
+
+      <!-- 4. CAREER TIPS -->
+      <section class="card pad">
+        <div class="sec-head">
+          <h2>Career tips</h2>
+          <a class="view-all" href="#">View all <svg><use href="#i-arr-r"/></svg></a>
+        </div>
+        <div class="rail-wrap">
+          <button class="rail-btn" data-dir="prev" aria-label="Scroll left"><svg><use href="#i-chev-l"/></svg></button>
+          <div class="rail" id="postRail"></div>
+          <button class="rail-btn" data-dir="next" aria-label="Scroll right"><svg><use href="#i-chev-r"/></svg></button>
+        </div>
+      </section>
+
+      <!-- 5. COMPANIES HIRING -->
+      <section class="card pad">
+        <div class="sec-head">
+          <div>
+            <h2>Companies hiring for</h2>
+            <div class="eyebrow" style="margin-top:6px">Senior sales consultant</div>
+          </div>
+          <a class="view-all" href="#">View all <svg><use href="#i-arr-r"/></svg></a>
+        </div>
+        <div class="rail-wrap">
+          <button class="rail-btn" data-dir="prev" aria-label="Scroll left"><svg><use href="#i-chev-l"/></svg></button>
+          <div class="rail" id="coRail"></div>
+          <button class="rail-btn" data-dir="next" aria-label="Scroll right"><svg><use href="#i-chev-r"/></svg></button>
+        </div>
+      </section>
+
+      <!-- 6. FEATURED -->
+      <section class="two">
+        <div class="card pad">
+          <div class="sec-head"><h3>Featured employers</h3><a class="view-all" href="#">View all</a></div>
+          <div class="flist" id="featEmp"></div>
+        </div>
+        <div class="card pad">
+          <div class="sec-head"><h3>Featured consultants</h3><a class="view-all" href="#">View all</a></div>
+          <div class="flist" id="featCon"></div>
+        </div>
+      </section>
+
+      <!-- 7. REMINDER -->
+      <section class="remind">
+        <span class="ri"><svg><use href="#i-shield"/></svg></span>
+        <span class="rt">Make sure every detail is filled in correctly — it's what employers see first.</span>
+        <a class="rl" href="#">View &amp; update profile</a>
+      </section>
+    </main>
+
+    <!-- RIGHT SIDEBAR -->
+    <aside class="side">
+
+      <!-- PROFILE CARD -->
+      <div class="pcard">
+        <div class="ptop">
+          <div class="avatar">AH</div>
+          <div class="pname">Abdullah Hashmi</div>
+          <div class="pdes">Senior Sales Consultant · 10 yrs</div>
+        </div>
+        <div class="pbody">
+          <div class="pc-row">
+            <span class="pct"><span class="n">64%</span> profile completed</span>
+            <span class="upd">Updated 26 Jun</span>
+          </div>
+          <div class="bar"><i></i></div>
+          <div class="improve">
+            <div class="imp">
+              <span class="ii"><svg><use href="#i-photo"/></svg></span>
+              <span class="il">Profile photo <small>ADDS 5%</small></span>
+              <a class="add" href="#">Upload</a>
+            </div>
+            <div class="imp">
+              <span class="ii"><svg><use href="#i-id"/></svg></span>
+              <span class="il">Visa details <small>ADDS 3%</small></span>
+              <a class="add" href="#">Add</a>
+            </div>
+          </div>
+          <a class="btn-primary" href="#">View &amp; edit profile</a>
+        </div>
+      </div>
+
+      <!-- VISIBILITY -->
+      <div class="card pad vis">
+        <div class="sec-head" style="margin-bottom:4px"><h3>Visibility to employers</h3></div>
+        <p style="color:var(--muted);font-size:12.5px;margin:0 0 14px">Your profile performance on the Manara CV database</p>
+        <div class="vstats">
+          <a class="vstat" href="#"><div class="vn">00</div><div class="vl">Search appearances</div></a>
+          <a class="vstat" href="#"><div class="vn">00</div><div class="vl">Employer actions</div></a>
+        </div>
+        <div class="chart">
+          <svg viewBox="0 0 300 120" preserveAspectRatio="none" role="img" aria-label="Weekly search appearances trend">
+            <line x1="0" y1="30" x2="300" y2="30" stroke="#EEF2F7" stroke-width="1"/>
+            <line x1="0" y1="60" x2="300" y2="60" stroke="#EEF2F7" stroke-width="1"/>
+            <line x1="0" y1="90" x2="300" y2="90" stroke="#EEF2F7" stroke-width="1"/>
+            <path d="M0,95 L50,80 L100,88 L150,55 L200,62 L250,34 L300,42 L300,120 L0,120 Z" fill="url(#g1)"/>
+            <path d="M0,95 L50,80 L100,88 L150,55 L200,62 L250,34 L300,42" fill="none" stroke="#0B5FD0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="250" cy="34" r="4" fill="#0B5FD0" stroke="#fff" stroke-width="2"/>
+            <defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0B5FD0" stop-opacity=".18"/><stop offset="1" stop-color="#0B5FD0" stop-opacity="0"/></linearGradient></defs>
+          </svg>
+          <div class="xaxis"><span>Wk 1</span><span>Wk 2</span><span>Wk 3</span><span>Wk 4</span><span>Wk 5</span><span>Wk 6</span></div>
+        </div>
+      </div>
+
+      <!-- FAQ -->
+      <div class="card pad faq">
+        <div class="sec-head" style="margin-bottom:6px"><h3>Frequently asked</h3></div>
+        <a href="#"><span class="fi ci-gold"><svg><use href="#i-check-doc"/></svg></span><span><span class="ft">Applying to jobs</span><span class="fx">How the search and application process works</span></span></a>
+        <a href="#"><span class="fi ci-green"><svg><use href="#i-id"/></svg></span><span><span class="ft">Jobseeker profile</span><span class="fx">Improve and manage your profile</span></span></a>
+        <a href="#"><span class="fi ci-blue"><svg><use href="#i-shield"/></svg></span><span><span class="ft">Account &amp; email settings</span><span class="fx">Configure your account the way you want</span></span></a>
+      </div>
+
+      <!-- POLL -->
+      <div class="card pad poll" id="poll">
+        <span class="peyebrow">Your opinion matters</span>
+        <div class="pq">Which sector is outperforming expectations right now?</div>
+        <div id="pollOpts">
+          <label class="opt"><input type="radio" name="poll" value="0"><span class="fill" data-w="24"></span><span class="rd"></span><span class="ol">Oil, gas &amp; energy</span><span class="pct num">24%</span></label>
+          <label class="opt"><input type="radio" name="poll" value="1"><span class="fill" data-w="19"></span><span class="rd"></span><span class="ol">Construction &amp; real estate</span><span class="pct num">19%</span></label>
+          <label class="opt"><input type="radio" name="poll" value="2"><span class="fill" data-w="12"></span><span class="rd"></span><span class="ol">Banking &amp; finance</span><span class="pct num">12%</span></label>
+          <label class="opt"><input type="radio" name="poll" value="3"><span class="fill" data-w="17"></span><span class="rd"></span><span class="ol">Healthcare</span><span class="pct num">17%</span></label>
+          <label class="opt"><input type="radio" name="poll" value="4"><span class="fill" data-w="28"></span><span class="rd"></span><span class="ol">IT &amp; AI</span><span class="pct num">28%</span></label>
+        </div>
+        <div class="pfoot">
+          <span class="votes">Total votes: <span class="num">3,918</span></span>
+          <button class="btn-vote" id="voteBtn" disabled>Submit your vote</button>
+          <span class="thanks"><svg><use href="#i-check-doc"/></svg> Thanks for voting</span>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- 8. BOOST (full width) -->
+  <section class="boost">
+    <div class="bl">
+      <div class="rocket"><svg><use href="#i-rocket"/></svg></div>
+      <h2>Boost your job hunt</h2>
+      <p>Get a CV that highlights your strengths and increase profile views by up to 50%.</p>
+    </div>
+    <div class="svc">
+      <div class="s">
+        <span class="si ci-blue"><svg><use href="#i-pen"/></svg></span>
+        <h4>Resume writing</h4>
+        <p>Get an expert to sharpen your CV so the right things stand out to employers.</p>
+        <a class="know" href="#">Know more →</a>
+      </div>
+      <div class="s">
+        <span class="si ci-gold"><svg><use href="#i-spark"/></svg></span>
+        <h4>Resume spotlight</h4>
+        <p>Put your profile in front of recruiters searching the database first.</p>
+        <a class="know" href="#">Know more →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9. APP DOWNLOAD (full width) -->
+  <section class="appdl">
+    <div class="rings2" aria-hidden="true">
+      <svg viewBox="0 0 360 360"><circle cx="180" cy="180" r="170" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="1.5"/><circle cx="180" cy="180" r="120" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="1.5"/><circle cx="180" cy="180" r="70" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="1.5"/></svg>
+    </div>
+    <div style="position:relative;z-index:2">
+      <h2>Get access to 37k+ jobs on the Manara app</h2>
+      <p class="asub">Real-time job updates and instant alerts, wherever you are.</p>
+      <div class="dl-row">
+        <div class="qr" aria-hidden="true">
+          <svg viewBox="0 0 78 78" width="78" height="78"><rect width="78" height="78" fill="#fff"/><g fill="#0A2540"><rect x="4" y="4" width="20" height="20"/><rect x="8" y="8" width="12" height="12" fill="#fff"/><rect x="11" y="11" width="6" height="6" fill="#0A2540"/><rect x="54" y="4" width="20" height="20"/><rect x="58" y="8" width="12" height="12" fill="#fff"/><rect x="61" y="11" width="6" height="6" fill="#0A2540"/><rect x="4" y="54" width="20" height="20"/><rect x="8" y="58" width="12" height="12" fill="#fff"/><rect x="11" y="61" width="6" height="6" fill="#0A2540"/><rect x="30" y="6" width="4" height="4"/><rect x="38" y="6" width="4" height="4"/><rect x="44" y="6" width="4" height="4"/><rect x="30" y="14" width="4" height="4"/><rect x="42" y="14" width="6" height="4"/><rect x="30" y="30" width="4" height="4"/><rect x="38" y="30" width="6" height="4"/><rect x="48" y="30" width="4" height="4"/><rect x="58" y="30" width="4" height="4"/><rect x="68" y="30" width="4" height="4"/><rect x="6" y="30" width="4" height="4"/><rect x="14" y="30" width="4" height="4"/><rect x="30" y="38" width="4" height="4"/><rect x="40" y="40" width="4" height="4"/><rect x="50" y="38" width="6" height="4"/><rect x="62" y="40" width="4" height="4"/><rect x="70" y="40" width="4" height="4"/><rect x="34" y="48" width="4" height="4"/><rect x="44" y="48" width="4" height="4"/><rect x="54" y="50" width="4" height="4"/><rect x="64" y="48" width="6" height="4"/><rect x="30" y="58" width="4" height="4"/><rect x="38" y="60" width="4" height="4"/><rect x="46" y="58" width="4" height="4"/><rect x="56" y="60" width="4" height="4"/><rect x="66" y="58" width="6" height="4"/><rect x="32" y="68" width="4" height="4"/><rect x="42" y="68" width="6" height="4"/><rect x="52" y="68" width="4" height="4"/><rect x="62" y="68" width="4" height="4"/><rect x="70" y="68" width="4" height="4"/></g></svg>
+          <span class="qcap num" style="font-size:9px;color:var(--faint);margin-top:3px">Scan to install</span>
+        </div>
+        <div class="stores">
+          <a class="store" href="#"><svg><use href="#i-play"/></svg><span class="st"><small>Get it on</small><b>Google Play</b></span></a>
+          <a class="store" href="#"><svg><use href="#i-apple"/></svg><span class="st"><small>Download on the</small><b>App Store</b></span></a>
+        </div>
+      </div>
+    </div>
+    <div class="phone-wrap">
+      <div class="phone" aria-hidden="true">
+        <div class="screen">
+          <div class="pnav"></div>
+          <div class="mini"><div class="mlogo"></div><div class="l1"></div><div class="l2"></div></div>
+          <div class="mini"><div class="mlogo"></div><div class="l1"></div><div class="l2"></div></div>
+          <div class="mini"><div class="mlogo"></div><div class="l1"></div><div class="l2"></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="wrap footer-in">
+    <div>
+      <div class="brand">
+        <svg class="beacon" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M11 13h10l-1.4 14H12.4L11 13Z" fill="#2C7BF0"/><rect x="13" y="9" width="6" height="4" rx="1" fill="#fff" opacity=".85"/><circle cx="16" cy="6.5" r="2.4" fill="#D9992B"/></svg>
+        Manara
+      </div>
+      <p class="fdesc">A career beacon for the Gulf — connecting professionals with employers across the UAE, KSA, Qatar and beyond.</p>
+      <div class="socials">
+        <a href="#" aria-label="Facebook"><svg><use href="#i-fb"/></svg></a>
+        <a href="#" aria-label="LinkedIn"><svg><use href="#i-in"/></svg></a>
+        <a href="#" aria-label="Instagram"><svg><use href="#i-ig"/></svg></a>
+        <a href="#" aria-label="YouTube"><svg><use href="#i-yt"/></svg></a>
+      </div>
+    </div>
+    <div class="fcol">
+      <h4>Explore</h4>
+      <a href="#">Home</a><a href="#">Search jobs</a><a href="#">Companies</a><a href="#">Salaries</a><a href="#">Career tips</a>
+    </div>
+    <div class="fcol">
+      <h4>Support</h4>
+      <a href="#">About us</a><a href="#">Contact us</a><a href="#">Fraud alert</a><a href="#">Terms &amp; conditions</a><a href="#">Privacy policy</a>
+    </div>
+    <div class="fcol">
+      <h4>Apply on the go</h4>
+      <p class="fdesc" style="margin-bottom:6px">Get real-time job updates on our app</p>
+      <div class="fapp">
+        <a class="store" href="#" style="min-width:0"><svg><use href="#i-play"/></svg><span class="st"><small>Get it on</small><b>Google Play</b></span></a>
+        <a class="store" href="#" style="min-width:0"><svg><use href="#i-apple"/></svg><span class="st"><small>Download on the</small><b>App Store</b></span></a>
+      </div>
+    </div>
+  </div>
+  <div class="wrap footer-bar">
+    <span class="cp">All trademarks are properties of their respective owners. © 2026 Manara Careers.</span>
+    <span class="partners"><span>Partner sites</span><a href="#">Manara Pro</a><a href="#">CV Studio</a><a href="#">Salaries</a></span>
+  </div>
+</footer>
+
+<div class="toast" id="toast"><svg><use href="#i-search"/></svg><span id="toastMsg"></span></div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---- data ----
+  var TINTS = [
+    {bg:'#EAF2FE',fg:'#0B5FD0'},{bg:'#FBF1DA',fg:'#8A5D10'},{bg:'#E4F5EC',fg:'#1E7A50'},
+    {bg:'#EEEBFB',fg:'#5B4AB8'},{bg:'#FCEAF0',fg:'#B03A63'},{bg:'#E7F4F3',fg:'#0E7C72'}
+  ];
+  function tint(i){return TINTS[i % TINTS.length];}
+  function initials(name){
+    var p = name.replace(/[^A-Za-z ]/g,'').trim().split(/\s+/);
+    return ((p[0]||'')[0]||'' ).concat((p[1]||'')[0]||'').toUpperCase() || name.slice(0,2).toUpperCase();
+  }
+
+  var JOBS = [
+    {t:'Senior Sales Consultant',c:'Al Noor Group',exp:'6 - 9 yrs',loc:'Dubai, UAE',d:'2 days ago',f:true},
+    {t:'Civil Site Engineer',c:'Gulf Peak Contracting',exp:'5 - 8 yrs',loc:'Riyadh, KSA',d:'1 day ago',f:false},
+    {t:'Registered Nurse (ICU)',c:'Meridian Health',exp:'3 - 6 yrs',loc:'Doha, Qatar',d:'4 days ago',f:false},
+    {t:'Oracle HCM Consultant',c:'Falcon Technologies',exp:'7 - 11 yrs',loc:'Abu Dhabi, UAE',d:'today',f:true},
+    {t:'Executive Chef',c:'Cedar Hospitality',exp:'8 - 12 yrs',loc:'Muscat, Oman',d:'3 days ago',f:false},
+    {t:'Financial Analyst',c:'Zenith Financial',exp:'4 - 7 yrs',loc:'Manama, Bahrain',d:'5 days ago',f:false},
+    {t:'Digital Marketing Manager',c:'Oryx Digital',exp:'6 - 10 yrs',loc:'Dubai, UAE',d:'2 days ago',f:false}
+  ];
+  var EMPLOYERS = ['Al Noor Group','Gulf Peak','Meridian Health','Falcon Tech','Cedar Hospitality','Blue Harbor','Zenith Financial','Oryx Digital','Sahara Energy','Pearl Retail','Vantage Consulting','Emerald Facilities','Nakhla Realty','Rowad Steel','Marsa Logistics','Aafaq Bank','Qamar Media','Suhail Aviation','Delta Marine','Rihan Foods','Bunyan Build','Waha Petro','Nasma Telecom','Yara Textiles'];
+  var POSTS = [
+    {t:'UAE hiring index — Q2 2026',x:'Where demand is climbing across the Emirates, and the roles employers are chasing this quarter.',v:918,d:'03 Jul',c:'#0B5FD0'},
+    {t:'The smartest career move starts before you resign',x:'People who transition smoothly rarely start preparing after they decide to leave.',v:412,d:'02 Jul',c:'#0E7C72'},
+    {t:'Should your nationality be on your CV?',x:'A quietly asked question with an honest, region-specific answer.',v:305,d:'02 Jul',c:'#8A5D10'},
+    {t:'Qatar hiring index — Q2 2026',x:'Steady momentum and the sectors adding headcount fastest right now.',v:288,d:'01 Jul',c:'#5B4AB8'},
+    {t:'Changing industries? Rewrite your CV',x:'A career switch needs a different kind of CV than a straight-line promotion.',v:236,d:'01 Jul',c:'#B03A63'},
+    {t:'Salary negotiation in the Gulf',x:'What is (and is not) on the table when the offer finally lands.',v:174,d:'30 Jun',c:'#0B4FB8'}
+  ];
+  var COMPANIES = [
+    {n:'Al Futtaim Retail',tags:['Retail','Dubai']},
+    {n:'ZainTech',tags:['IT','Dubai']},
+    {n:'Ghobash Group',tags:['Finance','Dubai']},
+    {n:'Royal Solutions',tags:['IT','Abu Dhabi']},
+    {n:'Lean Technologies',tags:['B2B','Riyadh']},
+    {n:'Sahara Energy',tags:['Energy','Doha']}
+  ];
+  var FEAT_EMP = ['Al Futtaim Private Co.','American Hospital Dubai','Emirates Global Aluminium','Ginco Contracting','Hill International ME','NMC Healthcare'];
+  var FEAT_CON = ['Brunel India Pvt. Ltd.','Dicetek Consultancy','Reliant HR','Soundlines HR','Sundus Consultancy','TASC Labour Services'];
+
+  var esc = function(s){return String(s).replace(/[&<>"]/g,function(m){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m];});};
+
+  // ---- render jobs ----
+  var jr = document.getElementById('jobRail');
+  jr.innerHTML = JOBS.map(function(j,i){
+    var tn=tint(i);
+    return '<article class="job">'
+      + '<div class="logo" style="background:'+tn.bg+';color:'+tn.fg+'">'+initials(j.c)+'</div>'
+      + '<div class="title">'+esc(j.t)+'</div>'
+      + '<div class="org">'+esc(j.c)+'</div>'
+      + '<div class="meta">'
+        + '<div class="row"><svg><use href="#i-bag"/></svg>'+esc(j.exp)+'</div>'
+        + '<div class="row"><svg><use href="#i-pin"/></svg>'+esc(j.loc)+'</div>'
+      + '</div>'
+      + '<div class="foot">'
+        + (j.f?'<span class="tag-featured">Featured</span>':'<span class="posted">'+esc(j.d)+'</span>')
+        + '<button class="save" aria-label="Save job"><svg><use href="#i-bookmark"/></svg></button>'
+      + '</div>'
+    + '</article>';
+  }).join('');
+
+  // ---- render employers ----
+  document.getElementById('empGrid').innerHTML = EMPLOYERS.map(function(n,i){
+    var tn=tint(i);
+    return '<a class="emp" href="#" title="'+esc(n)+'"><span class="mono" style="color:'+tn.fg+'">'+esc(n)+'</span></a>';
+  }).join('');
+
+  // ---- render posts ----
+  document.getElementById('postRail').innerHTML = POSTS.map(function(p){
+    return '<a class="post" href="#">'
+      + '<div class="ph" style="background:linear-gradient(135deg,'+p.c+',rgba(0,0,0,.18))"><span class="tagline">'+esc(p.t)+'</span></div>'
+      + '<div class="pb">'
+        + '<div class="pt">'+esc(p.t)+'</div>'
+        + '<div class="px">'+esc(p.x)+'</div>'
+        + '<div class="pf"><span class="mn"><svg><use href="#i-eye"/></svg>'+p.v.toLocaleString()+'</span><span class="rm">Read more →</span><span class="num">'+esc(p.d)+'</span></div>'
+      + '</div></a>';
+  }).join('');
+
+  // ---- render companies ----
+  document.getElementById('coRail').innerHTML = COMPANIES.map(function(co,i){
+    var tn=tint(i+1);
+    return '<article class="co">'
+      + '<div class="logo" style="background:'+tn.bg+';color:'+tn.fg+'">'+initials(co.n)+'</div>'
+      + '<div class="cn">'+esc(co.n)+'</div>'
+      + '<div class="ctags">'+co.tags.map(function(t){return '<span class="ctag">'+esc(t)+'</span>';}).join('')+'</div>'
+      + '<a class="cbtn" href="#">View jobs</a>'
+    + '</article>';
+  }).join('');
+
+  // ---- featured lists ----
+  function fillList(id,arr){
+    document.getElementById(id).innerHTML = arr.map(function(n){
+      return '<a class="item" href="#"><span class="dot"></span>'+esc(n)+'</a>';
+    }).join('');
+  }
+  fillList('featEmp',FEAT_EMP);
+  fillList('featCon',FEAT_CON);
+
+  // ---- tabs ----
+  var jobsCard = document.getElementById('jobsCard');
+  jobsCard.querySelectorAll('.tab').forEach(function(tab){
+    tab.addEventListener('click',function(){
+      jobsCard.querySelectorAll('.tab').forEach(function(t){t.classList.remove('is-active');t.removeAttribute('aria-selected');});
+      jobsCard.querySelectorAll('.tabpanel').forEach(function(p){p.hidden=true;});
+      tab.classList.add('is-active');
+      tab.setAttribute('aria-selected','true');
+      document.getElementById(tab.dataset.panel).hidden=false;
+    });
+  });
+
+  // ---- carousels ----
+  document.querySelectorAll('.rail-wrap').forEach(function(w){
+    var rail=w.querySelector('.rail');
+    var prev=w.querySelector('[data-dir="prev"]');
+    var next=w.querySelector('[data-dir="next"]');
+    function sync(){
+      var max=rail.scrollWidth-rail.clientWidth-2;
+      prev.disabled = rail.scrollLeft<=2;
+      next.disabled = rail.scrollLeft>=max;
+    }
+    function step(dir){ rail.scrollBy({left:dir*Math.max(260,rail.clientWidth*0.85),behavior:'smooth'}); }
+    prev.addEventListener('click',function(){step(-1);});
+    next.addEventListener('click',function(){step(1);});
+    rail.addEventListener('scroll',sync,{passive:true});
+    window.addEventListener('resize',sync);
+    sync();
+  });
+
+  // ---- poll ----
+  var poll=document.getElementById('poll');
+  var voteBtn=document.getElementById('voteBtn');
+  poll.querySelectorAll('input[name="poll"]').forEach(function(r){
+    r.addEventListener('change',function(){ voteBtn.disabled=false; });
+  });
+  voteBtn.addEventListener('click',function(){
+    poll.classList.add('voted');
+    poll.querySelectorAll('.fill').forEach(function(f){ f.style.width=(f.dataset.w||0)+'%'; });
+    poll.querySelectorAll('input').forEach(function(i){ i.disabled=true; });
+  });
+
+  // ---- search + toast ----
+  var toast=document.getElementById('toast'), toastMsg=document.getElementById('toastMsg'), tTimer;
+  function showToast(msg){
+    toastMsg.textContent=msg; toast.classList.add('show');
+    clearTimeout(tTimer); tTimer=setTimeout(function(){toast.classList.remove('show');},2200);
+  }
+  var input=document.getElementById('searchInput');
+  function doSearch(){
+    var q=input.value.trim();
+    if(!q){ input.focus(); showToast('Type a skill, role or company to search'); return; }
+    showToast('Searching for “'+q+'” across the Gulf…');
+  }
+  document.getElementById('searchBtn').addEventListener('click',doSearch);
+  input.addEventListener('keydown',function(e){ if(e.key==='Enter') doSearch(); });
+
+  // ---- mobile menu ----
+  var hamb=document.getElementById('hamb'), mm=document.getElementById('mobileMenu');
+  hamb.addEventListener('click',function(){ mm.classList.toggle('open'); });
+
+})();
+</script>
+</body>
+</html>

@@ -61,7 +61,7 @@ export async function getDashboardStats(req, res) {
   const completionWeights = [
     { pct: 5,  filled: !!user.name },
     { pct: 5,  filled: !!user.mobile },
-    { pct: 5,  filled: !!profile?.location },
+    { pct: 5,  filled: !!(profile?.country || profile?.city) },
     { pct: 10, filled: !!profile?.designation },
     { pct: 10, filled: !!profile?.experience },
     { pct: 10, filled: !!profile?.skills },

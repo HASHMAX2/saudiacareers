@@ -1,28 +1,36 @@
 import { ChevronDown } from "lucide-react";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 const MENU_MAX_HEIGHT = 240; // px, matches max-h-60
 const MENU_GAP = 6;
 
-export function Select({
+// Searchable, keyboard-accessible dropdown — same visual language and portal
+// positioning as Select.jsx, but with a type-to-filter input for long option
+// lists (e.g. the ~195-country list) where a plain listbox isn't usable.
+export function Combobox({
   id, label, labelHint, required, error, value, onChange, options,
-  placeholder = "Select…", className = "", icon: Icon, pill = false, bare = false, disabled = false,
+  placeholder = "Select…", searchPlaceholder = "Type to search…", className = "", disabled = false,
 }) {
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [activeIndex, setActiveIndex] = useState(0);
   const [menuRect, setMenuRect] = useState(null);
   const wrapperRef = useRef(null);
   const buttonRef = useRef(null);
   const menuRef = useRef(null);
+  const searchRef = useRef(null);
 
   useEffect(() => {
     if (disabled) setOpen(false);
   }, [disabled]);
 
-  // Position the menu in a portal (fixed, viewport coordinates) so it's never
-  // clipped by an ancestor's overflow:hidden — e.g. .card-soft, which clips
-  // content to its rounded corners and was cutting off Gender/Nationality
-  // dropdowns near the bottom of their card.
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return options;
+    return options.filter((o) => o.toLowerCase().includes(q));
+  }, [options, query]);
+
   useLayoutEffect(() => {
     if (!open || !buttonRef.current) return;
     const rect = buttonRef.current.getBoundingClientRect();
@@ -37,6 +45,16 @@ export function Select({
   }, [open]);
 
   useEffect(() => {
+    if (open) {
+      setQuery("");
+      setActiveIndex(0);
+      // Focus the search input once the portal has mounted.
+      const t = setTimeout(() => searchRef.current?.focus(), 0);
+      return () => clearTimeout(t);
+    }
+  }, [open]);
+
+  useEffect(() => {
     if (!open) return;
     function onClickOutside(e) {
       if (
@@ -46,34 +64,39 @@ export function Select({
         setOpen(false);
       }
     }
-    function onEscape(e) {
-      if (e.key === "Escape") setOpen(false);
-    }
-    // Closing on scroll (instead of repositioning) keeps this simple and
-    // matches how native selects behave — scrolling the page dismisses them.
-    // Scrolling inside the dropdown's own option list must not close it, though.
     function onScroll(e) {
+      // Scrolling inside the dropdown's own option list must not close it —
+      // only close on scrolling elsewhere (e.g. the page behind it).
       if (menuRef.current && menuRef.current.contains(e.target)) return;
       setOpen(false);
     }
     document.addEventListener("mousedown", onClickOutside);
-    document.addEventListener("keydown", onEscape);
     window.addEventListener("scroll", onScroll, true);
     window.addEventListener("resize", onScroll);
     return () => {
       document.removeEventListener("mousedown", onClickOutside);
-      document.removeEventListener("keydown", onEscape);
       window.removeEventListener("scroll", onScroll, true);
       window.removeEventListener("resize", onScroll);
     };
   }, [open]);
 
-  const normalized = options.map((o) => (typeof o === "string" || typeof o === "number" ? { value: o, label: String(o) } : o));
-  const selected = normalized.find((o) => o.value === value);
-
   function pick(val) {
     onChange?.({ target: { value: val } });
     setOpen(false);
+  }
+
+  function onKeyDown(e) {
+    if (e.key === "Escape") { setOpen(false); return; }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIndex((i) => Math.min(i + 1, filtered.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex((i) => Math.max(i - 1, 0));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (filtered[activeIndex]) pick(filtered[activeIndex]);
+    }
   }
 
   const control = (
@@ -86,18 +109,15 @@ export function Select({
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className={`flex w-full items-center justify-between gap-2 text-left disabled:cursor-not-allowed disabled:opacity-50 ${pill ? "rounded-full px-4 py-2.5 text-sm" : "field-box"}`}
+        className="field-box flex w-full items-center justify-between gap-2 text-left disabled:cursor-not-allowed disabled:opacity-50"
         style={{
           border: "1px solid var(--border-default)",
           background: "var(--bg-white)",
           ...(error ? { borderColor: "#f87171" } : {}),
         }}
       >
-        <span className="flex min-w-0 items-center gap-2">
-          {Icon && <Icon size={15} className="shrink-0" style={{ color: "var(--text-tertiary)" }} />}
-          <span className="truncate" style={{ color: selected ? "var(--text-primary)" : "var(--text-tertiary)" }}>
-            {selected ? selected.label : placeholder}
-          </span>
+        <span className="truncate" style={{ color: value ? "var(--text-primary)" : "var(--text-tertiary)" }}>
+          {value || placeholder}
         </span>
         <ChevronDown
           size={16}
@@ -109,7 +129,7 @@ export function Select({
       {open && menuRect && createPortal(
         <div
           ref={menuRef}
-          className="fixed z-[100] max-h-60 overflow-y-auto rounded-xl bg-white py-1.5"
+          className="fixed z-[100] rounded-xl bg-white py-1.5"
           style={{
             left: menuRect.left,
             width: menuRect.width,
@@ -118,31 +138,50 @@ export function Select({
             border: "1px solid var(--border-default)",
             boxShadow: "var(--sh-2)",
           }}
-          role="listbox"
         >
-          {normalized.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              role="option"
-              aria-selected={value === opt.value}
-              onClick={() => pick(opt.value)}
-              className="block w-full px-4 py-2 text-left text-sm transition-colors hover:bg-[var(--bg-elev)]"
-              style={{
-                color: value === opt.value ? "var(--accent)" : "var(--text-primary)",
-                fontWeight: value === opt.value ? 600 : 400,
-              }}
-            >
-              {opt.label}
-            </button>
-          ))}
+          <div className="px-2 pb-1.5">
+            <input
+              ref={searchRef}
+              type="text"
+              role="combobox"
+              aria-expanded={open}
+              aria-controls={id ? `${id}-listbox` : undefined}
+              value={query}
+              onChange={(e) => { setQuery(e.target.value); setActiveIndex(0); }}
+              onKeyDown={onKeyDown}
+              placeholder={searchPlaceholder}
+              className="w-full rounded-lg px-2.5 py-1.5 text-sm outline-none"
+              style={{ border: "1px solid var(--border-default)" }}
+            />
+          </div>
+          <div id={id ? `${id}-listbox` : undefined} role="listbox" className="max-h-52 overflow-y-auto">
+            {filtered.length === 0 && (
+              <p className="px-4 py-2 text-sm" style={{ color: "var(--text-tertiary)" }}>No matches</p>
+            )}
+            {filtered.map((opt, i) => (
+              <button
+                key={opt}
+                type="button"
+                role="option"
+                aria-selected={value === opt}
+                onClick={() => pick(opt)}
+                onMouseEnter={() => setActiveIndex(i)}
+                className="block w-full px-4 py-2 text-left text-sm transition-colors"
+                style={{
+                  color: value === opt ? "var(--accent)" : "var(--text-primary)",
+                  fontWeight: value === opt ? 600 : 400,
+                  background: i === activeIndex ? "var(--bg-elev)" : "transparent",
+                }}
+              >
+                {opt}
+              </button>
+            ))}
+          </div>
         </div>,
         document.body,
       )}
     </div>
   );
-
-  if (bare) return control;
 
   return (
     <label className="block" htmlFor={id}>

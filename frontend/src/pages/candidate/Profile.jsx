@@ -6,22 +6,25 @@ import {
 } from "lucide-react";
 import { profileApi } from "../../api/profile.js";
 import { Button } from "../../components/common/Button.jsx";
+import { Combobox } from "../../components/common/Combobox.jsx";
 import { Input } from "../../components/common/Input.jsx";
 import { Modal } from "../../components/common/Modal.jsx";
 import { Select } from "../../components/common/Select.jsx";
 import { Spinner } from "../../components/common/Spinner.jsx";
+import { COUNTRIES } from "../../utils/countries.js";
 import {
   AVAILABILITY_OPTIONS,
   INDUSTRIES,
-  LOCATIONS,
+  MARITAL_STATUS_OPTIONS,
   MONTHS_LONG,
+  WORK_AUTHORIZATION_OPTIONS,
 } from "../../utils/constants.js";
 
 // ─── Completion config ────────────────────────────────────────────────────────
 const COMPLETION_ITEMS = [
   { key: "name",       label: "Full Name",          pct: 5,  check: (p) => !!p.name },
   { key: "mobile",     label: "Mobile Number",      pct: 5,  check: (p) => !!p.mobile },
-  { key: "location",   label: "Location",           pct: 5,  check: (p) => !!p.location },
+  { key: "location",   label: "Location",           pct: 5,  check: (p) => !!(p.country || p.city) },
   { key: "designation",label: "Current Title",      pct: 10, check: (p) => !!p.designation },
   { key: "experience", label: "Work Experience",    pct: 10, check: (p) => !!p.experience },
   { key: "skills",     label: "Key Skills",         pct: 10, check: (p) => !!p.skills },
@@ -758,21 +761,34 @@ function ProfileSummarySection({ profile, editing, setEditing, saveSection, savi
 }
 
 // ─── Personal Details ─────────────────────────────────────────────────────────
+// Fixed dropdowns / date picker — rendered as explicit controlled fields rather
+// than the generic free-text loop below, so their values stay enum-valid.
+const STRUCTURED_PERSONAL = [
+  { key: "dateOfBirth",   label: "Date of Birth" },
+  { key: "maritalStatus", label: "Marital Status" },
+  { key: "visaStatus",    label: "Work Authorization" },
+];
+
 const OPTIONAL_PERSONAL = [
-  { key: "dateOfBirth",   label: "Date of Birth",                  placeholder: "e.g. 15 March 1990" },
-  { key: "maritalStatus", label: "Marital Status",                  placeholder: "e.g. Single, Married" },
   { key: "drivingLicense",label: "Driving License",                 placeholder: "e.g. Saudi, UAE, International" },
   { key: "languagesKnown",label: "Languages Known",                 placeholder: "e.g. Arabic, English, Urdu" },
-  { key: "visaStatus",    label: "Visa Status",                     placeholder: "e.g. Iqama, Visit Visa, Citizen" },
   { key: "religion",      label: "Religion",                        placeholder: "e.g. Islam, Christianity" },
   { key: "alternateEmail",label: "Alternate Email Address",         placeholder: "another@email.com" },
-  { key: "alternateMobile",label: "Alternate Contact Number",       placeholder: "+966XXXXXXXXX", labelHint: "enter number with country code" },
+  { key: "alternateMobile",label: "Alternate Contact ",       placeholder: "+966XXXXXXXXX", labelHint: "enter number with country code" },
 ];
+
+function fmtDob(value) {
+  if (!value) return "";
+  const [year, month, day] = value.split("-").map(Number);
+  if (!year || !month || !day) return value;
+  return `${day} ${MONTHS_SHORT[month - 1]} ${year}`;
+}
 
 function PersonalSection({ profile, editing, setEditing, saveSection, savingSection, sectionError }) {
   const sid = "personal";
   const isEditing = editing === sid;
   const [form, setForm] = useState({});
+  const today = new Date().toISOString().slice(0, 10);
 
   useEffect(() => { if (!isEditing) setForm({}); }, [isEditing]);
 
@@ -782,9 +798,13 @@ function PersonalSection({ profile, editing, setEditing, saveSection, savingSect
     if ((key === "mobile" || key === "alternateMobile") && val !== "" && !val.startsWith("+")) val = "+";
     setForm((prev) => ({ ...prev, [key]: val }));
   };
+  // Clearing the country invalidates whatever city was paired with it.
+  const setCountry = (e) => setForm((prev) => ({ ...prev, country: e.target.value, ...(e.target.value ? {} : { city: "" }) }));
 
-  const filledOptional = OPTIONAL_PERSONAL.filter(({ key }) => !!profile[key]);
-  const emptyOptional = OPTIONAL_PERSONAL.filter(({ key }) => !profile[key]);
+  const ALL_OPTIONAL = [...STRUCTURED_PERSONAL, ...OPTIONAL_PERSONAL];
+  const filledOptional = ALL_OPTIONAL.filter(({ key }) => !!profile[key]);
+  const emptyOptional = ALL_OPTIONAL.filter(({ key }) => !profile[key]);
+  const displayValue = (key, value) => (key === "dateOfBirth" ? fmtDob(value) : value);
 
   return (
     <SectionCard
@@ -797,7 +817,8 @@ function PersonalSection({ profile, editing, setEditing, saveSection, savingSect
             e.preventDefault();
             saveSection(sid, {
               mobile: f("mobile"),
-              location: f("location"),
+              country: f("country"),
+              city: f("country") ? f("city") : "",
               gender: f("gender"),
               nationality: f("nationality"),
               dateOfBirth: f("dateOfBirth"),
@@ -814,13 +835,31 @@ function PersonalSection({ profile, editing, setEditing, saveSection, savingSect
           {/* Core fields */}
           <div className="grid gap-4 sm:grid-cols-2">
             <Input id="mobile-p" label="Mobile Number" labelHint="enter number with country code" required value={f("mobile")} onChange={set("mobile")} placeholder="+966XXXXXXXXX" />
-            <Select label="Location" required value={f("location")} onChange={set("location")} options={LOCATIONS} placeholder="Select location" />
             <Select
               label="Gender"
               value={f("gender")}
               onChange={set("gender")}
               options={["Male", "Female", "Prefer not to say"]}
               placeholder="Select gender"
+            />
+            <Combobox
+              id="country-p"
+              label="Country"
+              required
+              value={f("country")}
+              onChange={setCountry}
+              options={COUNTRIES}
+              placeholder="Select country"
+              searchPlaceholder="Search countries…"
+            />
+            <Input
+              id="city-p"
+              label="City"
+              placeholder={f("country") ? "e.g. Riyadh" : "Select a country first"}
+              value={f("city")}
+              onChange={set("city")}
+              disabled={!f("country")}
+              maxLength={100}
             />
             <Input id="nationality-p" label="Nationality" placeholder="e.g. Saudi, Indian, Pakistani" value={f("nationality")} onChange={set("nationality")} />
           </div>
@@ -830,6 +869,23 @@ function PersonalSection({ profile, editing, setEditing, saveSection, savingSect
             Additional Details (optional)
           </p>
           <div className="grid gap-4 sm:grid-cols-2">
+            <Input id="dob-p" label="Date of Birth" type="date" max={today} value={f("dateOfBirth")} onChange={set("dateOfBirth")} />
+            <Select
+              label="Marital Status"
+              value={f("maritalStatus")}
+              onChange={set("maritalStatus")}
+              options={MARITAL_STATUS_OPTIONS}
+              placeholder="Select marital status"
+            />
+            <div className="sm:col-span-2">
+              <Select
+                label="Are you authorised to work in Saudi Arabia?"
+                value={f("visaStatus")}
+                onChange={set("visaStatus")}
+                options={WORK_AUTHORIZATION_OPTIONS}
+                placeholder="Select an option"
+              />
+            </div>
             {OPTIONAL_PERSONAL.map(({ key, label, placeholder, labelHint }) => (
               <Input key={key} label={label} labelHint={labelHint} placeholder={placeholder} value={f(key)} onChange={set(key)} />
             ))}
@@ -846,10 +902,10 @@ function PersonalSection({ profile, editing, setEditing, saveSection, savingSect
               { label: "Full Name", value: profile.name },
               { label: "Email", value: profile.email },
               { label: "Mobile", value: profile.mobile },
-              { label: "Location", value: profile.location },
+              { label: "Location", value: [profile.city, profile.country].filter(Boolean).join(", ") || null },
               { label: "Gender", value: profile.gender },
               { label: "Nationality", value: profile.nationality },
-              ...filledOptional.map(({ key, label }) => ({ label, value: profile[key] })),
+              ...filledOptional.map(({ key, label }) => ({ label, value: displayValue(key, profile[key]) })),
             ].map(({ label, value }) =>
               value ? (
                 <div key={label}>
@@ -1477,7 +1533,11 @@ export function Profile() {
                   </p>
                 )}
                 <div className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1 text-[13px]" style={{ color: "var(--text-tertiary)" }}>
-                  {profile.location && <span className="flex items-center gap-1"><MapPin size={12} />{profile.location}</span>}
+                  {(profile.city || profile.country) && (
+                    <span className="flex items-center gap-1">
+                      <MapPin size={12} />{[profile.city, profile.country].filter(Boolean).join(", ")}
+                    </span>
+                  )}
                   {profile.email && <span className="flex items-center gap-1">✉ {profile.email}</span>}
                   {profile.mobile && <span className="flex items-center gap-1"><Phone size={12} />{profile.mobile}</span>}
                 </div>

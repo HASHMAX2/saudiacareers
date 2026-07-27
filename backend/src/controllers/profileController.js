@@ -24,7 +24,7 @@ const profileInclude = {
 const COMPLETION_WEIGHTS = [
   (u, p) => [!!u.name, 5],
   (u, p) => [!!u.mobile, 5],
-  (u, p) => [!!p?.location, 5],
+  (u, p) => [!!(p?.country || p?.city), 5],
   (u, p) => [!!p?.designation, 10],
   (u, p) => [!!p?.experience, 10],
   (u, p) => [!!p?.skills, 10],
@@ -164,7 +164,7 @@ export async function uploadResume(req, res) {
   // so stale values from the old CV don't persist after uploading a new one.
   const RESUME_DERIVED_FIELDS = [
     "designation", "cvHeadline", "alternateMobile", "alternateEmail",
-    "nationality", "location", "visaStatus", "availabilityToJoin",
+    "nationality", "country", "city", "availabilityToJoin",
     "experience", "skills", "itSkills", "summary", "languagesKnown",
   ];
   const profileUpdate = Object.fromEntries(

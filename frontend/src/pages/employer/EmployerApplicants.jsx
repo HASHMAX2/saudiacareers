@@ -159,7 +159,7 @@ export function EmployerApplicants() {
                       <div>
                         <h4 className="font-bold" style={{ color: "var(--text-primary)" }}>{app.user.name}</h4>
                         <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>
-                          {[app.user.profile?.designation, app.user.profile?.experience, app.user.profile?.location].filter(Boolean).join(" · ")}
+                          {[app.user.profile?.designation, app.user.profile?.experience, [app.user.profile?.city, app.user.profile?.country].filter(Boolean).join(", ")].filter(Boolean).join(" · ")}
                         </p>
                       </div>
                     </div>

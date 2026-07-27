@@ -95,7 +95,7 @@ export function CandidateProfile() {
             <div className="mt-5 grid gap-4 text-sm sm:grid-cols-2">
               <Info icon={Mail} label="Email" value={candidate.email} />
               <Info icon={Phone} label="Mobile" value={candidate.mobile} />
-              <Info icon={MapPin} label="Location" value={profile?.location} />
+              <Info icon={MapPin} label="Location" value={[profile?.city, profile?.country].filter(Boolean).join(", ") || null} />
               <Info icon={UserRound} label="Nationality" value={profile?.nationality} />
             </div>
           </section>

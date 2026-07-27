@@ -20,6 +20,24 @@ export const INDUSTRIES = [
 
 export const EXPERIENCE_LEVELS = ["Fresh graduate", "1-2 years", "2-3 years", "3-5 years", "5-10 years", "10+ years"];
 
+export const MARITAL_STATUS_OPTIONS = [
+  "Single",
+  "Married",
+  "Divorced",
+  "Separated",
+  "Widowed",
+  "Prefer not to say",
+];
+
+export const WORK_AUTHORIZATION_OPTIONS = [
+  "Yes — Saudi citizen",
+  "Yes — GCC citizen",
+  "Yes — valid Iqama and work permit",
+  "Yes — dependent Iqama",
+  "No — I require employer sponsorship",
+  "Other",
+];
+
 export const AVAILABILITY_OPTIONS = [
   "Immediately",
   "2 Weeks Notice",

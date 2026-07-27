@@ -41,7 +41,7 @@ export function ApplicationDetail() {
             <div className="mt-5 grid gap-4 text-sm sm:grid-cols-2">
               <Info icon={Mail} label="Email" value={application.user.email} />
               <Info icon={Phone} label="Mobile" value={application.user.mobile} />
-              <Info icon={MapPin} label="Location" value={profile?.location || "Not provided"} />
+              <Info icon={MapPin} label="Location" value={[profile?.city, profile?.country].filter(Boolean).join(", ") || "Not provided"} />
               <Info icon={FileText} label="Experience" value={profile?.experience || "Not provided"} />
             </div>
           </section>

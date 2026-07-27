@@ -101,18 +101,17 @@ function parseHeader(lines) {
     const nat = l.match(/nationality\s*[:\-]\s*([^|,\n]+)/i);
     if (nat) out.nationality = nat[1].trim();
 
+    // Country/city are now fixed dropdowns validated against a bundled country
+    // list — a resume can only reliably tell us a Saudi city, so that's the only
+    // case mapped automatically. Anything else is left for the candidate to pick.
     const loc = l.match(/location\s*[:\-]\s*([^|,\n(]+)/i);
     if (loc) {
       const raw = loc[1].replace(/open to.*/i, "").trim();
       const lower = raw.toLowerCase();
-      if (lower.includes("riyadh")) out.location = "Riyadh";
-      else if (lower.includes("jeddah")) out.location = "Jeddah";
-      else if (lower.includes("dammam")) out.location = "Dammam";
-      else out.location = "Other";
+      if (lower.includes("riyadh")) { out.country = "Saudi Arabia"; out.city = "Riyadh"; }
+      else if (lower.includes("jeddah")) { out.country = "Saudi Arabia"; out.city = "Jeddah"; }
+      else if (lower.includes("dammam")) { out.country = "Saudi Arabia"; out.city = "Dammam"; }
     }
-
-    const visa = l.match(/visa\s*[:\-]\s*([^|,\n]+)/i);
-    if (visa) out.visaStatus = visa[1].trim();
 
     const notice = l.match(/notice\s*[:\-]\s*([^|,\n]+)/i);
     if (notice) out.availabilityToJoin = notice[1].trim();
@@ -413,8 +412,8 @@ export async function parseResume(buffer, mimetype) {
       alternateMobile: header.alternateMobile || null,
       alternateEmail: header.alternateEmail || null,
       nationality: header.nationality || null,
-      location: header.location || null,
-      visaStatus: header.visaStatus || null,
+      country: header.country || null,
+      city: header.city || null,
       availabilityToJoin: header.availabilityToJoin || null,
       experience,
       skills: skillsData.skills,

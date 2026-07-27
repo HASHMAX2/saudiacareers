@@ -98,7 +98,7 @@ export function Candidates() {
                         <p className="font-semibold" style={{ color: "var(--text-primary)" }}>{c.name}</p>
                         <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>{c.email}</p>
                       </td>
-                      <td className="px-4 py-3 text-xs" style={{ color: "var(--text-tertiary)" }}>{c.profile?.location || "—"}</td>
+                      <td className="px-4 py-3 text-xs" style={{ color: "var(--text-tertiary)" }}>{[c.profile?.city, c.profile?.country].filter(Boolean).join(", ") || "—"}</td>
                       <td className="px-4 py-3 text-xs" style={{ color: "var(--text-tertiary)" }}>{c.profile?.designation || "—"}</td>
                       <td className="px-4 py-3">
                         {review?.aiScore != null
