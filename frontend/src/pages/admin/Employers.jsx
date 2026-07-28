@@ -218,7 +218,9 @@ export function Employers() {
         </label>
         <div className="mt-4 flex justify-end gap-2">
           <Button variant="secondary" onClick={() => setSuspendTarget(null)}>Cancel</Button>
-          <Button variant="danger" disabled={!reason.trim() || busyId === suspendTarget?.id} onClick={confirmSuspend}>Confirm suspend</Button>
+          <Button variant="danger" disabled={!reason.trim() || busyId === suspendTarget?.id} onClick={confirmSuspend}>
+            {busyId === suspendTarget?.id ? <><Loader2 size={13} className="animate-spin shrink-0" />Suspending…</> : "Confirm suspend"}
+          </Button>
         </div>
       </Modal>
     </div>

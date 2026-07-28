@@ -27,11 +27,13 @@ app.use(
   cors({
     origin(origin, callback) {
       if (!origin) return callback(null, true);
-      const allowed =
-        env.allowedOrigins.includes(origin) ||
-        /^https:\/\/[a-z0-9-]+-saudiacareers\.vercel\.app$/.test(origin) ||
-        /^https:\/\/saudiacareers-frontend[a-z0-9-]*\.vercel\.app$/.test(origin);
-      if (allowed) return callback(null, true);
+      // Exact allow-list only. The previous regex (`*-saudiacareers.vercel.app`)
+      // matched any Vercel project name shaped that way, and Vercel project
+      // names are first-come-first-served across the whole platform — anyone
+      // could register a lookalike project and read back a victim's session
+      // via the credentialed refresh-token endpoint (SA-01). New preview/
+      // deployment URLs must be added to ALLOWED_ORIGINS explicitly.
+      if (env.allowedOrigins.includes(origin)) return callback(null, true);
       return callback(new ApiError(403, "Origin is not allowed by CORS"));
     },
     credentials: true,

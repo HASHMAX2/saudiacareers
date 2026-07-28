@@ -8,6 +8,7 @@ import { Spinner } from "../../components/common/Spinner.jsx";
 import { formatDate } from "../../utils/formatDate.js";
 
 const EMP = "var(--accent)";
+const DASHBOARD_POLL_INTERVAL_MS = 30000;
 
 const STATUS_META = {
   ACTIVE: { label: "Active", tone: "green" },
@@ -37,19 +38,24 @@ export function EmployerDashboard() {
   const [data, setData] = useState(null);
 
   useEffect(() => {
-    Promise.all([
-      employerApi.getProfile(),
-      employerApi.getDashboard(),
-      billingApi.getSummary(),
-      employerApi.listJobs({ page: 1, limit: 5 }),
-    ]).then(([profileRes, dashRes, billingRes, jobsRes]) => {
-      setData({
-        profile: profileRes.data.data,
-        metrics: dashRes.data.data,
-        subscription: billingRes.data.data.subscription,
-        jobs: jobsRes.data.data.jobs,
+    function load() {
+      Promise.all([
+        employerApi.getProfile(),
+        employerApi.getDashboard(),
+        billingApi.getSummary(),
+        employerApi.listJobs({ page: 1, limit: 5 }),
+      ]).then(([profileRes, dashRes, billingRes, jobsRes]) => {
+        setData({
+          profile: profileRes.data.data,
+          metrics: dashRes.data.data,
+          subscription: billingRes.data.data.subscription,
+          jobs: jobsRes.data.data.jobs,
+        });
       });
-    });
+    }
+    load();
+    const interval = setInterval(load, DASHBOARD_POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
   }, []);
 
   if (!data) return <div className="grid min-h-64 place-items-center"><Spinner label="Loading dashboard" /></div>;

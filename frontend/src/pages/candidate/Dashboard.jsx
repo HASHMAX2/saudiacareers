@@ -20,6 +20,7 @@ import { Link } from "react-router-dom";
 // Toggle for placeholder/mock-data dashboard sections — see HIDDEN_FEATURES.md at the repo root
 // for what each hidden section is and what's needed before flipping this back to true.
 const SHOW_HIDDEN_DASHBOARD_SECTIONS = false;
+const STATS_POLL_INTERVAL_MS = 30000;
 
 const SUGGESTED_CHIPS = ["React Developer", "Sales Consultant", "Civil Engineer", "Healthcare", "Finance"];
 
@@ -61,17 +62,19 @@ export function Dashboard() {
   const [tabLoading, setTabLoading] = useState(false);
 
   useEffect(() => {
-    Promise.all([
-      candidateApi.dashboard(),
-      candidateApi.careerTips(),
-      applicationsApi.mine(),
-      savedJobsApi.getAll(),
-    ]).then(([dashRes, tipsRes, appsRes, savedRes]) => {
-      setData(dashRes.data.data);
-      setTips(tipsRes.data.data);
-      setApplications(appsRes.data.data ?? []);
-      setSavedJobs(savedRes.data.data ?? []);
-    });
+    // Stats (application count, profile completion, etc.) are polled — they're
+    // an ambient status that can change from other tabs/sessions (a new
+    // application, a profile edit). Tips/applications/saved-jobs are one-time
+    // list content the tab switcher already refetches on demand.
+    function loadStats() {
+      candidateApi.dashboard().then(({ data: res }) => setData(res.data));
+    }
+    loadStats();
+    candidateApi.careerTips().then(({ data: res }) => setTips(res.data));
+    applicationsApi.mine().then(({ data: res }) => setApplications(res.data ?? []));
+    savedJobsApi.getAll().then(({ data: res }) => setSavedJobs(res.data ?? []));
+    const interval = setInterval(loadStats, STATS_POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
   }, []);
 
   async function switchTab(key) {

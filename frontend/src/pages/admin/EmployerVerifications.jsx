@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ShieldCheck } from "lucide-react";
+import { Loader2, ShieldCheck } from "lucide-react";
 import { adminApi } from "../../api/admin.js";
 import { Alert } from "../../components/common/Alert.jsx";
 import { Badge } from "../../components/common/Badge.jsx";
@@ -158,7 +158,9 @@ export function EmployerVerifications() {
                     <Button size="sm" style={{ background: "var(--gold-bg)", color: "#8A5D10", border: "1px solid #F0DFAE" }} disabled={busyId === p.id} onClick={() => openModal("request", p.id)}>
                       Request info
                     </Button>
-                    <Button size="sm" disabled={busyId === p.id} onClick={() => approve(p.id)}>Approve</Button>
+                    <Button size="sm" disabled={busyId === p.id} onClick={() => approve(p.id)}>
+                      {busyId === p.id ? <><Loader2 size={13} className="animate-spin shrink-0" />Approving…</> : "Approve"}
+                    </Button>
                     <Button size="sm" variant="danger" disabled={busyId === p.id} onClick={() => openModal("reject", p.id)}>Reject</Button>
                   </div>
                 </div>
@@ -181,7 +183,7 @@ export function EmployerVerifications() {
         <div className="mt-4 flex justify-end gap-2">
           <Button variant="secondary" onClick={() => setModal(null)}>Cancel</Button>
           <Button variant={modal?.type === "reject" ? "danger" : "primary"} disabled={!note.trim() || busyId === modal?.id} onClick={confirmModal}>
-            Confirm
+            {busyId === modal?.id ? <><Loader2 size={14} className="animate-spin shrink-0" />Submitting…</> : "Confirm"}
           </Button>
         </div>
       </Modal>

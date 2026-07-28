@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { RotateCcw } from "lucide-react";
+import { Loader2, RotateCcw } from "lucide-react";
 import { adminApi } from "../../api/admin.js";
 import { Alert } from "../../components/common/Alert.jsx";
 import { Badge } from "../../components/common/Badge.jsx";
@@ -7,6 +7,8 @@ import { Button } from "../../components/common/Button.jsx";
 import { Modal } from "../../components/common/Modal.jsx";
 import { Spinner } from "../../components/common/Spinner.jsx";
 import { formatDate } from "../../utils/formatDate.js";
+
+const REFUNDS_POLL_INTERVAL_MS = 30000;
 
 export function Refunds() {
   const [requests, setRequests] = useState(null);
@@ -25,7 +27,11 @@ export function Refunds() {
     setResolved(resolvedRes.data.data.invoices);
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    const interval = setInterval(load, REFUNDS_POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, []);
 
   async function handleApprove(id) {
     setBusyId(id);
@@ -100,7 +106,9 @@ export function Refunds() {
                     <td className="px-4 py-3 text-xs" style={{ color: "var(--text-tertiary)" }}>{formatDate(inv.issuedAt)}</td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1.5">
-                        <Button size="sm" disabled={busyId === inv.id} onClick={() => handleApprove(inv.id)}>Approve</Button>
+                        <Button size="sm" disabled={busyId === inv.id} onClick={() => handleApprove(inv.id)}>
+                          {busyId === inv.id ? <><Loader2 size={13} className="animate-spin shrink-0" />Approving…</> : "Approve"}
+                        </Button>
                         <Button size="sm" variant="danger" disabled={busyId === inv.id} onClick={() => { setReason(""); setRejectTarget(inv); }}>Reject</Button>
                       </div>
                     </td>
@@ -154,7 +162,9 @@ export function Refunds() {
         </label>
         <div className="mt-4 flex justify-end gap-2">
           <Button variant="secondary" onClick={() => setRejectTarget(null)}>Cancel</Button>
-          <Button variant="danger" disabled={!reason.trim() || busyId === rejectTarget?.id} onClick={confirmReject}>Confirm rejection</Button>
+          <Button variant="danger" disabled={!reason.trim() || busyId === rejectTarget?.id} onClick={confirmReject}>
+            {busyId === rejectTarget?.id ? <><Loader2 size={14} className="animate-spin shrink-0" />Rejecting…</> : "Confirm rejection"}
+          </Button>
         </div>
       </Modal>
     </div>

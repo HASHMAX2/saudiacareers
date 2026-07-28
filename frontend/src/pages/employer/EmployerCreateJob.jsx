@@ -57,7 +57,7 @@ export function EmployerCreateJob() {
       <Toast show={showToast} message={toastMessage} tone="success" duration={2500} />
       <p className="mb-1 text-xs font-bold uppercase tracking-wider" style={{ color: "var(--text-tertiary)" }}>Employer</p>
       <h1 className="mb-7 text-3xl font-extrabold tracking-tight md:text-4xl" style={{ color: "var(--text-primary)" }}>Post a new job</h1>
-      <JobForm initialValue={defaults} onSubmit={handleSubmit} submitLabel="Publish job" allowDraft />
+      <JobForm initialValue={defaults} onSubmit={handleSubmit} submitLabel="Publish job" allowDraft onCancel={() => navigate("/employer/jobs")} />
     </>
   );
 }

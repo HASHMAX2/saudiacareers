@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { LockKeyhole } from "lucide-react";
+import { Loader2, LockKeyhole } from "lucide-react";
 import { authApi } from "../../api/auth.js";
 import { Alert } from "../../components/common/Alert.jsx";
 import { Button } from "../../components/common/Button.jsx";
@@ -89,7 +89,7 @@ export function CandidateChangePassword() {
         {error && <div className="mt-4"><Alert>{error}</Alert></div>}
         {message && <div className="mt-4"><Alert tone="success">{message}</Alert></div>}
         <Button className="mt-5 w-full sm:w-auto" disabled={saving} type="submit">
-          {saving ? "Saving…" : "Update password"}
+          {saving ? <><Loader2 size={16} className="animate-spin shrink-0" />Saving…</> : "Update password"}
         </Button>
       </form>
     </div>

@@ -1,4 +1,4 @@
-import { CheckCircle2, ShieldCheck } from "lucide-react";
+import { CheckCircle2, Loader2, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { authApi } from "../../api/auth.js";
@@ -125,7 +125,7 @@ export function AdminLogin() {
           {error && <Alert>{error}</Alert>}
 
           <Button className="w-full" disabled={submitting} type="submit" style={submitting ? {} : { background: ACCENT, borderColor: ACCENT }}>
-            {submitting ? "Signing in…" : "Sign in"}
+            {submitting ? <><Loader2 size={16} className="animate-spin shrink-0" />Signing in…</> : "Sign in"}
           </Button>
         </form>
       </div>

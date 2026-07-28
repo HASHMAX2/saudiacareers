@@ -1,4 +1,4 @@
-import { Eye, EyeOff, Briefcase, CheckCircle2 } from "lucide-react";
+import { Eye, EyeOff, Briefcase, CheckCircle2, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { authApi } from "../../api/auth.js";
@@ -176,7 +176,7 @@ export function EmployerLogin() {
             type="submit"
             style={submitting ? {} : { background: EMP, borderColor: EMP }}
           >
-            {submitting ? "Signing in…" : "Sign in"}
+            {submitting ? <><Loader2 size={16} className="animate-spin shrink-0" />Signing in…</> : "Sign in"}
           </Button>
         </form>
 

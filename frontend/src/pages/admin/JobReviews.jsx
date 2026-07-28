@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ShieldAlert } from "lucide-react";
+import { ChevronDown, ChevronUp, Loader2, ShieldAlert } from "lucide-react";
 import { adminApi } from "../../api/admin.js";
 import { Alert } from "../../components/common/Alert.jsx";
 import { Badge } from "../../components/common/Badge.jsx";
@@ -23,25 +23,42 @@ const REASON_LABELS = {
 export function JobReviews() {
   const [jobs, setJobs] = useState(null);
   const [busyId, setBusyId] = useState(null);
+  const [busyAction, setBusyAction] = useState(null);
   const [error, setError] = useState("");
+  const [loadError, setLoadError] = useState("");
+  const [expandedIds, setExpandedIds] = useState(new Set());
+
+  function toggleExpanded(id) {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
 
   async function load() {
     // New submissions and job-update revisions are two distinct statuses,
     // but they share a single review queue — approve/reject work the same
     // way for both (approveJobReview branches internally on revisesJobId).
-    const [newSubmissions, revisions] = await Promise.all([
-      adminApi.jobs({ status: "PENDING_REVIEW", page: 1, limit: 50 }),
-      adminApi.jobs({ status: "REVISION_PENDING_APPROVAL", page: 1, limit: 50 }),
-    ]);
-    const merged = [...newSubmissions.data.data.jobs, ...revisions.data.data.jobs]
-      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-    setJobs(merged);
+    try {
+      const [newSubmissions, revisions] = await Promise.all([
+        adminApi.jobs({ status: "PENDING_REVIEW", page: 1, limit: 50 }),
+        adminApi.jobs({ status: "REVISION_PENDING_APPROVAL", page: 1, limit: 50 }),
+      ]);
+      const merged = [...newSubmissions.data.data.jobs, ...revisions.data.data.jobs]
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      setJobs(merged);
+      setLoadError("");
+    } catch (requestError) {
+      setLoadError(requestError.response?.data?.message ?? "Unable to load job reviews");
+    }
   }
 
   useEffect(() => { load(); }, []);
 
   async function approve(id) {
     setBusyId(id);
+    setBusyAction("approve");
     setError("");
     try {
       await adminApi.approveJobReview(id);
@@ -50,6 +67,7 @@ export function JobReviews() {
       setError(requestError.response?.data?.message ?? "Unable to approve");
     } finally {
       setBusyId(null);
+      setBusyAction(null);
     }
   }
 
@@ -57,6 +75,7 @@ export function JobReviews() {
     const note = window.prompt("Reason for rejection (shown to the employer):");
     if (!note) return;
     setBusyId(id);
+    setBusyAction("reject");
     setError("");
     try {
       await adminApi.rejectJobReview(id, note);
@@ -65,6 +84,7 @@ export function JobReviews() {
       setError(requestError.response?.data?.message ?? "Unable to reject");
     } finally {
       setBusyId(null);
+      setBusyAction(null);
     }
   }
 
@@ -79,9 +99,19 @@ export function JobReviews() {
       </p>
 
       {error && <Alert>{error}</Alert>}
+      {loadError && jobs && <Alert>{loadError}</Alert>}
 
       {!jobs ? (
-        <div className="grid min-h-64 place-items-center"><Spinner label="Loading job reviews" /></div>
+        loadError ? (
+          <div className="card-soft grid min-h-56 place-items-center p-8 text-center">
+            <div>
+              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{loadError}</p>
+              <Button className="mt-4" variant="secondary" onClick={() => load()}>Retry</Button>
+            </div>
+          </div>
+        ) : (
+          <div className="grid min-h-64 place-items-center"><Spinner label="Loading job reviews" /></div>
+        )
       ) : !jobs.length ? (
         <div className="card-soft grid min-h-56 place-items-center p-8 text-center">
           <div>
@@ -111,8 +141,19 @@ export function JobReviews() {
                   <p className="mt-1 text-xs" style={{ color: "var(--text-tertiary)" }}>Submitted {formatDate(job.createdAt)}</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                  <Button size="sm" disabled={busyId === job.id} onClick={() => approve(job.id)}>Approve</Button>
-                  <Button size="sm" variant="danger" disabled={busyId === job.id} onClick={() => reject(job.id)}>Reject</Button>
+                  <Button size="sm" variant="secondary" onClick={() => toggleExpanded(job.id)}>
+                    {expandedIds.has(job.id) ? <><ChevronUp size={14} />Hide details</> : <><ChevronDown size={14} />View details</>}
+                  </Button>
+                  <Button size="sm" disabled={busyId === job.id} onClick={() => approve(job.id)}>
+                    {busyId === job.id && busyAction === "approve"
+                      ? <><Loader2 size={14} className="animate-spin shrink-0" />Approving…</>
+                      : "Approve"}
+                  </Button>
+                  <Button size="sm" variant="danger" disabled={busyId === job.id} onClick={() => reject(job.id)}>
+                    {busyId === job.id && busyAction === "reject"
+                      ? <><Loader2 size={14} className="animate-spin shrink-0" />Rejecting…</>
+                      : "Reject"}
+                  </Button>
                 </div>
               </div>
               {job.flagReasons?.length > 0 && (
@@ -122,10 +163,39 @@ export function JobReviews() {
                   ))}
                 </div>
               )}
+              {expandedIds.has(job.id) && (
+                <div className="mt-4 space-y-3 rounded-xl p-4 text-sm" style={{ background: "var(--bg-elev)" }}>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">
+                    <Field label="Industry" value={job.industry} />
+                    <Field label="Employment type" value={job.employmentType} />
+                    <Field label="Experience required" value={job.experienceRequired} />
+                    <Field label="Salary range" value={job.salaryRange || "Not specified"} />
+                    <Field label="HR email" value={job.hrEmail} />
+                    <Field label="Application deadline" value={job.applicationDeadline ? formatDate(job.applicationDeadline) : "None"} />
+                  </div>
+                  <div>
+                    <p className="font-mono text-xs uppercase tracking-wide" style={{ color: "var(--text-tertiary)" }}>Required skills</p>
+                    <p className="mt-1" style={{ color: "var(--text-primary)" }}>{job.requiredSkills}</p>
+                  </div>
+                  <div>
+                    <p className="font-mono text-xs uppercase tracking-wide" style={{ color: "var(--text-tertiary)" }}>Description</p>
+                    <p className="mt-1 whitespace-pre-wrap" style={{ color: "var(--text-primary)" }}>{job.description}</p>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function Field({ label, value }) {
+  return (
+    <div>
+      <p className="font-mono text-xs uppercase tracking-wide" style={{ color: "var(--text-tertiary)" }}>{label}</p>
+      <p className="mt-0.5" style={{ color: "var(--text-primary)" }}>{value}</p>
     </div>
   );
 }

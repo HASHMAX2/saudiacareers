@@ -106,6 +106,7 @@ export async function getDashboardStats(req, res) {
         profileCompletion,
         profilePhotoUrl,
         missingFields,
+        updatedAt: profile?.updatedAt ?? null,
       },
       stats: {
         appliedCount,

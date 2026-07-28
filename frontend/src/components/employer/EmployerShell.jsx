@@ -14,6 +14,7 @@ import { Toast } from "../common/Toast.jsx";
 const EMP = "var(--accent)";
 const EMP_SUBTLE = "var(--accent-subtle)";
 const LOGOUT_DELAY = 1500;
+const METRICS_POLL_INTERVAL_MS = 30000;
 
 const VERIFICATION_META = {
   PENDING:  { label: "Verification pending", color: "#8A5D10", bg: "var(--gold-bg)" },
@@ -41,8 +42,14 @@ export function EmployerShell() {
 
   useEffect(() => {
     employerApi.getProfile().then(({ data }) => setProfile(data.data)).catch(() => setProfile({}));
-    employerApi.getDashboard().then(({ data }) => setMetrics(data.data)).catch(() => {});
-    employerApi.listPendingJobs().then(({ data }) => setPendingCount(data.data.length)).catch(() => {});
+
+    function refreshCounts() {
+      employerApi.getDashboard().then(({ data }) => setMetrics(data.data)).catch(() => {});
+      employerApi.listPendingJobs().then(({ data }) => setPendingCount(data.data.length)).catch(() => {});
+    }
+    refreshCounts();
+    const interval = setInterval(refreshCounts, METRICS_POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
   }, []);
 
   const closeMenu = useCallback(() => setMenuOpen(false), []);

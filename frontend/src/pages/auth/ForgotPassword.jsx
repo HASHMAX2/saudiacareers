@@ -1,3 +1,4 @@
+import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { authApi } from "../../api/auth.js";
@@ -25,7 +26,9 @@ export function ForgotPassword() {
       <form className="space-y-4" onSubmit={submit}>
         <Input id="email" label="Email address" placeholder="you@example.com" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
         {message && <Alert tone="success">{message}</Alert>}
-        <Button className="w-full" disabled={submitting} type="submit">{submitting ? "Sending..." : "Send reset link"}</Button>
+        <Button className="w-full" disabled={submitting} type="submit">
+          {submitting ? <><Loader2 size={16} className="animate-spin shrink-0" />Sending…</> : "Send reset link"}
+        </Button>
       </form>
     </AuthShell>
   );

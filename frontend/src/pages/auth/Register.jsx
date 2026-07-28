@@ -1,4 +1,4 @@
-import { CheckCircle2, Rocket } from "lucide-react";
+import { CheckCircle2, Loader2, Rocket } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { Link, useNavigate } from "react-router-dom";
@@ -118,7 +118,9 @@ export function Register() {
             <p className="mt-1.5 font-mono text-xs" style={{ color: "var(--text-tertiary)" }}>Use at least 8 characters with one uppercase letter and one number.</p>
           </div>
           {error && <Alert>{error}</Alert>}
-          <Button className="w-full" disabled={submitting} type="submit">{submitting ? "Creating account..." : "Create account"}</Button>
+          <Button className="w-full" disabled={submitting} type="submit">
+            {submitting ? <><Loader2 size={16} className="animate-spin shrink-0" />Creating account…</> : "Create account"}
+          </Button>
         </form>
 
         <p className="mt-6 text-center text-sm" style={{ color: "var(--text-secondary)" }}>

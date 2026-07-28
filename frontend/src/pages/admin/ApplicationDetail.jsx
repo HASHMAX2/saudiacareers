@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Download, FileText, Mail, MapPin, Phone, UserRound } from "lucide-react";
+import { Download, FileText, Loader2, Mail, MapPin, Phone, UserRound } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { adminApi } from "../../api/admin.js";
 import { Badge } from "../../components/common/Badge.jsx";
@@ -13,8 +13,20 @@ const statusTone = { APPLIED: "blue", UNDER_REVIEW: "amber", SELECTED: "green", 
 export function ApplicationDetail() {
   const { id } = useParams();
   const [application, setApplication] = useState(null);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
   const load = useCallback(() => adminApi.application(id).then(({ data }) => setApplication(data.data)), [id]);
   useEffect(() => { load(); }, [load]);
+
+  async function handleStatusChange(event) {
+    setUpdatingStatus(true);
+    try {
+      await adminApi.updateApplicationStatus(id, event.target.value);
+      await load();
+    } finally {
+      setUpdatingStatus(false);
+    }
+  }
+
   if (!application) return <div className="grid min-h-64 place-items-center"><Spinner label="Loading application" /></div>;
   const profile = application.user.profile;
   return (
@@ -60,10 +72,13 @@ export function ApplicationDetail() {
             <Select
               className="mt-4"
               value={application.status}
-              onChange={async (event) => { await adminApi.updateApplicationStatus(id, event.target.value); load(); }}
+              onChange={handleStatusChange}
               options={["APPLIED", "UNDER_REVIEW", "SELECTED", "REJECTED"]}
+              disabled={updatingStatus}
             />
-            <p className="mt-3 font-mono text-xs leading-5" style={{ color: "var(--text-tertiary)" }}>Changing status sends an email notification to the candidate.</p>
+            {updatingStatus
+              ? <p className="mt-3 flex items-center gap-1.5 font-mono text-xs leading-5" style={{ color: "var(--text-tertiary)" }}><Loader2 size={12} className="animate-spin shrink-0" />Updating status…</p>
+              : <p className="mt-3 font-mono text-xs leading-5" style={{ color: "var(--text-tertiary)" }}>Changing status sends an email notification to the candidate.</p>}
           </section>
           <section className="card-soft p-5">
             <h2 className="font-semibold" style={{ color: "var(--text-primary)" }}>Resume</h2>

@@ -37,7 +37,11 @@ services:
         value: noreply@saudiacareers.com
       - key: FRONTEND_URL
         value: https://saudiacareers.com
+      # Exact origins only — CORS no longer accepts a wildcard pattern (SA-01).
+      # Add any new Vercel preview/project URL here explicitly before it needs
+      # cross-origin cookie access; the three current live portals are listed
+      # below alongside the eventual custom domains.
       - key: ALLOWED_ORIGINS
-        value: https://saudiacareers.com,https://www.saudiacareers.com
+        value: https://saudiacareers.com,https://www.saudiacareers.com,https://saudiacareers-frontend.vercel.app,https://saudiacareers-employer.vercel.app,https://saudiacareers-admin.vercel.app
       - key: COOKIE_DOMAIN
         value: .saudiacareers.com

@@ -1,4 +1,4 @@
-import { Briefcase, CheckCircle2, Clock, HelpCircle, Mail, MapPin, Phone } from "lucide-react";
+import { Briefcase, CheckCircle2, Clock, HelpCircle, Loader2, Mail, MapPin, Phone } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { enquiryApi } from "../../api/employer.js";
@@ -234,7 +234,7 @@ export function EmployerContact() {
                 type="submit"
                 style={submitting ? {} : { background: EMP, borderColor: EMP }}
               >
-                {submitting ? "Sending…" : "Send Message"}
+                {submitting ? <><Loader2 size={16} className="animate-spin shrink-0" />Sending…</> : "Send Message"}
               </Button>
             </form>
           )}

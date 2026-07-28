@@ -4,7 +4,10 @@ import { Toast } from "../common/Toast.jsx";
 import { EMPTY_FILTERS, EXPERIENCE_LEVELS, SALARY_RANGES } from "../../utils/constants.js";
 
 const LOCATIONS        = ["Riyadh", "Jeddah", "Dammam", "Other"];
-const EMPLOYMENT_TYPES = ["Full-time", "Part-time", "Contract", "Internship"];
+// "Permanent"/"Contractual" are the only values the job-posting form now offers;
+// "Full-time"/"Part-time"/"Contract"/"Internship" stay listed so existing
+// listings that still carry those values remain filterable.
+const EMPLOYMENT_TYPES = ["Permanent", "Contractual", "Full-time", "Part-time", "Contract", "Internship"];
 const GENDERS          = ["Any", "Male", "Female"];
 const FRESHNESS_OPTIONS = [
   { value: 1,  label: "Last 24 hours" },

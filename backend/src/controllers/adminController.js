@@ -6,6 +6,7 @@ import { consumeJobCredit, getOrCreateSubscription } from "../services/employerB
 import { expireOverdueJobs } from "../services/jobExpiryService.js";
 import { notify, notifyJobClosedForCandidates } from "../services/notificationService.js";
 import { pickRevisableFields } from "../utils/jobFields.js";
+import { assertEmployerCanPublish } from "../utils/employerPublishGuard.js";
 import { ApiError } from "../utils/ApiError.js";
 import { sendSuccess } from "../utils/ApiResponse.js";
 
@@ -161,6 +162,16 @@ export async function approveJobReview(req, res) {
   if (!job) throw new ApiError(404, "Job not found");
   if (!PENDING_STATUSES.includes(job.status)) throw new ApiError(400, "Only jobs pending review can be approved");
 
+  // Looked up and gated before either branch runs: an employer suspended (or
+  // whose verification was revoked) after submitting a job or a revision
+  // must not have it published just because it already cleared the review
+  // queue. Previously only checked on the fresh-job branch below, and only
+  // for verification — never suspension (SA-07); the revision branch checked
+  // neither at all.
+  const employerProfile = await prisma.employerProfile.findUnique({ where: { userId: job.createdBy } });
+  if (!employerProfile) throw new ApiError(404, "Employer profile not found");
+  assertEmployerCanPublish(employerProfile);
+
   // Revision approval: this row is a working copy of an already-live job.
   // Merge its content onto the original (which was never taken offline),
   // discard the working copy, and stop — no credit is consumed since the
@@ -182,12 +193,6 @@ export async function approveJobReview(req, res) {
       link: "/employer/jobs",
     });
     return sendSuccess(res, { message: "Revision approved and merged into the live job", data: updatedOriginal });
-  }
-
-  const employerProfile = await prisma.employerProfile.findUnique({ where: { userId: job.createdBy } });
-  if (!employerProfile) throw new ApiError(404, "Employer profile not found");
-  if (employerProfile.verificationStatus !== "APPROVED") {
-    throw new ApiError(403, "Cannot approve — the employer's company verification is not approved");
   }
 
   const subscription = await getOrCreateSubscription(employerProfile.id);

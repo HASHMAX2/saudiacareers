@@ -32,6 +32,7 @@ export function EmployerJobs() {
   const [status, setStatus]   = useState("");
   const [verified, setVerified] = useState(true);
   const [busyId, setBusyId]   = useState(null);
+  const [busyAction, setBusyAction] = useState(null);
   const [toggleError, setToggleError] = useState("");
 
   async function load(p = page, q = search, st = status) {
@@ -53,6 +54,7 @@ export function EmployerJobs() {
 
   async function handleToggle(job) {
     setBusyId(job.id);
+    setBusyAction("toggle");
     setToggleError("");
     try {
       await employerApi.updateJobStatus(job.id, { status: job.status === "ACTIVE" ? "INACTIVE" : "ACTIVE" });
@@ -61,17 +63,20 @@ export function EmployerJobs() {
       setToggleError(error.response?.data?.message ?? "Unable to update job status");
     } finally {
       setBusyId(null);
+      setBusyAction(null);
     }
   }
 
   async function handleDelete(job) {
     if (!window.confirm(`Delete "${job.title}"? This cannot be undone.`)) return;
     setBusyId(job.id);
+    setBusyAction("delete");
     try {
       await employerApi.deleteJob(job.id);
       await load();
     } finally {
       setBusyId(null);
+      setBusyAction(null);
     }
   }
 
@@ -84,6 +89,7 @@ export function EmployerJobs() {
       return;
     }
     setBusyId(job.id);
+    setBusyAction("edit");
     setToggleError("");
     try {
       const { data } = await employerApi.reviseJob(job.id);
@@ -92,6 +98,7 @@ export function EmployerJobs() {
       setToggleError(error.response?.data?.message ?? "Unable to start an update for this job");
     } finally {
       setBusyId(null);
+      setBusyAction(null);
     }
   }
 
@@ -198,7 +205,7 @@ export function EmployerJobs() {
                     <td className="py-3 pl-4 pr-5">
                       <div className="flex items-center justify-end gap-1.5">
                         <Button size="sm" variant="secondary" className="w-[104px] justify-center" onClick={() => handleEdit(job)} disabled={!!busyId}>
-                          {busyId === job.id ? <Loader2 size={13} className="animate-spin" /> : <Edit2 size={13} />}Edit
+                          {busyId === job.id && busyAction === "edit" ? <Loader2 size={13} className="animate-spin" /> : <Edit2 size={13} />}Edit
                         </Button>
                         {job.status === "REJECTED" ? (
                           <Button size="sm" variant="secondary" className="w-[104px] justify-center" disabled title="Rejected jobs can't be republished directly">
@@ -206,7 +213,7 @@ export function EmployerJobs() {
                           </Button>
                         ) : (
                           <Button size="sm" variant="secondary" className="w-[104px] justify-center" disabled={!!busyId} onClick={() => handleToggle(job)}>
-                            {busyId === job.id ? (
+                            {busyId === job.id && busyAction === "toggle" ? (
                               <Loader2 size={13} className="animate-spin" />
                             ) : job.status === "ACTIVE" ? (
                               <Ban size={13} />
@@ -220,7 +227,7 @@ export function EmployerJobs() {
                           <Button size="sm" variant="secondary" className="w-[104px] justify-center" disabled={!!busyId}><Eye size={13} />View</Button>
                         </Link>
                         <Button size="sm" variant="ghost" className="w-[104px] justify-center" disabled={!!busyId} onClick={() => handleDelete(job)} style={{ color: "var(--text-tertiary)" }}>
-                          <Trash2 size={13} />Delete
+                          {busyId === job.id && busyAction === "delete" ? <Loader2 size={13} className="animate-spin shrink-0" /> : <Trash2 size={13} />}Delete
                         </Button>
                       </div>
                     </td>

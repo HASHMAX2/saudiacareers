@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { LockKeyhole } from "lucide-react";
+import { Loader2, LockKeyhole } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { authApi } from "../../api/auth.js";
 import { Alert } from "../../components/common/Alert.jsx";
@@ -113,7 +113,9 @@ export function ChangePassword() {
             <p className="mt-1.5 font-mono text-xs" style={{ color: "var(--text-tertiary)" }}>At least 8 characters with one uppercase letter and one number.</p>
           </div>
           {error && <Alert>{error}</Alert>}
-          <Button className="w-full" disabled={submitting} type="submit">{submitting ? "Updating..." : "Change password"}</Button>
+          <Button className="w-full" disabled={submitting} type="submit">
+            {submitting ? <><Loader2 size={16} className="animate-spin shrink-0" />Updating…</> : "Change password"}
+          </Button>
         </form>
       </div>
     </div>

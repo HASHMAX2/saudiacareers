@@ -168,7 +168,9 @@ export function ScrapedJobs() {
           {formError && <Alert>{formError}</Alert>}
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={() => setShowAddModal(false)}>Cancel</Button>
-            <Button type="submit" disabled={saving}>{saving ? "Adding…" : "Add job"}</Button>
+            <Button type="submit" disabled={saving}>
+              {saving ? <><Loader2 size={14} className="animate-spin shrink-0" />Adding…</> : "Add job"}
+            </Button>
           </div>
         </form>
       </Modal>

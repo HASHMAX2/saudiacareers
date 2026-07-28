@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ShieldAlert, Trash2 } from "lucide-react";
+import { Loader2, ShieldAlert, Trash2 } from "lucide-react";
 import { adminApi } from "../../api/admin.js";
 import { Alert } from "../../components/common/Alert.jsx";
 import { Badge } from "../../components/common/Badge.jsx";
@@ -18,6 +18,7 @@ const REASON_LABELS = {
 export function JobsFlagged() {
   const [jobs, setJobs] = useState(null);
   const [busyId, setBusyId] = useState(null);
+  const [busyAction, setBusyAction] = useState(null);
   const [error, setError] = useState("");
 
   async function load() {
@@ -30,6 +31,7 @@ export function JobsFlagged() {
   async function handleRemove(job) {
     if (!window.confirm(`Remove "${job.title}"? This cannot be undone.`)) return;
     setBusyId(job.id);
+    setBusyAction("remove");
     setError("");
     try {
       await adminApi.deleteJob(job.id);
@@ -38,11 +40,13 @@ export function JobsFlagged() {
       setError(requestError.response?.data?.message ?? "Unable to remove job");
     } finally {
       setBusyId(null);
+      setBusyAction(null);
     }
   }
 
   async function handleDismiss(job) {
     setBusyId(job.id);
+    setBusyAction("dismiss");
     setError("");
     try {
       await adminApi.dismissJobReports(job.id);
@@ -51,6 +55,7 @@ export function JobsFlagged() {
       setError(requestError.response?.data?.message ?? "Unable to dismiss reports");
     } finally {
       setBusyId(null);
+      setBusyAction(null);
     }
   }
 
@@ -96,10 +101,14 @@ export function JobsFlagged() {
                 </div>
                 <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                   <Button size="sm" variant="secondary" disabled={busyId === job.id} onClick={() => handleDismiss(job)}>
-                    Dismiss
+                    {busyId === job.id && busyAction === "dismiss"
+                      ? <><Loader2 size={13} className="animate-spin shrink-0" />Dismissing…</>
+                      : "Dismiss"}
                   </Button>
                   <Button size="sm" variant="danger" disabled={busyId === job.id} onClick={() => handleRemove(job)}>
-                    <Trash2 size={13} />Remove
+                    {busyId === job.id && busyAction === "remove"
+                      ? <><Loader2 size={13} className="animate-spin shrink-0" />Removing…</>
+                      : <><Trash2 size={13} />Remove</>}
                   </Button>
                 </div>
               </div>

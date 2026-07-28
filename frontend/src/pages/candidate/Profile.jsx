@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Award, Briefcase, Camera, Download,
   FileText, Github, Globe, GraduationCap, Linkedin,
-  MapPin, Pencil, Phone, Plus, Target, Trash2,
+  Loader2, MapPin, Pencil, Phone, Plus, Target, Trash2,
 } from "lucide-react";
 import { profileApi } from "../../api/profile.js";
 import { Button } from "../../components/common/Button.jsx";
@@ -118,7 +118,7 @@ function EditBar({ saving, onCancel }) {
   return (
     <div className="flex gap-2 mt-4">
       <Button size="sm" type="submit" disabled={saving}>
-        {saving ? "Saving…" : "Save"}
+        {saving ? <><Loader2 size={13} className="animate-spin shrink-0" />Saving…</> : "Save"}
       </Button>
       <Button size="sm" variant="secondary" type="button" onClick={onCancel} disabled={saving}>
         Cancel
@@ -384,7 +384,7 @@ function EmploymentSection({ profile, onOpenModal, showToast, load }) {
                       disabled={deletingId === e.id}
                       title="Remove"
                     >
-                      {deletingId === e.id ? "Deleting…" : <Trash2 size={13} />}
+                      {deletingId === e.id ? <Loader2 size={13} className="animate-spin shrink-0" /> : <Trash2 size={13} />}
                     </button>
                   </div>
                 </div>
@@ -531,7 +531,7 @@ function AccomplishmentsSection({ profile, editing, setEditing, saveSection, sav
                     onClick={() => removeCert(c.id)}
                     disabled={deletingCertId === c.id}
                   >
-                    {deletingCertId === c.id ? "Deleting…" : <Trash2 size={12} />}
+                    {deletingCertId === c.id ? <Loader2 size={12} className="animate-spin shrink-0" /> : <Trash2 size={12} />}
                   </button>
                 </div>
               </div>
@@ -699,7 +699,7 @@ function EducationSection({ profile, onOpenModal, showToast, load }) {
                       disabled={deletingId === e.id}
                       title="Remove"
                     >
-                      {deletingId === e.id ? "Deleting…" : <Trash2 size={13} />}
+                      {deletingId === e.id ? <Loader2 size={13} className="animate-spin shrink-0" /> : <Trash2 size={13} />}
                     </button>
                   </div>
                 </div>
@@ -1067,7 +1067,7 @@ function CvSection({ profile, onUpload, onDownload, resumeUploading, showToast, 
               <Download size={13} /> Download
             </Button>
             <label className={`btn-secondary btn-sm cursor-pointer${resumeUploading ? " opacity-50 cursor-not-allowed" : ""}`}>
-              {resumeUploading ? "Uploading…" : "Replace"}
+              {resumeUploading ? <><Loader2 size={13} className="animate-spin shrink-0" />Uploading…</> : "Replace"}
               <input className="sr-only" type="file" accept=".pdf,.doc,.docx" disabled={resumeUploading} onChange={onUpload} />
             </label>
             <Button size="sm" variant="danger" onClick={remove} disabled={deleting}>
@@ -1086,7 +1086,7 @@ function CvSection({ profile, onUpload, onDownload, resumeUploading, showToast, 
           <p className="text-sm font-medium mb-1" style={{ color: "var(--text-primary)" }}>No CV uploaded yet</p>
           <p className="text-xs mb-4" style={{ color: "var(--text-tertiary)" }}>PDF, DOC or DOCX — max 5 MB</p>
           <label className={`btn-primary text-sm cursor-pointer${resumeUploading ? " opacity-50 cursor-not-allowed" : ""}`}>
-            <FileText size={14} />
+            {resumeUploading ? <Loader2 size={14} className="animate-spin shrink-0" /> : <FileText size={14} />}
             {resumeUploading ? "Uploading…" : "Upload CV"}
             <input className="sr-only" type="file" accept=".pdf,.doc,.docx" disabled={resumeUploading} onChange={onUpload} />
           </label>
@@ -1495,10 +1495,10 @@ export function Profile() {
                     <button
                       onClick={saveName}
                       disabled={nameEdit.saving}
-                      className="text-xs font-semibold px-3 py-1.5 rounded-lg text-white"
+                      className="text-xs font-semibold px-3 py-1.5 rounded-lg text-white flex items-center gap-1.5"
                       style={{ background: "var(--accent)" }}
                     >
-                      {nameEdit.saving ? "Saving…" : "Save"}
+                      {nameEdit.saving ? <><Loader2 size={12} className="animate-spin shrink-0" />Saving…</> : "Save"}
                     </button>
                     <button
                       onClick={() => setNameEdit({ open: false, value: "", saving: false })}

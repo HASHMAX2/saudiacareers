@@ -15,6 +15,7 @@ import { Toast } from "../common/Toast.jsx";
 const ACCENT = "var(--accent)";
 const ACCENT_SUBTLE = "var(--accent-subtle)";
 const LOGOUT_DELAY = 1500;
+const COUNTS_POLL_INTERVAL_MS = 30000;
 
 const NAV_GROUPS = [
   {
@@ -70,20 +71,25 @@ export function AdminShell() {
   useEffect(() => () => clearTimeout(timerRef.current), []);
 
   useEffect(() => {
-    Promise.all([
-      adminApi.pendingVerifications({ page: 1, limit: 1 }),
-      adminApi.jobs({ status: "PENDING_REVIEW", page: 1, limit: 1 }),
-      adminApi.jobs({ status: "REVISION_PENDING_APPROVAL", page: 1, limit: 1 }),
-      adminApi.flaggedJobs(),
-      adminApi.invoices({ status: "REFUND_REQUESTED", page: 1, limit: 1 }),
-    ]).then(([verRes, reviewRes, revisionRes, flaggedRes, refundRes]) => {
-      setCounts({
-        pendingApprovals: verRes.data.data.pagination.total,
-        jobReviews: reviewRes.data.data.pagination.total + revisionRes.data.data.pagination.total,
-        flaggedJobs: flaggedRes.data.data.length,
-        refunds: refundRes.data.data.pagination.total,
-      });
-    }).catch(() => {});
+    function refreshCounts() {
+      Promise.all([
+        adminApi.pendingVerifications({ page: 1, limit: 1 }),
+        adminApi.jobs({ status: "PENDING_REVIEW", page: 1, limit: 1 }),
+        adminApi.jobs({ status: "REVISION_PENDING_APPROVAL", page: 1, limit: 1 }),
+        adminApi.flaggedJobs(),
+        adminApi.invoices({ status: "REFUND_REQUESTED", page: 1, limit: 1 }),
+      ]).then(([verRes, reviewRes, revisionRes, flaggedRes, refundRes]) => {
+        setCounts({
+          pendingApprovals: verRes.data.data.pagination.total,
+          jobReviews: reviewRes.data.data.pagination.total + revisionRes.data.data.pagination.total,
+          flaggedJobs: flaggedRes.data.data.length,
+          refunds: refundRes.data.data.pagination.total,
+        });
+      }).catch(() => {});
+    }
+    refreshCounts();
+    const interval = setInterval(refreshCounts, COUNTS_POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
   }, []);
 
   const closeMenu = useCallback(() => setMenuOpen(false), []);

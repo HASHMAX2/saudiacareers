@@ -1,4 +1,4 @@
-import { CheckCircle2, Sparkles } from "lucide-react";
+import { CheckCircle2, Loader2, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { authApi } from "../../api/auth.js";
@@ -100,7 +100,9 @@ export function Login({ admin = false, employer = false }) {
         )}
       </div>
       {error && <Alert>{error}</Alert>}
-      <Button className="w-full" disabled={submitting} type="submit">{submitting ? "Signing in..." : "Sign in"}</Button>
+      <Button className="w-full" disabled={submitting} type="submit">
+        {submitting ? <><Loader2 size={16} className="animate-spin shrink-0" />Signing in…</> : "Sign in"}
+      </Button>
     </form>
   );
 

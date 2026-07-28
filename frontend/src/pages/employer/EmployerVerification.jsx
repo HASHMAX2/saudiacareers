@@ -274,7 +274,7 @@ export function EmployerVerification() {
                   </div>
                 </div>
                 <Button className="mt-4" disabled={saving} type="submit" style={{ background: EMP, borderColor: EMP }}>
-                  {saving ? "Saving…" : "Save changes"}
+                  {saving ? <><Loader2 size={14} className="animate-spin shrink-0" />Saving…</> : "Save changes"}
                 </Button>
               </div>
             </form>
@@ -507,7 +507,7 @@ export function EmployerVerification() {
             <div className="flex justify-end gap-3">
               <Button type="button" variant="secondary" onClick={() => setSupportOpen(false)}>Cancel</Button>
               <Button type="submit" disabled={supportSubmitting} style={{ background: EMP, borderColor: EMP }}>
-                {supportSubmitting ? "Sending…" : "Submit support request"}
+                {supportSubmitting ? <><Loader2 size={14} className="animate-spin shrink-0" />Sending…</> : "Submit support request"}
               </Button>
             </div>
           </form>

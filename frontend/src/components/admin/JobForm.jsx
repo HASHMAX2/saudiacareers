@@ -1,3 +1,4 @@
+import { Loader2 } from "lucide-react";
 import { forwardRef, useImperativeHandle, useState } from "react";
 import { Alert } from "../common/Alert.jsx";
 import { Button } from "../common/Button.jsx";
@@ -7,6 +8,7 @@ import { EXPERIENCE_LEVELS, INDUSTRIES, SALARY_RANGES } from "../../utils/consta
 import { isCompanyEmail } from "../../utils/validators.js";
 import { extractErrorMessage } from "../../utils/apiError.js";
 
+const EMPLOYMENT_TYPE_OPTIONS = ["Permanent", "Contractual"];
 const GENDER_OPTIONS = ["Any", "Male", "Female"];
 const NATIONALITY_OPTIONS = ["Any Nationality", "Saudi", "Non-Saudi"];
 const WORK_MODE_OPTIONS = ["Remote", "Hybrid", "On-site"];
@@ -95,7 +97,7 @@ function mergeWithDefaults(initialValue) {
   return merged;
 }
 
-export const JobForm = forwardRef(function JobForm({ initialValue, onSubmit, submitLabel, allowDraft }, ref) {
+export const JobForm = forwardRef(function JobForm({ initialValue, onSubmit, submitLabel, allowDraft, onCancel }, ref) {
   const [form, setForm] = useState(() => mergeWithDefaults(initialValue));
   const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState("");
@@ -171,7 +173,16 @@ export const JobForm = forwardRef(function JobForm({ initialValue, onSubmit, sub
             options={INDUSTRIES}
             placeholder="Select an industry"
           />
-          <Input id="employmentType" label="Employment type" required value={form.employmentType} error={fieldErrors.employmentType} onChange={update("employmentType")} />
+          <Select
+            id="employmentType"
+            label="Employment type"
+            required
+            value={form.employmentType}
+            error={fieldErrors.employmentType}
+            onChange={update("employmentType")}
+            options={EMPLOYMENT_TYPE_OPTIONS}
+            placeholder="Select employment type"
+          />
           <Select
             id="experienceRequired"
             label="Experience required"
@@ -269,6 +280,17 @@ export const JobForm = forwardRef(function JobForm({ initialValue, onSubmit, sub
       </section>
       {error && <Alert>{error}</Alert>}
       <div className="flex justify-end gap-3">
+        {onCancel && (
+          <Button
+            className="w-full sm:w-auto sm:min-w-40"
+            variant="secondary"
+            disabled={submitting || savingDraft}
+            type="button"
+            onClick={onCancel}
+          >
+            Cancel
+          </Button>
+        )}
         {allowDraft && (
           <Button
             className="w-full sm:w-auto sm:min-w-40"
@@ -277,11 +299,11 @@ export const JobForm = forwardRef(function JobForm({ initialValue, onSubmit, sub
             type="button"
             onClick={(e) => submit(e, true)}
           >
-            {savingDraft ? "Saving draft..." : "Save draft"}
+            {savingDraft ? <><Loader2 size={14} className="animate-spin shrink-0" />Saving draft…</> : "Save draft"}
           </Button>
         )}
         <Button className="w-full sm:w-auto sm:min-w-40" disabled={submitting || savingDraft} type="submit">
-          {submitting ? "Saving..." : submitLabel}
+          {submitting ? <><Loader2 size={14} className="animate-spin shrink-0" />Saving…</> : submitLabel}
         </Button>
       </div>
     </form>

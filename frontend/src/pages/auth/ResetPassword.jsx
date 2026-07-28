@@ -1,3 +1,4 @@
+import { Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { authApi } from "../../api/auth.js";
@@ -69,7 +70,9 @@ export function ResetPassword() {
           <p className="mt-1.5 font-mono text-xs" style={{ color: "var(--text-tertiary)" }}>At least 8 characters with one uppercase letter and one number.</p>
         </div>
         {error && <Alert>{error}</Alert>}
-        <Button className="w-full" disabled={submitting} type="submit">{submitting ? "Updating..." : "Reset password"}</Button>
+        <Button className="w-full" disabled={submitting} type="submit">
+          {submitting ? <><Loader2 size={16} className="animate-spin shrink-0" />Updating…</> : "Reset password"}
+        </Button>
       </form>
     </AuthShell>
     </>

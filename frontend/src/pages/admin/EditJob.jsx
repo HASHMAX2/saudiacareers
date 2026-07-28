@@ -35,7 +35,7 @@ export function EditJob() {
         <p className="section-label">Admin</p>
         <h1 className="page-title text-3xl md:text-4xl">Edit job</h1>
         <p className="mt-2 mb-8 text-base" style={{ color: "var(--text-secondary)" }}>Update the listing without affecting existing application history.</p>
-        <JobForm initialValue={job} submitLabel="Save changes" onSubmit={handleSubmit} />
+        <JobForm initialValue={job} submitLabel="Save changes" onSubmit={handleSubmit} onCancel={() => navigate("/admin/jobs")} />
       </div>
     </>
   );

@@ -81,6 +81,7 @@ export function EmployerBilling() {
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [busyAction, setBusyAction] = useState(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [showNotice, setShowNotice] = useState(false);
@@ -131,8 +132,9 @@ export function EmployerBilling() {
   // Every write action either resolves immediately (toast + reload) or hands
   // back a Dodo-hosted checkoutUrl the employer must be redirected to — card
   // entry always happens on Dodo's side, never in our own UI.
-  async function run(action) {
+  async function run(action, actionName) {
     setBusy(true);
+    setBusyAction(actionName);
     setError("");
     try {
       const { data } = await action();
@@ -146,6 +148,7 @@ export function EmployerBilling() {
       setError(requestError.response?.data?.message ?? "Something went wrong");
     } finally {
       setBusy(false);
+      setBusyAction(null);
     }
   }
 
@@ -308,8 +311,8 @@ export function EmployerBilling() {
             <Button variant="secondary" disabled={busy} onClick={() => setShowCancelModal(true)}>Cancel plan</Button>
           )}
           {canResume && (
-            <Button variant="secondary" disabled={busy} onClick={() => run(() => billingApi.resumeSubscription())}>
-              {busy ? <Loader2 size={14} className="animate-spin" /> : null}Resume plan
+            <Button variant="secondary" disabled={busy} onClick={() => run(() => billingApi.resumeSubscription(), "resume")}>
+              {busyAction === "resume" ? <><Loader2 size={14} className="animate-spin shrink-0" />Resuming…</> : "Resume plan"}
             </Button>
           )}
         </div>
@@ -360,9 +363,9 @@ export function EmployerBilling() {
               variant="secondary"
               disabled={busy || !dodoConfigured}
               style={{ background: "transparent", color: "#fff", borderColor: "rgba(255,255,255,0.35)" }}
-              onClick={() => run(() => billingApi.purchaseCredits(5))}
+              onClick={() => run(() => billingApi.purchaseCredits(5), "buyCredits")}
             >
-              Buy 5 extra credits
+              {busyAction === "buyCredits" ? <><Loader2 size={14} className="animate-spin shrink-0" />Processing…</> : "Buy 5 extra credits"}
             </Button>
           </div>
         </div>
@@ -398,8 +401,8 @@ export function EmployerBilling() {
                   <p className="text-sm" style={{ color: "var(--text-secondary)" }}>No payment method on file</p>
                 )}
               </div>
-              <button type="button" className="text-xs font-semibold" style={{ color: EMP }} disabled={!dodoConfigured} onClick={() => run(() => billingApi.updatePaymentMethod())}>
-                Update
+              <button type="button" className="flex items-center gap-1.5 text-xs font-semibold disabled:opacity-50" style={{ color: EMP }} disabled={busy || !dodoConfigured} onClick={() => run(() => billingApi.updatePaymentMethod(), "updatePayment")}>
+                {busyAction === "updatePayment" ? <><Loader2 size={12} className="animate-spin shrink-0" />Updating…</> : "Update"}
               </button>
             </div>
 
@@ -525,7 +528,9 @@ export function EmployerBilling() {
                             </Button>
                           )}
                           {inv.status === "PAID" && inv.type !== "REFUND" && (
-                            <Button size="sm" variant="ghost" disabled={busy} onClick={() => run(() => billingApi.requestRefund(inv.id))}>Request refund</Button>
+                            <Button size="sm" variant="ghost" disabled={busy} onClick={() => run(() => billingApi.requestRefund(inv.id), `refund-${inv.id}`)}>
+                              {busyAction === `refund-${inv.id}` ? <><Loader2 size={13} className="animate-spin shrink-0" />Requesting…</> : "Request refund"}
+                            </Button>
                           )}
                           <button type="button" aria-label="Download PDF" disabled={downloadingInvoiceId === inv.id} onClick={() => handleDownloadPdf(inv.id)} style={{ color: "var(--text-tertiary)" }}>
                             {downloadingInvoiceId === inv.id ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
@@ -558,14 +563,16 @@ export function EmployerBilling() {
             <h3 className="font-bold" style={{ color: "var(--text-primary)" }}>Quick actions</h3>
             <ul className="mt-3 divide-y" style={{ borderColor: "var(--border-default)" }}>
               {[
-                { icon: Download, label: "Download all invoices", onClick: handleDownloadAll },
+                { icon: Download, label: "Download all invoices", onClick: handleDownloadAll, loading: downloadingAll },
                 { icon: FileText, label: "Update tax / GST details", onClick: openProfileModal },
-                { icon: CreditCard, label: "Change payment method", onClick: () => run(() => billingApi.updatePaymentMethod()), disabled: !dodoConfigured },
+                { icon: CreditCard, label: "Change payment method", onClick: () => run(() => billingApi.updatePaymentMethod(), "updatePayment"), disabled: !dodoConfigured, loading: busyAction === "updatePayment" },
                 { icon: FolderOpen, label: "Transaction history", onClick: openTransactions },
-              ].map(({ icon: Icon, label, onClick, disabled }) => (
+              ].map(({ icon: Icon, label, onClick, disabled, loading }) => (
                 <li key={label}>
-                  <button type="button" className="flex w-full items-center gap-3 py-3 text-left text-sm disabled:opacity-50" disabled={disabled} onClick={onClick}>
-                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg" style={{ background: EMP_SUBTLE, color: EMP }}><Icon size={15} /></span>
+                  <button type="button" className="flex w-full items-center gap-3 py-3 text-left text-sm disabled:opacity-50" disabled={disabled || loading} onClick={onClick}>
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg" style={{ background: EMP_SUBTLE, color: EMP }}>
+                      {loading ? <Loader2 size={15} className="animate-spin shrink-0" /> : <Icon size={15} />}
+                    </span>
                     <span className="flex-1" style={{ color: "var(--text-primary)" }}>{label}</span>
                     <ChevronDown size={14} style={{ color: "var(--text-tertiary)", transform: "rotate(-90deg)" }} />
                   </button>

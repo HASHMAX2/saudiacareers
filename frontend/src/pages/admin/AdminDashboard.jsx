@@ -7,6 +7,7 @@ import { Button } from "../../components/common/Button.jsx";
 import { Spinner } from "../../components/common/Spinner.jsx";
 import { formatDate } from "../../utils/formatDate.js";
 
+const DASHBOARD_POLL_INTERVAL_MS = 30000;
 const CARD_KEYS = ["jobs", "activeJobs", "applications", "candidates"];
 const icons = { jobs: BriefcaseBusiness, activeJobs: Zap, applications: FileText, candidates: UserRound };
 const labels = { jobs: "Total jobs", activeJobs: "Active jobs", applications: "Applications", candidates: "Candidates" };
@@ -29,10 +30,15 @@ export function AdminDashboard() {
   const [refunds, setRefunds] = useState(null);
 
   useEffect(() => {
-    adminApi.dashboard().then(({ data }) => setMetrics(data.data));
-    adminApi.pendingVerifications({ page: 1, limit: 3 }).then(({ data }) => setPendingVerifications(data.data.profiles));
-    adminApi.flaggedJobs().then(({ data }) => setFlaggedJobs(data.data.slice(0, 3)));
-    adminApi.invoices({ status: "REFUND_REQUESTED", page: 1, limit: 3 }).then(({ data }) => setRefunds(data.data.invoices));
+    function load() {
+      adminApi.dashboard().then(({ data }) => setMetrics(data.data));
+      adminApi.pendingVerifications({ page: 1, limit: 3 }).then(({ data }) => setPendingVerifications(data.data.profiles));
+      adminApi.flaggedJobs().then(({ data }) => setFlaggedJobs(data.data.slice(0, 3)));
+      adminApi.invoices({ status: "REFUND_REQUESTED", page: 1, limit: 3 }).then(({ data }) => setRefunds(data.data.invoices));
+    }
+    load();
+    const interval = setInterval(load, DASHBOARD_POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
   }, []);
 
   if (!metrics) return <div className="grid min-h-64 place-items-center"><Spinner label="Loading dashboard" /></div>;

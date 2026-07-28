@@ -29,7 +29,7 @@ export function CreateJob() {
         <p className="section-label">Admin</p>
         <h1 className="page-title text-3xl md:text-4xl">Create a job</h1>
         <p className="mt-2 mb-8 text-base" style={{ color: "var(--text-secondary)" }}>Publish a new opportunity and route applications to the correct HR contact.</p>
-        <JobForm submitLabel="Create job" onSubmit={handleSubmit} />
+        <JobForm submitLabel="Create job" onSubmit={handleSubmit} onCancel={() => navigate("/admin/jobs")} />
       </div>
     </>
   );

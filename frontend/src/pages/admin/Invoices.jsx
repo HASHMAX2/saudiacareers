@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Receipt, SlidersHorizontal } from "lucide-react";
+import { Loader2, Receipt, SlidersHorizontal } from "lucide-react";
 import { adminApi } from "../../api/admin.js";
 import { Alert } from "../../components/common/Alert.jsx";
 import { Badge } from "../../components/common/Badge.jsx";
@@ -94,7 +94,9 @@ export function Invoices() {
                   <td className="px-5 py-4"><Badge tone={STATUS_TONES[inv.status]}>{STATUS_LABELS[inv.status]}</Badge></td>
                   <td className="px-5 py-4 text-right">
                     {inv.status === "REFUND_REQUESTED" && (
-                      <Button size="sm" variant="secondary" disabled={busyId === inv.id} onClick={() => approveRefund(inv.id)}>Approve refund</Button>
+                      <Button size="sm" variant="secondary" disabled={busyId === inv.id} onClick={() => approveRefund(inv.id)}>
+                        {busyId === inv.id ? <><Loader2 size={13} className="animate-spin shrink-0" />Approving…</> : "Approve refund"}
+                      </Button>
                     )}
                   </td>
                 </tr>

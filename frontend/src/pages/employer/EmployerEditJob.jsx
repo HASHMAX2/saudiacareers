@@ -51,7 +51,12 @@ export function EmployerEditJob() {
           exactly as it is for candidates until an admin approves this change.
         </div>
       )}
-      <JobForm initialValue={job} onSubmit={handleSubmit} submitLabel={isRevision ? "Submit for review" : "Save changes"} />
+      <JobForm
+        initialValue={job}
+        onSubmit={handleSubmit}
+        submitLabel={isRevision ? "Submit for review" : "Save changes"}
+        onCancel={() => navigate(isRevision ? "/employer/jobs/pending" : "/employer/jobs")}
+      />
     </>
   );
 }

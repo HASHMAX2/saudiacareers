@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Loader2 } from "lucide-react";
 import { adminApi } from "../../api/admin.js";
 import { Alert } from "../../components/common/Alert.jsx";
 import { Badge } from "../../components/common/Badge.jsx";
@@ -115,7 +115,9 @@ export function AdminPlans() {
             {error && <Alert>{error}</Alert>}
             <div className="flex justify-end gap-2 pt-2">
               <Button type="button" variant="secondary" onClick={() => setEditing(null)}>Cancel</Button>
-              <Button type="submit" disabled={saving}>{saving ? "Saving…" : "Save changes"}</Button>
+              <Button type="submit" disabled={saving}>
+                {saving ? <><Loader2 size={14} className="animate-spin shrink-0" />Saving…</> : "Save changes"}
+              </Button>
             </div>
           </form>
         )}

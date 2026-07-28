@@ -1,5 +1,5 @@
 import { prisma } from "../config/prisma.js";
-import { createSignedViewUrl } from "../services/storageService.js";
+import { createSignedDownloadUrl } from "../services/storageService.js";
 import * as dodoService from "../services/dodoService.js";
 import { notify } from "../services/notificationService.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -50,7 +50,10 @@ async function withDocuments(profile) {
       id: doc.id,
       documentType: doc.documentType,
       fileName: doc.fileName,
-      viewUrl: await createSignedViewUrl(doc.filePath),
+      // Forced download, not inline view (SA-04) — an admin reviewing an
+      // unverified employer's document shouldn't have it rendered inline by
+      // the browser on a self-registered, unvetted upload.
+      viewUrl: await createSignedDownloadUrl(doc.filePath),
     })),
   );
   return { ...profile, verificationDocuments: undefined, documents };

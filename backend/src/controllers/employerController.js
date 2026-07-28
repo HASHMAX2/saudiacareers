@@ -3,7 +3,8 @@ import { prisma } from "../config/prisma.js";
 import { sendEmail } from "../services/emailService.js";
 import { applicationStatusEmailTemplate } from "../services/emailTemplates/applicationStatus.js";
 import { employerSupportRequestEmailTemplate } from "../services/emailTemplates/employerSupportRequest.js";
-import { createSignedDownloadUrl, createSignedViewUrl, removePrivateFile, uploadPrivateFile } from "../services/storageService.js";
+import { createSignedDownloadUrl, removePrivateFile, uploadPrivateFile } from "../services/storageService.js";
+import { isPdfBuffer } from "../utils/fileSignature.js";
 import { env } from "../config/env.js";
 import { consumeJobCredit, getOrCreateSubscription } from "../services/employerBillingService.js";
 import { checkJobLegitimacy } from "../services/jobLegitimacyService.js";
@@ -65,7 +66,10 @@ export async function getVerification(req, res) {
       fileName: doc.fileName,
       fileSize: doc.fileSize,
       createdAt: doc.createdAt,
-      viewUrl: await createSignedViewUrl(doc.filePath),
+      // Forced download, not inline view (SA-04) — an unverified employer's
+      // upload isn't guaranteed to actually be the PDF it claims to be, and
+      // this URL is opened directly by the employer's own browser.
+      viewUrl: await createSignedDownloadUrl(doc.filePath),
     })),
   );
 
@@ -84,6 +88,13 @@ function isAwaitingReview(profile) {
 
 export async function uploadVerificationDocument(req, res) {
   if (!req.file) throw new ApiError(422, "A document file is required");
+  // multer's fileFilter only saw the client-declared Content-Type header;
+  // this checks the actual bytes now that the buffer exists (SA-04) — a file
+  // relabeled with a spoofed "application/pdf" header is rejected here even
+  // though it already passed the upload middleware.
+  if (!isPdfBuffer(req.file.buffer)) {
+    throw new ApiError(422, "That file doesn't look like a valid PDF — please upload an actual PDF document");
+  }
   const { documentType } = req.validated.body;
 
   const profile = await prisma.employerProfile.findUnique({ where: { userId: req.user.id } });
@@ -350,6 +361,20 @@ export async function createEmployerJob(req, res) {
   if (!employerProfile) throw new ApiError(404, "Employer profile not found");
   if (employerProfile.isSuspended) throw new ApiError(403, "This account is suspended and cannot post jobs");
 
+  const subscription = await getOrCreateSubscription(employerProfile.id);
+
+  // The Free plan is capped at one job total — draft or live, verified or not —
+  // not one free credit per month. Verification status still decides whether
+  // that single job lands as ACTIVE or DRAFT below; it never raises the cap.
+  if (subscription.planTier === "FREE") {
+    const existingJobCount = await prisma.job.count({
+      where: { createdBy: req.user.id, isDeleted: false, revisesJobId: null },
+    });
+    if (existingJobCount >= 1) {
+      throw new ApiError(403, "The Free plan is limited to 1 job posting. Upgrade your plan to post more jobs.");
+    }
+  }
+
   if (saveAsDraft) {
     const job = await prisma.job.create({
       data: { ...jobData, createdBy: req.user.id, status: "DRAFT" },
@@ -368,7 +393,7 @@ export async function createEmployerJob(req, res) {
     });
   }
 
-  const legitimacy = await checkJobLegitimacy(jobData, employerProfile, req.user.id);
+  const legitimacy = await checkJobLegitimacy(jobData, req.user.id);
   if (legitimacy.flagged) {
     const job = await prisma.job.create({
       data: { ...jobData, createdBy: req.user.id, status: "PENDING_REVIEW", flagReasons: legitimacy.reasons },
@@ -386,7 +411,6 @@ export async function createEmployerJob(req, res) {
     });
   }
 
-  const subscription = await getOrCreateSubscription(employerProfile.id);
   const creditSource = await consumeJobCredit(subscription, { userId: req.user.id, companyName: employerProfile.companyName });
   const listingDurationDays = jobData.listingDurationDays ?? 30;
   const expiresAt = new Date(Date.now() + listingDurationDays * 24 * 60 * 60 * 1000);
@@ -479,7 +503,7 @@ export async function updateEmployerJobStatus(req, res) {
       throw new ApiError(403, "Publishing is locked until company verification is approved");
     }
 
-    const legitimacy = await checkJobLegitimacy(job, employerProfile, req.user.id);
+    const legitimacy = await checkJobLegitimacy(job, req.user.id);
     if (legitimacy.flagged) {
       await prisma.job.update({
         where: { id },
@@ -650,7 +674,17 @@ export async function getApplicationDetail(req, res) {
   const { id } = req.validated.params;
   const application = await prisma.application.findFirst({
     where: { id, job: { createdBy: req.user.id } },
-    include: { user: { include: { profile: true }, omit: { passwordHash: true } }, job: true },
+    include: {
+      user: {
+        include: {
+          profile: {
+            include: { employmentEntries: true, educationEntries: true, certifications: true },
+          },
+        },
+        omit: { passwordHash: true },
+      },
+      job: true,
+    },
   });
   if (!application) throw new ApiError(404, "Application not found");
 

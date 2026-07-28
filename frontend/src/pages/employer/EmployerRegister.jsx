@@ -1,4 +1,4 @@
-import { Briefcase, CheckCircle2 } from "lucide-react";
+import { Briefcase, CheckCircle2, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { employerApi } from "../../api/employer.js";
@@ -407,7 +407,7 @@ export function EmployerRegister() {
                 type="submit"
                 style={submitting ? {} : { background: EMP, borderColor: EMP }}
               >
-                {submitting ? "Creating account…" : "Create employer account"}
+                {submitting ? <><Loader2 size={16} className="animate-spin shrink-0" />Creating account…</> : "Create employer account"}
               </Button>
             </div>
           </form>

@@ -1,6 +1,28 @@
 import { prisma } from "../config/prisma.js";
 import { ApiError } from "../utils/ApiError.js";
 import { sendSuccess } from "../utils/ApiResponse.js";
+import { assertPublicHttpUrl } from "../utils/publicUrlGuard.js";
+
+const MAX_REDIRECTS = 5;
+
+// Never lets fetch auto-follow redirects (SA-05) — an initially-public URL
+// could still redirect server-side into an internal address. Each hop's
+// target is re-validated with the same public-URL guard before it's ever
+// requested.
+async function fetchIsLive(startUrl) {
+  let currentUrl = startUrl;
+  for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+    await assertPublicHttpUrl(currentUrl);
+    const response = await fetch(currentUrl, { method: "HEAD", redirect: "manual", signal: AbortSignal.timeout(8000) });
+    const location = response.headers.get("location");
+    if (response.status >= 300 && response.status < 400 && location) {
+      currentUrl = new URL(location, currentUrl).toString();
+      continue;
+    }
+    return response.ok;
+  }
+  return false; // too many redirects
+}
 
 export async function listScrapedJobs(req, res) {
   const { page, limit, search, status } = req.validated.query;
@@ -52,8 +74,7 @@ export async function recrawlScrapedJob(req, res) {
 
   let isLive = false;
   try {
-    const response = await fetch(scrapedJob.applyUrl, { method: "HEAD", redirect: "follow", signal: AbortSignal.timeout(8000) });
-    isLive = response.ok;
+    isLive = await fetchIsLive(scrapedJob.applyUrl);
   } catch {
     isLive = false;
   }

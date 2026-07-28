@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Download, FileText, SlidersHorizontal } from "lucide-react";
+import { Download, FileText, Loader2, SlidersHorizontal } from "lucide-react";
 import { Link } from "react-router-dom";
 import { adminApi } from "../../api/admin.js";
 import { Alert } from "../../components/common/Alert.jsx";
@@ -17,6 +17,7 @@ export function Applications() {
   const [applications, setApplications] = useState(null);
   const [filters, setFilters] = useState({ search: "", status: "", hrEmailStatus: "" });
   const [error, setError] = useState("");
+  const [exporting, setExporting] = useState(false);
 
   async function load() {
     try {
@@ -29,9 +30,14 @@ export function Applications() {
   }
   useEffect(() => { load(); }, [filters]); // eslint-disable-line react-hooks/exhaustive-deps
   async function exportCsv() {
-    const response = await adminApi.exportApplications(Object.fromEntries(Object.entries(filters).filter(([, value]) => value)));
-    const url = URL.createObjectURL(response.data);
-    const link = document.createElement("a"); link.href = url; link.download = "applications.csv"; link.click(); URL.revokeObjectURL(url);
+    setExporting(true);
+    try {
+      const response = await adminApi.exportApplications(Object.fromEntries(Object.entries(filters).filter(([, value]) => value)));
+      const url = URL.createObjectURL(response.data);
+      const link = document.createElement("a"); link.href = url; link.download = "applications.csv"; link.click(); URL.revokeObjectURL(url);
+    } finally {
+      setExporting(false);
+    }
   }
   return (
     <div>
@@ -41,7 +47,9 @@ export function Applications() {
           <h1 className="page-title text-3xl md:text-4xl">Applications</h1>
           <p className="mt-2 text-base" style={{ color: "var(--text-secondary)" }}>Review candidates, track HR delivery, and update application outcomes.</p>
         </div>
-        <Button className="w-full sm:w-auto" variant="secondary" onClick={exportCsv}><Download size={16} />Export CSV</Button>
+        <Button className="w-full sm:w-auto" variant="secondary" disabled={exporting} onClick={exportCsv}>
+          {exporting ? <><Loader2 size={16} className="animate-spin shrink-0" />Exporting…</> : <><Download size={16} />Export CSV</>}
+        </Button>
       </div>
       <div className="flex flex-wrap gap-3 mb-6">
         <Input id="applicationSearch" placeholder="Candidate or job title" value={filters.search} onChange={(event) => setFilters({ ...filters, search: event.target.value })} />

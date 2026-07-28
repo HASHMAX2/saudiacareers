@@ -1,3 +1,4 @@
+import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { adminApi } from "../../api/admin.js";
@@ -45,6 +46,7 @@ export function EmployerReviewDetail() {
   const [detail, setDetail] = useState(null);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
+  const [busyAction, setBusyAction] = useState(null);
   const [error, setError] = useState("");
 
   async function load() {
@@ -63,8 +65,9 @@ export function EmployerReviewDetail() {
     load();
   }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  async function run(action) {
+  async function run(action, actionName) {
     setBusy(true);
+    setBusyAction(actionName);
     setError("");
     try {
       await action();
@@ -73,6 +76,7 @@ export function EmployerReviewDetail() {
       setError(requestError.response?.data?.message ?? "Unable to complete action");
     } finally {
       setBusy(false);
+      setBusyAction(null);
     }
   }
 
@@ -90,7 +94,9 @@ export function EmployerReviewDetail() {
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" onClick={() => navigate("/admin/verifications")}>Back to queue</Button>
-          <Button disabled={busy} onClick={() => run(() => adminApi.approveVerification(id))}>Approve employer</Button>
+          <Button disabled={busy} onClick={() => run(() => adminApi.approveVerification(id), "approve")}>
+            {busyAction === "approve" ? <><Loader2 size={14} className="animate-spin shrink-0" />Approving…</> : "Approve employer"}
+          </Button>
         </div>
       </div>
 
@@ -176,15 +182,15 @@ export function EmployerReviewDetail() {
             className="w-full mb-2"
             style={{ background: "var(--gold-bg)", color: "#8A5D10", border: "1px solid #F0DFAE" }}
             disabled={busy || !note.trim()}
-            onClick={() => run(() => adminApi.requestMoreInfo(id, note.trim()))}
+            onClick={() => run(() => adminApi.requestMoreInfo(id, note.trim()), "requestInfo")}
           >
-            Request more info
+            {busyAction === "requestInfo" ? <><Loader2 size={14} className="animate-spin shrink-0" />Sending…</> : "Request more info"}
           </Button>
-          <Button className="w-full mb-2" disabled={busy} onClick={() => run(() => adminApi.approveVerification(id))}>
-            Approve employer
+          <Button className="w-full mb-2" disabled={busy} onClick={() => run(() => adminApi.approveVerification(id), "approve")}>
+            {busyAction === "approve" ? <><Loader2 size={14} className="animate-spin shrink-0" />Approving…</> : "Approve employer"}
           </Button>
-          <Button className="w-full" variant="danger" disabled={busy || !note.trim()} onClick={() => run(() => adminApi.rejectVerification(id, note.trim()))}>
-            Reject employer
+          <Button className="w-full" variant="danger" disabled={busy || !note.trim()} onClick={() => run(() => adminApi.rejectVerification(id, note.trim()), "reject")}>
+            {busyAction === "reject" ? <><Loader2 size={14} className="animate-spin shrink-0" />Rejecting…</> : "Reject employer"}
           </Button>
           {!note.trim() && <p className="mt-2 text-xs" style={{ color: "var(--text-tertiary)" }}>Add a note above to request info or reject.</p>}
         </div>

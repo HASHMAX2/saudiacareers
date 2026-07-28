@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CheckCircle2, Mail, MessageSquare } from "lucide-react";
+import { CheckCircle2, Loader2, Mail, MessageSquare } from "lucide-react";
 import { enquiryApi } from "../../api/employer.js";
 import { Alert } from "../../components/common/Alert.jsx";
 import { Button } from "../../components/common/Button.jsx";
@@ -103,7 +103,9 @@ export function Contact() {
               {fieldErrors.message && <span className="mt-1 block text-xs text-red-600">{fieldErrors.message}</span>}
             </div>
             {error && <Alert>{error}</Alert>}
-            <Button className="w-full" disabled={submitting} type="submit">{submitting ? "Sending…" : "Send message"}</Button>
+            <Button className="w-full" disabled={submitting} type="submit">
+              {submitting ? <><Loader2 size={16} className="animate-spin shrink-0" />Sending…</> : "Send message"}
+            </Button>
           </form>
         </div>
       )}

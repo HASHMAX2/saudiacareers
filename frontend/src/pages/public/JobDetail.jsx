@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Banknote, Bookmark, BriefcaseBusiness, CalendarDays, Check, Clock3, Flag, MapPin, SearchX, Share2, Users } from "lucide-react";
+import { Banknote, Bookmark, BriefcaseBusiness, CalendarDays, Check, Clock3, Flag, Loader2, MapPin, SearchX, Share2, Users } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { applicationsApi } from "../../api/applications.js";
 import { jobsApi } from "../../api/jobs.js";
@@ -229,7 +229,11 @@ export function JobDetail() {
           )}
           {message && <div className="mt-4"><Alert tone={message.includes("success") ? "success" : "error"}>{message}</Alert></div>}
           <Button className="mt-5 w-full" disabled={job.isClosed || alreadyApplied || applying} onClick={apply}>
-            {alreadyApplied ? <><Check size={17} />Applied</> : applying ? "Submitting..." : job.isClosed ? "Applications closed" : "Apply now"}
+            {alreadyApplied
+              ? <><Check size={17} />Applied</>
+              : applying
+              ? <><Loader2 size={16} className="animate-spin shrink-0" />Submitting…</>
+              : job.isClosed ? "Applications closed" : "Apply now"}
           </Button>
           <p className="mt-3 text-center font-mono text-xs" style={{ color: "var(--text-tertiary)" }}>Your profile and resume are sent securely.</p>
         </div>
@@ -251,7 +255,7 @@ export function JobDetail() {
       <div className="mt-4 flex justify-end gap-2">
         <Button variant="secondary" onClick={() => setShowReportModal(false)}>Cancel</Button>
         <Button variant="danger" disabled={reportSubmitting} onClick={submitReport}>
-          {reportSubmitting ? "Submitting…" : "Submit report"}
+          {reportSubmitting ? <><Loader2 size={14} className="animate-spin shrink-0" />Submitting…</> : "Submit report"}
         </Button>
       </div>
     </Modal>

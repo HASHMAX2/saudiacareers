@@ -49,9 +49,11 @@ export function ProfileCard({ profile }) {
           <span className="text-[14px] font-bold" style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)" }}>
             <span style={{ fontFamily: "var(--font-mono)", color: "var(--accent)" }}>{profile.profileCompletion}%</span> profile completed
           </span>
-          <span className="text-[10.5px]" style={{ fontFamily: "var(--font-mono)", color: "var(--text-tertiary)" }}>
-            Updated {new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}
-          </span>
+          {profile.updatedAt && (
+            <span className="text-[10.5px]" style={{ fontFamily: "var(--font-mono)", color: "var(--text-tertiary)" }}>
+              Updated {new Date(profile.updatedAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}
+            </span>
+          )}
         </div>
 
         {/* Progress bar */}
