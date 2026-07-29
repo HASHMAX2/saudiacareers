@@ -252,7 +252,7 @@ export async function changePassword(req, res) {
     type: "SECURITY_ALERT",
     title: "Password changed",
     message: "Your password was just changed. If this wasn't you, contact support immediately.",
-    link: user.role === "CANDIDATE" ? "/dashboard/change-password" : null,
+    link: user.role === "CANDIDATE" ? "/dashboard/change-password" : user.role === "EMPLOYER" ? "/employer/change-password" : null,
   });
   return sendSuccess(res, {
     message: "Password changed successfully",

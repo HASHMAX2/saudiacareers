@@ -38,7 +38,7 @@ export function Input({ label, labelHint, error, id, required, className = "", t
             style={{ color: "var(--text-tertiary)" }}
             aria-label={showPwd ? "Hide password" : "Show password"}
           >
-            {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+            {showPwd ? <Eye size={16} /> : <EyeOff size={16} />}
           </button>
         )}
       </div>

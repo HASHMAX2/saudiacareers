@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
   AlertTriangle, BadgeCheck, Briefcase, Building2, ChevronDown, Clock3, LayoutDashboard, Loader2, LogOut,
-  Menu, PlusCircle, Users, Wallet, X,
+  Menu, PlusCircle, Settings, Users, Wallet, X,
 } from "lucide-react";
 import { authApi } from "../../api/auth.js";
 import { employerApi } from "../../api/employer.js";
@@ -98,6 +98,7 @@ export function EmployerShell() {
     { label: "Applicants", to: "/employer/applicants", icon: Users, badge: metrics?.totalApplications },
     { label: "Billing", to: "/employer/billing", icon: Wallet },
     { label: "Company Profile", to: "/employer/verification", icon: Building2 },
+    { label: "Settings", to: "/employer/change-password", icon: Settings },
   ];
 
   return (

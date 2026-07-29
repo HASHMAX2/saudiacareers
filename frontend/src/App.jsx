@@ -56,6 +56,7 @@ const EmployerEditJob = lazy(() => import("./pages/employer/EmployerEditJob.jsx"
 const EmployerApplications = lazy(() => import("./pages/employer/EmployerApplications.jsx").then((m) => ({ default: m.EmployerApplications })));
 const EmployerApplicants = lazy(() => import("./pages/employer/EmployerApplicants.jsx").then((m) => ({ default: m.EmployerApplicants })));
 const EmployerBilling = lazy(() => import("./pages/employer/EmployerBilling.jsx").then((m) => ({ default: m.EmployerBilling })));
+const EmployerChangePassword = lazy(() => import("./pages/employer/EmployerChangePassword.jsx").then((m) => ({ default: m.EmployerChangePassword })));
 const EmployerVerification = lazy(() => import("./pages/employer/EmployerVerification.jsx").then((m) => ({ default: m.EmployerVerification })));
 
 const Contact = lazy(() => import("./pages/public/Contact.jsx").then((m) => ({ default: m.Contact })));
@@ -140,6 +141,7 @@ export default function App() {
             <Route path="employer/applicants" element={<EmployerApplicants />} />
             <Route path="employer/billing" element={<EmployerBilling />} />
             <Route path="employer/verification" element={<EmployerVerification />} />
+            <Route path="employer/change-password" element={<EmployerChangePassword />} />
           </Route>
         </Route>
 
