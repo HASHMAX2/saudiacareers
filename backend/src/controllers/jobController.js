@@ -4,12 +4,49 @@ import { expireOverdueJobs } from "../services/jobExpiryService.js";
 import { ApiError } from "../utils/ApiError.js";
 import { sendSuccess } from "../utils/ApiResponse.js";
 
-function serializeJob(job) {
-  const { creator, ...rest } = job;
+// A job's "company" can come from either a real registered employer account
+// (creator.employerProfile) or, for admin-imported/scraped listings with no
+// such account, a standalone CompanyProfile row. Normalized to one shape so
+// the frontend ("About the employer" on the job detail page, the company
+// profile page) doesn't need to know which source it came from.
+function normalizeEmployer(employerProfile, companyProfile) {
+  if (employerProfile) {
+    return {
+      companyName: employerProfile.companyName,
+      description: employerProfile.description,
+      website: employerProfile.website,
+      linkedinUrl: employerProfile.linkedinUrl,
+    };
+  }
+  if (companyProfile) {
+    return {
+      companyName: companyProfile.name,
+      description: companyProfile.description,
+      website: companyProfile.website,
+      linkedinUrl: null,
+    };
+  }
+  return null;
+}
+
+// Job detail page — includes the full "About the employer" payload.
+function serializeJobDetail(job) {
+  const { creator, companyProfile, companyProfileId: _companyProfileId, ...rest } = job;
   return {
     ...rest,
     isClosed: Boolean(job.applicationDeadline && job.applicationDeadline < new Date()),
-    ...(creator !== undefined ? { employer: creator?.employerProfile ?? null } : {}),
+    employer: normalizeEmployer(creator?.employerProfile, companyProfile),
+  };
+}
+
+// Job listing cards — only a boolean (is there a profile to link to), not the
+// full payload, to keep the paginated list response lean.
+function serializeJobCard(job) {
+  const { creator, companyProfileId, ...rest } = job;
+  return {
+    ...rest,
+    isClosed: Boolean(job.applicationDeadline && job.applicationDeadline < new Date()),
+    hasCompanyProfile: Boolean(creator?.employerProfile || companyProfileId),
   };
 }
 
@@ -160,6 +197,8 @@ export async function listJobs(req, res) {
         nationality: true,
         applicationDeadline: true,
         createdAt: true,
+        companyProfileId: true,
+        creator: { select: { employerProfile: { select: { id: true } } } },
       },
     }),
     prisma.job.count({ where }),
@@ -168,7 +207,7 @@ export async function listJobs(req, res) {
   return sendSuccess(res, {
     message: "Jobs retrieved",
     data: {
-      jobs: jobs.map(serializeJob),
+      jobs: jobs.map(serializeJobCard),
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     },
   });
@@ -189,8 +228,50 @@ export async function getJob(req, res) {
           },
         },
       },
+      companyProfile: {
+        select: { name: true, description: true, website: true },
+      },
     },
   });
   if (!job) throw new ApiError(404, "Job not found");
-  return sendSuccess(res, { message: "Job retrieved", data: serializeJob(job) });
+  return sendSuccess(res, { message: "Job retrieved", data: serializeJobDetail(job) });
+}
+
+// Public, view-only company info for a job — resolves whichever source the
+// job actually has (real employer account or a standalone CompanyProfile),
+// never both. Deliberately job-scoped rather than company-id-scoped so the
+// frontend never needs to know which source it's looking at.
+export async function getJobCompany(req, res) {
+  const job = await prisma.job.findFirst({
+    where: { id: req.validated.params.id, isDeleted: false },
+    include: {
+      creator: {
+        select: {
+          employerProfile: {
+            select: { companyName: true, industry: true, location: true, description: true, website: true, linkedinUrl: true },
+          },
+        },
+      },
+      companyProfile: {
+        select: { name: true, industry: true, location: true, description: true, website: true },
+      },
+    },
+  });
+  if (!job) throw new ApiError(404, "Job not found");
+
+  const source = job.creator?.employerProfile ?? job.companyProfile;
+  if (!source) throw new ApiError(404, "No company profile available for this job");
+
+  const isEmployerAccount = Boolean(job.creator?.employerProfile);
+  return sendSuccess(res, {
+    message: "Company profile retrieved",
+    data: {
+      companyName: isEmployerAccount ? source.companyName : source.name,
+      industry: source.industry ?? null,
+      location: source.location ?? null,
+      description: source.description ?? null,
+      website: source.website ?? null,
+      linkedinUrl: isEmployerAccount ? source.linkedinUrl : null,
+    },
+  });
 }

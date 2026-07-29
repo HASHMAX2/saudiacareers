@@ -38,7 +38,8 @@ import {
   listCandidates,
   sendCandidateFeedback,
 } from "../controllers/adminCandidatesController.js";
-import { parseImport } from "../controllers/importController.js";
+import { parseExcelImport, parseImport } from "../controllers/importController.js";
+import { excelUpload } from "../middleware/upload.js";
 import { listPlansAdmin, updatePlan } from "../controllers/adminPlansController.js";
 import {
   createScrapedJob,
@@ -100,6 +101,7 @@ adminRouter.get("/applications", validate(adminApplicationsQuerySchema), asyncHa
 adminRouter.get("/applications/:id", validate(adminIdSchema), asyncHandler(getApplication));
 adminRouter.patch("/applications/:id/status", validate(applicationStatusSchema), asyncHandler(updateApplicationStatus));
 adminRouter.post("/import/parse", asyncHandler(parseImport));
+adminRouter.post("/import/parse-excel", excelUpload.single("file"), asyncHandler(parseExcelImport));
 
 adminRouter.get("/candidates", validate(adminCandidatesQuerySchema), asyncHandler(listCandidates));
 adminRouter.get("/candidates/:id", validate(adminIdSchema), asyncHandler(getCandidate));

@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { normalizeJobLocation } from "../utils/locationNormalizer.js";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -100,13 +101,18 @@ async function callModel(rawText) {
 }
 
 export async function parseJobsFromWhatsApp(rawText) {
+  let jobs;
   try {
-    return await callModel(rawText);
+    jobs = await callModel(rawText);
   } catch (error) {
     // One retry for transient issues (rate limits, network blips, or the rare
     // malformed tool call) — not a fix for bad input, just resilience against
     // the AI call itself failing outright and losing the whole batch.
     console.error("AI import parse attempt 1 failed, retrying once:", error.message);
-    return await callModel(rawText);
+    jobs = await callModel(rawText);
   }
+  // Safety net, not the primary defense — the tool schema's enum already
+  // constrains the model's output, this just guards against the rare
+  // non-conformant response instead of trusting it blindly.
+  return jobs.map((job) => ({ ...job, location: normalizeJobLocation(job.location) }));
 }

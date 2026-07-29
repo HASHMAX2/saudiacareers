@@ -7,14 +7,17 @@ const COMPANY_EMAIL_MESSAGE = "Please enter a valid company email address. Perso
 const jobBody = z.object({
   title: z.string().trim().min(2).max(150),
   companyName: z.string().trim().min(2).max(150),
-  location: z.string().trim().min(2).max(100),
-  industry: z.string().trim().min(2).max(100),
-  employmentType: z.string().trim().min(2).max(100),
-  experienceRequired: z.string().trim().min(1).max(100),
+  // Only title/companyName are truly required — bulk-imported sources (AI
+  // WhatsApp parsing, Excel rows) routinely lack one or more of the rest, so
+  // these all accept null/empty rather than blocking the whole job on it.
+  location: z.string().trim().max(100).nullable().optional(),
+  industry: z.string().trim().max(100).nullable().optional(),
+  employmentType: z.string().trim().max(100).nullable().optional(),
+  experienceRequired: z.string().trim().max(100).nullable().optional(),
   salaryRange: z.string().trim().max(100).nullable().optional(),
-  description: z.string().trim().min(20).max(20000),
-  requiredSkills: z.string().trim().min(1).max(2000),
-  hrEmail: z.string().email().refine(isCompanyEmail, COMPANY_EMAIL_MESSAGE),
+  description: z.string().trim().max(20000).nullable().optional(),
+  requiredSkills: z.string().trim().max(2000).nullable().optional(),
+  hrEmail: z.string().trim().toLowerCase().email().refine(isCompanyEmail, COMPANY_EMAIL_MESSAGE).nullable().optional().or(z.literal("")),
   gender: z.string().trim().max(50).nullable().optional(),
   nationality: z.string().trim().max(100).nullable().optional(),
   applicationDeadline: z.coerce.date().nullable().optional(),

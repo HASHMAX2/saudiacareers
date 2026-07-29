@@ -59,6 +59,7 @@ const EmployerBilling = lazy(() => import("./pages/employer/EmployerBilling.jsx"
 const EmployerChangePassword = lazy(() => import("./pages/employer/EmployerChangePassword.jsx").then((m) => ({ default: m.EmployerChangePassword })));
 const EmployerVerification = lazy(() => import("./pages/employer/EmployerVerification.jsx").then((m) => ({ default: m.EmployerVerification })));
 
+const CompanyProfile = lazy(() => import("./pages/public/CompanyProfile.jsx").then((m) => ({ default: m.CompanyProfile })));
 const Contact = lazy(() => import("./pages/public/Contact.jsx").then((m) => ({ default: m.Contact })));
 const JobDetail = lazy(() => import("./pages/public/JobDetail.jsx").then((m) => ({ default: m.JobDetail })));
 const Jobs = lazy(() => import("./pages/public/Jobs.jsx").then((m) => ({ default: m.Jobs })));
@@ -99,6 +100,7 @@ export default function App() {
           <Route index element={<PortalHome />} />
           <Route path="jobs" element={<Jobs />} />
           <Route path="jobs/:id" element={<JobDetail />} />
+          <Route path="company/:jobId" element={<CompanyProfile />} />
           <Route path="contact" element={<Contact />} />
           <Route path="terms" element={<Terms />} />
           <Route path="privacy" element={<Privacy />} />

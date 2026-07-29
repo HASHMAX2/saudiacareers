@@ -28,11 +28,11 @@ async function checkDuplicatePostings(jobData, userId) {
   });
 
   const normalizedTitle = jobData.title?.trim().toLowerCase();
-  const normalizedDescription = jobData.description?.trim().toLowerCase();
+  const normalizedDescription = jobData.description?.trim().toLowerCase() ?? "";
 
   const duplicateCount = recentJobs.filter(
-    (job) => job.title.trim().toLowerCase() === normalizedTitle
-      && job.description.trim().toLowerCase() === normalizedDescription,
+    (job) => job.title?.trim().toLowerCase() === normalizedTitle
+      && (job.description?.trim().toLowerCase() ?? "") === normalizedDescription,
   ).length;
 
   return duplicateCount >= 2 ? ["RAPID_DUPLICATE_POSTINGS"] : [];

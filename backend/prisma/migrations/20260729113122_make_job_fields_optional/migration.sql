@@ -1,0 +1,8 @@
+-- AlterTable
+ALTER TABLE "Job" ALTER COLUMN "location" DROP NOT NULL,
+ALTER COLUMN "industry" DROP NOT NULL,
+ALTER COLUMN "employmentType" DROP NOT NULL,
+ALTER COLUMN "experienceRequired" DROP NOT NULL,
+ALTER COLUMN "description" DROP NOT NULL,
+ALTER COLUMN "requiredSkills" DROP NOT NULL,
+ALTER COLUMN "hrEmail" DROP NOT NULL;

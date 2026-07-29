@@ -101,18 +101,22 @@ function SavedJobCard({ job, removing, onRemove, dimmed = false }) {
       <div className="flex items-start justify-between gap-4">
         <div className="flex flex-wrap items-center gap-2">
           {badge}
-          <span
-            className="rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.1em]"
-            style={{ background: "var(--bg-elev)", color: "var(--text-tertiary)" }}
-          >
-            {job.industry}
-          </span>
-          <span
-            className="rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.1em]"
-            style={{ background: "var(--bg-elev)", color: "var(--text-tertiary)" }}
-          >
-            {job.employmentType}
-          </span>
+          {job.industry && (
+            <span
+              className="rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.1em]"
+              style={{ background: "var(--bg-elev)", color: "var(--text-tertiary)" }}
+            >
+              {job.industry}
+            </span>
+          )}
+          {job.employmentType && (
+            <span
+              className="rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.1em]"
+              style={{ background: "var(--bg-elev)", color: "var(--text-tertiary)" }}
+            >
+              {job.employmentType}
+            </span>
+          )}
         </div>
         <div className="flex shrink-0 items-center gap-2">
           {isViewable && (
@@ -155,14 +159,27 @@ function SavedJobCard({ job, removing, onRemove, dimmed = false }) {
             {job.title}
           </p>
         )}
-        <p className="mt-1 text-[14px]" style={{ color: "var(--text-secondary)" }}>{job.companyName}</p>
+        {job.hasCompanyProfile ? (
+          <Link
+            className="mt-1 inline-block text-[14px] text-[var(--text-secondary)] hover:text-blue-600 hover:underline"
+            to={`/company/${job.id}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            {job.companyName}
+          </Link>
+        ) : (
+          <p className="mt-1 text-[14px]" style={{ color: "var(--text-secondary)" }}>{job.companyName}</p>
+        )}
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-4 text-[13px]" style={{ color: "var(--text-secondary)" }}>
-        <span className="flex items-center gap-1.5">
-          <MapPin size={13} style={{ color: "var(--text-tertiary)" }} />
-          {job.location}
-        </span>
+        {job.location && (
+          <span className="flex items-center gap-1.5">
+            <MapPin size={13} style={{ color: "var(--text-tertiary)" }} />
+            {job.location}
+          </span>
+        )}
         {job.salaryRange && (
           <span className="flex items-center gap-1.5 font-semibold" style={{ color: "var(--text-primary)" }}>
             <Banknote size={13} style={{ color: "var(--text-tertiary)" }} />

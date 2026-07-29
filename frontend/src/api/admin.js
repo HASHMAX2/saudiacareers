@@ -22,7 +22,12 @@ export const adminApi = {
     api.patch(`/admin/applications/${id}/status`, { status }),
   exportApplications: (params = {}) =>
     api.get("/admin/applications/export", { params, responseType: "blob" }),
-  parseImport: (text) => api.post("/admin/import/parse", { text }),
+  parseImport: (text, signal) => api.post("/admin/import/parse", { text }, { signal }),
+  parseImportExcel: (file, signal) => {
+    const form = new FormData();
+    form.append("file", file);
+    return api.post("/admin/import/parse-excel", form, { headers: { "Content-Type": "multipart/form-data" }, signal });
+  },
 
   pendingVerifications: (params) => api.get("/admin/employer-verifications", { params }),
   verificationDetail: (id) => api.get(`/admin/employer-verifications/${id}`),

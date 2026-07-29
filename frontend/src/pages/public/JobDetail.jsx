@@ -138,7 +138,7 @@ export function JobDetail() {
     }
   }
 
-  const skills = job.requiredSkills.split(",").map((skill) => skill.trim()).filter(Boolean);
+  const skills = (job.requiredSkills ?? "").split(",").map((skill) => skill.trim()).filter(Boolean);
 
   return (
     <>
@@ -153,7 +153,18 @@ export function JobDetail() {
                 <Badge>{job.industry}</Badge>
               </div>
               <h1 className="page-title text-3xl md:text-4xl">{job.title}</h1>
-              <p className="mt-2 text-lg font-medium" style={{ color: "var(--text-secondary)" }}>{job.companyName}</p>
+              {job.employer ? (
+                <Link
+                  className="mt-2 inline-block text-lg font-medium text-[var(--text-secondary)] hover:text-blue-600 hover:underline"
+                  to={`/company/${job.id}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {job.companyName}
+                </Link>
+              ) : (
+                <p className="mt-2 text-lg font-medium" style={{ color: "var(--text-secondary)" }}>{job.companyName}</p>
+              )}
             </div>
             <div className="flex items-center gap-2">
               {isCandidate && (
@@ -184,41 +195,35 @@ export function JobDetail() {
             </div>
           </div>
           <div className="mt-6 flex flex-wrap gap-3 pt-6" style={{ borderTop: "1px solid var(--border-default)" }}>
-            <span className="chip flex items-center gap-2"><MapPin size={14} style={{ color: "var(--accent)" }} />{job.location}</span>
-            <span className="chip flex items-center gap-2"><BriefcaseBusiness size={14} style={{ color: "var(--accent)" }} />{job.employmentType}</span>
-            <span className="chip flex items-center gap-2"><Clock3 size={14} style={{ color: "var(--accent)" }} />{job.experienceRequired}</span>
+            {job.location && <span className="chip flex items-center gap-2"><MapPin size={14} style={{ color: "var(--accent)" }} />{job.location}</span>}
+            {job.employmentType && <span className="chip flex items-center gap-2"><BriefcaseBusiness size={14} style={{ color: "var(--accent)" }} />{job.employmentType}</span>}
+            {job.experienceRequired && <span className="chip flex items-center gap-2"><Clock3 size={14} style={{ color: "var(--accent)" }} />{job.experienceRequired}</span>}
             {job.salaryRange && <span className="chip flex items-center gap-2"><Banknote size={14} style={{ color: "var(--accent)" }} />{job.salaryRange}</span>}
             {job.gender && job.gender !== "Any" && <span className="chip flex items-center gap-2"><Users size={14} style={{ color: "var(--accent)" }} />{job.gender} only</span>}
             {job.nationality && job.nationality !== "Any Nationality" && <span className="chip flex items-center gap-2"><MapPin size={14} style={{ color: "var(--accent)" }} />{job.nationality}</span>}
           </div>
         </header>
 
-        <section className="card-soft p-6 sm:p-8">
-          <h2 className="text-xl font-semibold" style={{ color: "var(--text-primary)" }}>Job description</h2>
-          <div className="mt-4 whitespace-pre-wrap break-words text-sm leading-7" style={{ color: "var(--text-secondary)" }}>{job.description}</div>
-        </section>
+        {job.description && (
+          <section className="card-soft p-6 sm:p-8">
+            <h2 className="text-xl font-semibold" style={{ color: "var(--text-primary)" }}>Job description</h2>
+            <div className="mt-4 whitespace-pre-wrap break-words text-sm leading-7" style={{ color: "var(--text-secondary)" }}>{job.description}</div>
+          </section>
+        )}
 
-        <section className="card-soft p-6 sm:p-8">
-          <h2 className="text-xl font-semibold" style={{ color: "var(--text-primary)" }}>Required skills</h2>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {skills.map((skill) => <Badge key={skill} tone="green">{skill}</Badge>)}
-          </div>
-        </section>
+        {skills.length > 0 && (
+          <section className="card-soft p-6 sm:p-8">
+            <h2 className="text-xl font-semibold" style={{ color: "var(--text-primary)" }}>Required skills</h2>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {skills.map((skill) => <Badge key={skill} tone="green">{skill}</Badge>)}
+            </div>
+          </section>
+        )}
 
         {job.employer?.description && (
           <section className="card-soft p-6 sm:p-8">
             <h2 className="text-xl font-semibold" style={{ color: "var(--text-primary)" }}>About {job.employer.companyName || job.companyName}</h2>
             <div className="mt-4 whitespace-pre-wrap break-words text-sm leading-7" style={{ color: "var(--text-secondary)" }}>{job.employer.description}</div>
-            {(job.employer.website || job.employer.linkedinUrl) && (
-              <div className="mt-4 flex flex-wrap gap-4 text-sm">
-                {job.employer.website && (
-                  <a href={job.employer.website} target="_blank" rel="noreferrer" className="font-semibold hover:underline" style={{ color: "var(--accent)" }}>Website →</a>
-                )}
-                {job.employer.linkedinUrl && (
-                  <a href={job.employer.linkedinUrl} target="_blank" rel="noreferrer" className="font-semibold hover:underline" style={{ color: "var(--accent)" }}>LinkedIn →</a>
-                )}
-              </div>
-            )}
           </section>
         )}
       </div>

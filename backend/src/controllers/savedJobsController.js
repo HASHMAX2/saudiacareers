@@ -49,16 +49,22 @@ export async function getSavedJobs(req, res) {
           status: true,
           isDeleted: true,
           createdAt: true,
+          companyProfileId: true,
+          creator: { select: { employerProfile: { select: { id: true } } } },
         },
       },
     },
   });
 
-  const data = saved.map(({ savedAt, job }) => ({
-    ...job,
-    savedAt,
-    isClosed: Boolean(job.applicationDeadline && job.applicationDeadline < now),
-  }));
+  const data = saved.map(({ savedAt, job }) => {
+    const { creator, companyProfileId, ...rest } = job;
+    return {
+      ...rest,
+      savedAt,
+      isClosed: Boolean(job.applicationDeadline && job.applicationDeadline < now),
+      hasCompanyProfile: Boolean(creator?.employerProfile || companyProfileId),
+    };
+  });
 
   return sendSuccess(res, { message: "Saved jobs retrieved", data });
 }

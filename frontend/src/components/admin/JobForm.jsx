@@ -23,7 +23,7 @@ const emptyJob = {
   title: "", companyName: "", location: "", industry: "", employmentType: "", experienceRequired: "",
   salaryRange: "", description: "", requiredSkills: "", hrEmail: "", gender: "Any", nationality: "Any Nationality",
   applicationDeadline: "", status: "ACTIVE",
-  department: "", workMode: "Remote", applyMethod: "PLATFORM", applyContact: "",
+  department: "", workMode: "", applyMethod: "PLATFORM", applyContact: "",
   screeningQuestion: "", listingDurationDays: 30,
 };
 
@@ -32,9 +32,7 @@ function validateJob(form) {
   const title = form.title?.trim() ?? "";
   const companyName = form.companyName?.trim() ?? "";
   const location = form.location?.trim() ?? "";
-  const industry = form.industry?.trim() ?? "";
   const employmentType = form.employmentType?.trim() ?? "";
-  const experienceRequired = form.experienceRequired?.trim() ?? "";
   const description = form.description?.trim() ?? "";
   const requiredSkills = form.requiredSkills?.trim() ?? "";
   const hrEmail = form.hrEmail?.trim() ?? "";
@@ -48,28 +46,22 @@ function validateJob(form) {
   else if (companyName.length < 2) errors.companyName = "Company name must be at least 2 characters.";
   else if (companyName.length > 150) errors.companyName = "Company name must be 150 characters or fewer.";
 
-  if (!location) errors.location = "Location is required.";
-  else if (!LOCATIONS.includes(location)) errors.location = "Select a valid location.";
+  // Everything below is optional — bulk-imported sources routinely miss one
+  // or more of these, so only format/length is validated when a value is
+  // actually present, nothing is required.
+  if (location && !LOCATIONS.includes(location)) errors.location = "Select a valid location.";
 
-  if (!industry) errors.industry = "Industry is required.";
+  if (employmentType.length > 100) errors.employmentType = "Employment type must be 100 characters or fewer.";
 
-  if (!employmentType) errors.employmentType = "Employment type is required.";
-  else if (employmentType.length < 2) errors.employmentType = "Employment type must be at least 2 characters.";
-  else if (employmentType.length > 100) errors.employmentType = "Employment type must be 100 characters or fewer.";
+  if (description.length > 20000) errors.description = "Description must be 20,000 characters or fewer.";
 
-  if (!experienceRequired) errors.experienceRequired = "Experience required is required.";
+  if (requiredSkills.length > 2000) errors.requiredSkills = "Required skills must be 2,000 characters or fewer.";
 
-  if (!description) errors.description = "Job description is required.";
-  else if (description.length < 20) errors.description = "Description must be at least 20 characters.";
-  else if (description.length > 20000) errors.description = "Description must be 20,000 characters or fewer.";
-
-  if (!requiredSkills) errors.requiredSkills = "Required skills is required.";
-  else if (requiredSkills.length > 2000) errors.requiredSkills = "Required skills must be 2,000 characters or fewer.";
-
-  if (!hrEmail) errors.hrEmail = "HR email is required.";
-  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(hrEmail)) errors.hrEmail = "Enter a valid email address.";
-  else if (!isCompanyEmail(hrEmail)) {
-    errors.hrEmail = "Please enter a valid company email address. Personal email providers are not allowed.";
+  if (hrEmail) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(hrEmail)) errors.hrEmail = "Enter a valid email address.";
+    else if (!isCompanyEmail(hrEmail)) {
+      errors.hrEmail = "Please enter a valid company email address. Personal email providers are not allowed.";
+    }
   }
 
   if (salaryRange.length > 100) errors.salaryRange = "Salary range must be 100 characters or fewer.";
@@ -124,6 +116,13 @@ export const JobForm = forwardRef(function JobForm({ initialValue, onSubmit, sub
     try {
       await onSubmit({
         ...form,
+        location: form.location?.trim() || null,
+        industry: form.industry?.trim() || null,
+        employmentType: form.employmentType?.trim() || null,
+        experienceRequired: form.experienceRequired?.trim() || null,
+        description: form.description?.trim() || null,
+        requiredSkills: form.requiredSkills?.trim() || null,
+        hrEmail: form.hrEmail?.trim() || null,
         salaryRange: form.salaryRange || null,
         gender: form.gender || "Any",
         nationality: form.nationality || "Any Nationality",
@@ -163,8 +162,7 @@ export const JobForm = forwardRef(function JobForm({ initialValue, onSubmit, sub
           <Input id="companyName" label="Company" required value={form.companyName} error={fieldErrors.companyName} onChange={update("companyName")} />
           <Select
             id="location"
-            label="Location"
-            required
+            label="Location (optional)"
             value={form.location}
             error={fieldErrors.location}
             onChange={update("location")}
@@ -173,8 +171,7 @@ export const JobForm = forwardRef(function JobForm({ initialValue, onSubmit, sub
           />
           <Select
             id="industry"
-            label="Industry"
-            required
+            label="Industry (optional)"
             value={form.industry}
             error={fieldErrors.industry}
             onChange={update("industry")}
@@ -183,8 +180,7 @@ export const JobForm = forwardRef(function JobForm({ initialValue, onSubmit, sub
           />
           <Select
             id="employmentType"
-            label="Employment type"
-            required
+            label="Employment type (optional)"
             value={form.employmentType}
             error={fieldErrors.employmentType}
             onChange={update("employmentType")}
@@ -193,8 +189,7 @@ export const JobForm = forwardRef(function JobForm({ initialValue, onSubmit, sub
           />
           <Select
             id="experienceRequired"
-            label="Experience required"
-            required
+            label="Experience required (optional)"
             value={form.experienceRequired}
             error={fieldErrors.experienceRequired}
             onChange={update("experienceRequired")}
@@ -229,10 +224,11 @@ export const JobForm = forwardRef(function JobForm({ initialValue, onSubmit, sub
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           <Input id="department" label="Department (optional)" value={form.department} onChange={update("department")} />
           <Select
-            label="Work mode"
-            value={form.workMode ?? "Remote"}
+            label="Work mode (optional)"
+            value={form.workMode ?? ""}
             onChange={update("workMode")}
             options={WORK_MODE_OPTIONS}
+            placeholder="Not specified"
           />
           <Select
             label="Listing duration"
@@ -270,11 +266,16 @@ export const JobForm = forwardRef(function JobForm({ initialValue, onSubmit, sub
       <section className="card-soft p-5 sm:p-6">
         <h2 className="font-semibold" style={{ color: "var(--text-primary)" }}>Requirements and routing</h2>
         <div className="mt-5 grid gap-4 md:grid-cols-2">
-          <Input id="requiredSkills" label="Required skills" required value={form.requiredSkills} error={fieldErrors.requiredSkills} onChange={update("requiredSkills")} />
-          <Input id="hrEmail" label="HR application email" type="email" required value={form.hrEmail} error={fieldErrors.hrEmail} onChange={update("hrEmail")} />
+          <Input id="requiredSkills" label="Required skills (optional)" value={form.requiredSkills} error={fieldErrors.requiredSkills} onChange={update("requiredSkills")} />
+          <div>
+            <Input id="hrEmail" label="HR application email (optional)" type="email" value={form.hrEmail} error={fieldErrors.hrEmail} onChange={update("hrEmail")} />
+            <p className="mt-1.5 text-xs" style={{ color: "var(--text-tertiary)" }}>
+              Applications can&apos;t be routed to HR without this — add it later from the edit screen if it&apos;s missing now.
+            </p>
+          </div>
           <label className="md:col-span-2">
             <span className="field-label">
-              Full job description <span className="text-red-500" aria-hidden="true">*</span>
+              Full job description (optional)
             </span>
             <textarea
               aria-invalid={Boolean(fieldErrors.description)}

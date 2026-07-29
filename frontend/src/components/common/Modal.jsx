@@ -1,4 +1,4 @@
-import { Button } from "./Button.jsx";
+import { X } from "lucide-react";
 
 export function Modal({ isOpen, title, children, onClose }) {
   if (!isOpen) return null;
@@ -17,9 +17,14 @@ export function Modal({ isOpen, title, children, onClose }) {
       >
         <div className="mb-4 flex items-center justify-between gap-4">
           <h2 className="text-lg font-semibold">{title}</h2>
-          <Button variant="secondary" onClick={onClose} aria-label="Close modal">
-            Close
-          </Button>
+          <button
+            type="button"
+            className="shrink-0 rounded-lg p-1.5 transition-colors hover:bg-black/5"
+            onClick={onClose}
+            aria-label="Close modal"
+          >
+            <X size={18} style={{ color: "var(--text-tertiary)" }} />
+          </button>
         </div>
         {children}
       </section>
