@@ -208,28 +208,29 @@ export function EmployerApplications() {
                       <td className="px-4 py-3 font-mono text-xs" style={{ color: "var(--text-tertiary)" }}>{formatDate(app.appliedAt)}</td>
                       <td className="px-4 py-3">
                         <div className="flex flex-wrap items-center justify-end gap-1.5">
-                          <Button size="sm" variant="secondary" onClick={() => toggleProfile(app)}>
+                          <Button size="xs" className="min-w-[102px]" variant="secondary" onClick={() => toggleProfile(app)}>
                             {loadingProfileId === app.id
-                              ? <Loader2 size={13} className="animate-spin shrink-0" />
-                              : expandedId === app.id ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                              ? <Loader2 size={12} className="animate-spin shrink-0" />
+                              : expandedId === app.id ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                             {expandedId === app.id ? "Hide profile" : "View profile"}
                           </Button>
                           {app.user.profile?.resumePath && (
-                            <Button size="sm" variant="secondary" disabled={!!busyId || downloadingId === app.id} onClick={() => handleDownload(app)}>
-                              {downloadingId === app.id ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
+                            <Button size="xs" className="min-w-[102px]" variant="secondary" disabled={!!busyId || downloadingId === app.id} onClick={() => handleDownload(app)}>
+                              {downloadingId === app.id ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
                               Resume
                             </Button>
                           )}
                           {STATUS_OPTIONS.filter((s) => s !== app.status).map((s) => (
                             <Button
                               key={s}
-                              size="sm"
+                              size="xs"
+                              className="min-w-[102px]"
                               variant={s === "REJECTED" ? "ghost" : "primary"}
                               disabled={!!busyId}
                               onClick={() => handleStatus(app.id, s)}
                               style={s === "REJECTED" ? { color: "var(--text-tertiary)" } : { background: EMP, borderColor: EMP }}
                             >
-                              {busyId === app.id && busyAction === s ? <Loader2 size={13} className="animate-spin" /> : null}
+                              {busyId === app.id && busyAction === s ? <Loader2 size={12} className="animate-spin" /> : null}
                               {STATUS_META[s]?.label}
                             </Button>
                           ))}

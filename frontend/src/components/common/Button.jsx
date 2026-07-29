@@ -15,7 +15,7 @@ export function Button({
   return (
     <button
       type={type}
-      className={`${variants[variant]}${size === "sm" ? " btn-sm" : ""} ${className}`}
+      className={`${variants[variant]}${size === "sm" ? " btn-sm" : size === "xs" ? " btn-xs" : ""} ${className}`}
       {...props}
     />
   );

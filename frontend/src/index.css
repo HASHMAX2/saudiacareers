@@ -108,6 +108,13 @@ h1,h2,h3,h4,h5,h6 {
     gap: 4px !important;
   }
 
+  .btn-xs {
+    min-height: 26px !important;
+    padding: 0 9px !important;
+    font-size: 12px !important;
+    gap: 3px !important;
+  }
+
   .nav-header {
     box-shadow: inset 0 -1px 0 var(--border-default);
     transition: box-shadow 250ms ease;
