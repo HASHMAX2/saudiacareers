@@ -3,6 +3,7 @@ import {
   createEmployerJob,
   createJobRevision,
   deleteEmployerJob,
+  deleteEmployerLogo,
   deleteVerificationDocument,
   getApplicationDetail,
   getEmployerDashboard,
@@ -19,9 +20,10 @@ import {
   updateEmployerJob,
   updateEmployerJobStatus,
   updateEmployerProfile,
+  uploadEmployerLogo,
   uploadVerificationDocument,
 } from "../controllers/employerController.js";
-import { verificationDocUpload } from "../middleware/upload.js";
+import { avatarUpload, verificationDocUpload } from "../middleware/upload.js";
 import {
   cancelSubscription,
   changePlan,
@@ -67,6 +69,8 @@ employerRouter.use(authenticate, authorizeEmployer);
 
 employerRouter.get("/profile", asyncHandler(getEmployerProfile));
 employerRouter.put("/profile", validate(employerProfileSchema), asyncHandler(updateEmployerProfile));
+employerRouter.post("/logo", avatarUpload.single("logo"), asyncHandler(uploadEmployerLogo));
+employerRouter.delete("/logo", asyncHandler(deleteEmployerLogo));
 
 employerRouter.get("/dashboard", asyncHandler(getEmployerDashboard));
 

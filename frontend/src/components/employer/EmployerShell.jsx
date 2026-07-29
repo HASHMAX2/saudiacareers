@@ -216,9 +216,13 @@ export function EmployerShell() {
               aria-haspopup="menu"
               aria-expanded={menuOpen}
             >
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-xs font-extrabold text-white" style={{ background: EMP }}>
-                {initials}
-              </span>
+              {profile?.logoUrl ? (
+                <img src={profile.logoUrl} alt={profile.companyName} className="h-8 w-8 shrink-0 rounded-full object-cover" />
+              ) : (
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-xs font-extrabold text-white" style={{ background: EMP }}>
+                  {initials}
+                </span>
+              )}
               <span className="hidden sm:inline">{user?.name}</span>
               <ChevronDown
                 size={14}

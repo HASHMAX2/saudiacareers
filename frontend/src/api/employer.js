@@ -4,6 +4,12 @@ export const employerApi = {
   register:              (data)         => api.post("/auth/employer/register", data),
   getProfile:            ()             => api.get("/employer/profile"),
   updateProfile:         (data)         => api.put("/employer/profile", data),
+  uploadLogo:            (file) => {
+    const form = new FormData();
+    form.append("logo", file);
+    return api.post("/employer/logo", form, { headers: { "Content-Type": "multipart/form-data" } });
+  },
+  deleteLogo:            ()             => api.delete("/employer/logo"),
   getDashboard:          ()             => api.get("/employer/dashboard"),
   listJobs:              (params)       => api.get("/employer/jobs", { params }),
   listPendingJobs:       ()             => api.get("/employer/jobs/pending"),

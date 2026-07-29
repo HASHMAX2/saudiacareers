@@ -4,7 +4,7 @@ import { Alert } from "../common/Alert.jsx";
 import { Button } from "../common/Button.jsx";
 import { Input } from "../common/Input.jsx";
 import { Select } from "../common/Select.jsx";
-import { EXPERIENCE_LEVELS, INDUSTRIES, SALARY_RANGES } from "../../utils/constants.js";
+import { EXPERIENCE_LEVELS, INDUSTRIES, LOCATIONS, SALARY_RANGES } from "../../utils/constants.js";
 import { isCompanyEmail } from "../../utils/validators.js";
 import { extractErrorMessage } from "../../utils/apiError.js";
 
@@ -49,8 +49,7 @@ function validateJob(form) {
   else if (companyName.length > 150) errors.companyName = "Company name must be 150 characters or fewer.";
 
   if (!location) errors.location = "Location is required.";
-  else if (location.length < 2) errors.location = "Location must be at least 2 characters.";
-  else if (location.length > 100) errors.location = "Location must be 100 characters or fewer.";
+  else if (!LOCATIONS.includes(location)) errors.location = "Select a valid location.";
 
   if (!industry) errors.industry = "Industry is required.";
 
@@ -162,7 +161,16 @@ export const JobForm = forwardRef(function JobForm({ initialValue, onSubmit, sub
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           <Input id="title" label="Job title" required value={form.title} error={fieldErrors.title} onChange={update("title")} />
           <Input id="companyName" label="Company" required value={form.companyName} error={fieldErrors.companyName} onChange={update("companyName")} />
-          <Input id="location" label="Location" required value={form.location} error={fieldErrors.location} onChange={update("location")} />
+          <Select
+            id="location"
+            label="Location"
+            required
+            value={form.location}
+            error={fieldErrors.location}
+            onChange={update("location")}
+            options={LOCATIONS}
+            placeholder="Select a location"
+          />
           <Select
             id="industry"
             label="Industry"

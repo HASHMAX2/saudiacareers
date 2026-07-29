@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  AlertTriangle, CheckCircle2, Clock, FileText, Loader2, ShieldCheck, Trash2, Upload, XCircle,
+  AlertTriangle, Building2, Camera, CheckCircle2, Clock, FileText, Loader2, ShieldCheck, Trash2, Upload, XCircle,
 } from "lucide-react";
 import { employerApi } from "../../api/employer.js";
 import { useAuthStore } from "../../store/authStore.js";
@@ -27,6 +27,10 @@ const STATUS_META = {
 const EMPTY_SUPPORT_FORM = { category: "VERIFICATION", subject: "", message: "" };
 const TOAST_DURATION = 3000;
 
+function companyInitials(name) {
+  return (name ?? "?").trim().split(/\s+/).map((p) => p[0]).slice(0, 2).join("").toUpperCase();
+}
+
 function documentLabel(value) {
   return VERIFICATION_DOCUMENT_TYPES.find((t) => t.value === value)?.label ?? value;
 }
@@ -43,6 +47,7 @@ export function EmployerVerification() {
   const [profile, setProfile] = useState(null);
   const [form, setForm] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [logoUploading, setLogoUploading] = useState(false);
   const [error, setError] = useState("");
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
@@ -108,14 +113,28 @@ export function EmployerVerification() {
       // Reload first so the confirmation only appears once the page is
       // actually showing the saved data, not a moment before it.
       await load();
-      // About Company is cleared after a successful save so the field is
-      // ready for a fresh entry rather than showing what was just submitted.
-      setForm((f) => ({ ...f, description: "" }));
       flashToast("Your company profile has been updated.");
     } catch (requestError) {
       setError(requestError.response?.data?.message ?? "Unable to save company profile");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function uploadLogo(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLogoUploading(true);
+    setError("");
+    try {
+      await employerApi.uploadLogo(file);
+      await load();
+      flashToast("Company logo updated.");
+    } catch (requestError) {
+      setError(requestError.response?.data?.message ?? "Logo upload failed");
+    } finally {
+      setLogoUploading(false);
+      e.target.value = "";
     }
   }
 
@@ -260,7 +279,40 @@ export function EmployerVerification() {
             <form onSubmit={handleSaveProfile}>
               <div className="p-6">
                 <h3 className="font-bold" style={{ color: "var(--text-primary)" }}>Company information</h3>
-                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <div className="mt-4 flex items-center gap-4">
+                  <div className="relative shrink-0">
+                    {profile.logoUrl ? (
+                      <img
+                        src={profile.logoUrl}
+                        alt={profile.companyName}
+                        className="h-16 w-16 rounded-xl object-cover"
+                        style={{ border: "1px solid var(--border-default)" }}
+                      />
+                    ) : (
+                      <div
+                        className="grid h-16 w-16 place-items-center rounded-xl font-bold"
+                        style={{ background: "var(--accent-subtle)", color: EMP, border: "1px solid var(--border-default)" }}
+                      >
+                        {profile.companyName ? companyInitials(profile.companyName) : <Building2 size={22} />}
+                      </div>
+                    )}
+                    <label
+                      className="absolute grid cursor-pointer place-items-center rounded-full"
+                      style={{ width: 26, height: 26, bottom: -4, right: -4, background: EMP, color: "#fff" }}
+                      title="Change company logo"
+                    >
+                      {logoUploading
+                        ? <Loader2 size={12} className="animate-spin" />
+                        : <Camera size={12} />}
+                      <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={logoUploading} onChange={uploadLogo} />
+                    </label>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Company logo</p>
+                    <p className="mt-0.5 text-xs" style={{ color: "var(--text-tertiary)" }}>JPEG, PNG, or WebP. Max 2 MB.</p>
+                  </div>
+                </div>
+                <div className="mt-5 grid gap-4 md:grid-cols-2">
                   <Input id="ver-companyName" label="Company name" required value={form.companyName} onChange={update("companyName")} />
                   <Input id="ver-website" label="Website" value={form.website} onChange={update("website")} placeholder="https://" />
                   <Input id="ver-linkedin" label="LinkedIn company page" value={form.linkedinUrl} onChange={update("linkedinUrl")} placeholder="https://linkedin.com/company/..." />

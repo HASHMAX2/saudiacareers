@@ -124,13 +124,25 @@ export async function mine(req, res) {
     orderBy: { appliedAt: "desc" },
     include: {
       job: {
-        select: { id: true, title: true, companyName: true, location: true },
+        select: {
+          id: true, title: true, companyName: true, location: true,
+          creator: {
+            select: {
+              employerProfile: {
+                select: { companyName: true, description: true, website: true, linkedinUrl: true },
+              },
+            },
+          },
+        },
       },
     },
   });
   return sendSuccess(res, {
     message: "Applications retrieved",
-    data: applications,
+    data: applications.map(({ job: { creator, ...job }, ...application }) => ({
+      ...application,
+      job: { ...job, employer: creator?.employerProfile ?? null },
+    })),
   });
 }
 

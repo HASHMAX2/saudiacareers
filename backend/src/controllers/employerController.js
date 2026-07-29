@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import path from "node:path";
 import { prisma } from "../config/prisma.js";
 import { sendEmail } from "../services/emailService.js";
 import { employerSupportRequestEmailTemplate } from "../services/emailTemplates/employerSupportRequest.js";
@@ -23,7 +24,11 @@ export async function getEmployerProfile(req, res) {
     where: { userId: req.user.id },
   });
   if (!profile) throw new ApiError(404, "Employer profile not found");
-  return sendSuccess(res, { message: "Profile retrieved", data: profile });
+  const data = { ...profile };
+  if (profile.logoPath) {
+    data.logoUrl = await createSignedDownloadUrl(profile.logoPath);
+  }
+  return sendSuccess(res, { message: "Profile retrieved", data });
 }
 
 export async function updateEmployerProfile(req, res) {
@@ -41,6 +46,28 @@ export async function updateEmployerProfile(req, res) {
     });
   }
   return sendSuccess(res, { message: "Profile updated", data: profile });
+}
+
+export async function uploadEmployerLogo(req, res) {
+  if (!req.file) throw new ApiError(422, "Company logo is required");
+  const existing = await prisma.employerProfile.findUnique({ where: { userId: req.user.id } });
+  if (!existing) throw new ApiError(404, "Employer profile not found");
+  const extension = path.extname(req.file.originalname).toLowerCase() || ".jpg";
+  const logoPath = `logos/${req.user.id}/${crypto.randomUUID()}${extension}`;
+  await uploadPrivateFile(logoPath, req.file.buffer, req.file.mimetype);
+  await prisma.employerProfile.update({ where: { userId: req.user.id }, data: { logoPath } });
+  if (existing.logoPath) {
+    await removePrivateFile(existing.logoPath).catch(() => {});
+  }
+  return sendSuccess(res, { statusCode: 201, message: "Company logo uploaded" });
+}
+
+export async function deleteEmployerLogo(req, res) {
+  const existing = await prisma.employerProfile.findUnique({ where: { userId: req.user.id } });
+  if (!existing?.logoPath) throw new ApiError(404, "Company logo not found");
+  await removePrivateFile(existing.logoPath);
+  await prisma.employerProfile.update({ where: { userId: req.user.id }, data: { logoPath: null } });
+  return sendSuccess(res, { message: "Company logo removed" });
 }
 
 // ── Verification ──────────────────────────────────────────────────────────────

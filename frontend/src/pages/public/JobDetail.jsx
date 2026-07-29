@@ -204,6 +204,23 @@ export function JobDetail() {
             {skills.map((skill) => <Badge key={skill} tone="green">{skill}</Badge>)}
           </div>
         </section>
+
+        {job.employer?.description && (
+          <section className="card-soft p-6 sm:p-8">
+            <h2 className="text-xl font-semibold" style={{ color: "var(--text-primary)" }}>About {job.employer.companyName || job.companyName}</h2>
+            <div className="mt-4 whitespace-pre-wrap break-words text-sm leading-7" style={{ color: "var(--text-secondary)" }}>{job.employer.description}</div>
+            {(job.employer.website || job.employer.linkedinUrl) && (
+              <div className="mt-4 flex flex-wrap gap-4 text-sm">
+                {job.employer.website && (
+                  <a href={job.employer.website} target="_blank" rel="noreferrer" className="font-semibold hover:underline" style={{ color: "var(--accent)" }}>Website →</a>
+                )}
+                {job.employer.linkedinUrl && (
+                  <a href={job.employer.linkedinUrl} target="_blank" rel="noreferrer" className="font-semibold hover:underline" style={{ color: "var(--accent)" }}>LinkedIn →</a>
+                )}
+              </div>
+            )}
+          </section>
+        )}
       </div>
 
       <aside className="lg:sticky lg:top-24 lg:self-start">

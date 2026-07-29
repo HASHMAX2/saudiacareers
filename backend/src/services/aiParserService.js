@@ -7,11 +7,17 @@ const SYSTEM_PROMPT = `You are a job-data extraction assistant. Extract structur
 RULES:
 1. Create one object per ROLE. If a message lists multiple roles (e.g. "Arabic Teacher" and "Qudrat Trainer"), produce a separate object for each.
 2. If the same role is offered in multiple cities in one message (e.g. Riyadh / Jeddah / Dammam), produce a separate object for each city.
-3. Location mapping — map to EXACTLY one of: "Riyadh", "Jeddah", "Dammam", "Other":
+3. Location mapping — map to EXACTLY one of: "Riyadh", "Jeddah", "Mecca", "Medina", "Dammam", "Khobar", "Dhahran", "Jubail", "Taif", "Abha", "Khamis Mushait", "Najran", "Jizan", "Tabuk", "Hail", "Buraidah", "Al Kharj", "Hafar Al-Batin", "Yanbu", "Al Ahsa", "Qatif", "Arar", "Sakaka", "Other":
    - Riyadh / Riyad / East Riyadh / Al-Riyadh → "Riyadh"
    - Jeddah / Jidda / Jidah → "Jeddah"
-   - Dammam / Khobar / Al-Khobar / Dhahran / Eastern Province → "Dammam"
-   - Anything else → "Other"
+   - Mecca / Makkah → "Mecca"
+   - Medina / Madinah / Al-Madinah → "Medina"
+   - Dammam → "Dammam"
+   - Khobar / Al-Khobar → "Khobar"
+   - Dhahran → "Dhahran"
+   - Jubail / Al-Jubail → "Jubail"
+   - Hofuf / Al-Hasa / Al-Ahsa → "Al Ahsa"
+   - Any other named Saudi city not in this list, or anything not clearly a Saudi city (e.g. remote, unspecified) → "Other"
 4. hrEmail: extract valid email addresses only. If multiple, use the FIRST one. If only WhatsApp numbers (no email), set hrEmail to "".
 5. requiredSkills: comma-separated string of skills/qualifications inferred from requirements bullets. Be concise (e.g. "English proficiency, Teaching experience, Communication skills").
 6. experienceRequired: e.g. "2+ years", "Fresh graduate", "3-5 years". If not specified, write "Not specified".
@@ -31,7 +37,14 @@ const JOB_ITEM_SCHEMA = {
   properties: {
     title: { type: "string" },
     companyName: { type: "string" },
-    location: { type: "string", enum: ["Riyadh", "Jeddah", "Dammam", "Other"] },
+    location: {
+      type: "string",
+      enum: [
+        "Riyadh", "Jeddah", "Mecca", "Medina", "Dammam", "Khobar", "Dhahran", "Jubail",
+        "Taif", "Abha", "Khamis Mushait", "Najran", "Jizan", "Tabuk", "Hail", "Buraidah",
+        "Al Kharj", "Hafar Al-Batin", "Yanbu", "Al Ahsa", "Qatif", "Arar", "Sakaka", "Other",
+      ],
+    },
     industry: { type: "string" },
     employmentType: { type: "string", enum: ["Full-time", "Part-time", "Contract", "Internship"] },
     experienceRequired: { type: "string" },

@@ -43,6 +43,7 @@ export const employerProfileSchema = bodyOnly(
       .optional()
       .or(z.literal("")),
     description: z.string().trim().max(2000).optional(),
+    taxRegistrationNumber: z.string().trim().max(50).optional(),
   }).strict(),
 );
 

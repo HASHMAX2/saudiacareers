@@ -1,9 +1,8 @@
 import { ChevronDown, SlidersHorizontal, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Toast } from "../common/Toast.jsx";
-import { EMPTY_FILTERS, EXPERIENCE_LEVELS, SALARY_RANGES } from "../../utils/constants.js";
+import { EMPTY_FILTERS, EXPERIENCE_LEVELS, LOCATIONS, SALARY_RANGES } from "../../utils/constants.js";
 
-const LOCATIONS        = ["Riyadh", "Jeddah", "Dammam", "Other"];
 // "Permanent"/"Contractual" are the only values the job-posting form now offers;
 // "Full-time"/"Part-time"/"Contract"/"Internship" stay listed so existing
 // listings that still carry those values remain filterable.

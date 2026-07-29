@@ -5,9 +5,11 @@ import { ApiError } from "../utils/ApiError.js";
 import { sendSuccess } from "../utils/ApiResponse.js";
 
 function serializeJob(job) {
+  const { creator, ...rest } = job;
   return {
-    ...job,
+    ...rest,
     isClosed: Boolean(job.applicationDeadline && job.applicationDeadline < new Date()),
+    ...(creator !== undefined ? { employer: creator?.employerProfile ?? null } : {}),
   };
 }
 
@@ -178,6 +180,15 @@ export async function getJob(req, res) {
       id: req.validated.params.id,
       status: JobStatus.ACTIVE,
       isDeleted: false,
+    },
+    include: {
+      creator: {
+        select: {
+          employerProfile: {
+            select: { companyName: true, description: true, website: true, linkedinUrl: true },
+          },
+        },
+      },
     },
   });
   if (!job) throw new ApiError(404, "Job not found");

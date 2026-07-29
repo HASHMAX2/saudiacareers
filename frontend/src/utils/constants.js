@@ -1,4 +1,32 @@
-export const LOCATIONS = ["Riyadh", "Jeddah", "Dammam", "Other"];
+// Jobs are Saudi Arabia only, so this list of major cities is treated as fixed —
+// used for both the job-posting form and the job-search location filter so the
+// two always stay in sync. "Other" is a catch-all for anywhere not listed.
+export const LOCATIONS = [
+  "Riyadh",
+  "Jeddah",
+  "Mecca",
+  "Medina",
+  "Dammam",
+  "Khobar",
+  "Dhahran",
+  "Jubail",
+  "Taif",
+  "Abha",
+  "Khamis Mushait",
+  "Najran",
+  "Jizan",
+  "Tabuk",
+  "Hail",
+  "Buraidah",
+  "Al Kharj",
+  "Hafar Al-Batin",
+  "Yanbu",
+  "Al Ahsa",
+  "Qatif",
+  "Arar",
+  "Sakaka",
+  "Other",
+];
 
 export const INDUSTRIES = [
   "IT - Software Services",
