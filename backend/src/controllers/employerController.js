@@ -1,7 +1,6 @@
 import crypto from "node:crypto";
 import { prisma } from "../config/prisma.js";
 import { sendEmail } from "../services/emailService.js";
-import { applicationStatusEmailTemplate } from "../services/emailTemplates/applicationStatus.js";
 import { employerSupportRequestEmailTemplate } from "../services/emailTemplates/employerSupportRequest.js";
 import { createSignedDownloadUrl, removePrivateFile, uploadPrivateFile } from "../services/storageService.js";
 import { isPdfBuffer } from "../utils/fileSignature.js";
@@ -658,14 +657,13 @@ export async function updateApplicationStatus(req, res) {
     include: { user: true, job: true },
   });
 
-  const template = applicationStatusEmailTemplate({
-    name: updated.user.name,
-    jobTitle: updated.job.title,
-    status: updated.status,
+  await notify({
+    userId: updated.userId,
+    type: "APPLICATION_STATUS_UPDATED",
+    title: "Your application status has been updated",
+    message: `Your application for "${updated.job.title}" is now ${updated.status.replaceAll("_", " ")}.`,
+    link: "/dashboard/applications",
   });
-  sendEmail({ to: updated.user.email, ...template }).catch((error) =>
-    console.error("Status email failed:", error.message),
-  );
 
   return sendSuccess(res, { message: "Application status updated", data: updated });
 }

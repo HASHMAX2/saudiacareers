@@ -65,7 +65,7 @@ export const employerAllApplicationsQuerySchema = envelope(
     limit: z.coerce.number().int().min(1).max(100).default(20),
     search: z.string().trim().max(100).optional(),
     jobId: z.coerce.number().int().positive().optional(),
-    status: z.enum(["APPLIED", "SHORTLISTED", "ON_HOLD", "SELECTED", "REJECTED"]).optional(),
+    status: z.enum(["APPLIED", "SELECTED", "REJECTED"]).optional(),
   }),
 );
 
@@ -76,12 +76,12 @@ export const employerJobApplicationsQuerySchema = envelope(
     page: z.coerce.number().int().positive().default(1),
     limit: z.coerce.number().int().min(1).max(100).default(20),
     search: z.string().trim().max(100).optional(),
-    status: z.enum(["APPLIED", "SHORTLISTED", "ON_HOLD", "SELECTED", "REJECTED"]).optional(),
+    status: z.enum(["APPLIED", "SELECTED", "REJECTED"]).optional(),
   }),
 );
 
 export const employerApplicationStatusSchema = envelope(
-  z.object({ status: z.enum(["APPLIED", "SHORTLISTED", "ON_HOLD", "SELECTED", "REJECTED"]) }).strict(),
+  z.object({ status: z.enum(["APPLIED", "SELECTED", "REJECTED"]) }).strict(),
   z.object({ id: z.coerce.number().int().positive() }),
 );
 

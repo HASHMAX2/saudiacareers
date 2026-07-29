@@ -321,7 +321,7 @@ Shows: all fields above + full description, required skills as tags, application
 - Table: candidate name, email, mobile, applied job, date, status, HR email status, resume download button
 - Search: by candidate name or job title
 - Filter: by job, by status, by HR email status
-- Change application status → triggers email notification to candidate
+- Change application status → triggers in-app notification to candidate (no email — kept off the Resend send volume)
 - Export to CSV: all applications or filtered set
 - Download resume: generates signed URL
 
@@ -333,8 +333,9 @@ Shows: all fields above + full description, required skills as tags, application
 |---|---|---|
 | Candidate registers | Candidate | Welcome to SaudiaCareers |
 | Candidate applies | HR email (from job) | Application for [Title] – [Name] |
-| Application status changes | Candidate | Your application status has been updated |
 | Forgot password | Candidate | Reset your SaudiaCareers password |
+
+Application status changes do NOT send an email — sending one on every status change risked hitting the Resend rate/volume limit. Instead they create an in-app `Notification` record for the candidate (`notify()` in `backend/src/services/notificationService.js`), surfaced in-app and linking to `/dashboard/applications`.
 
 Use HTML email templates. Store templates in `backend/src/services/emailTemplates/`.
 
@@ -668,7 +669,7 @@ NODE_ENV=production
 - Profile must be complete (designation + experience + skills) before applying
 - HR email is per-job — each job can route applications to a different HR contact
 - HR email failures must be tracked on the application record
-- Application status changes trigger email to the candidate automatically
+- Application status changes trigger an in-app notification to the candidate — never an email (avoids burning Resend send volume on every status change)
 - Default seeded admin must change password before accessing admin dashboard
 
 ---
@@ -726,7 +727,7 @@ NODE_ENV=production
 - Test forced admin password change
 - Test admin job create/edit/deactivate/soft-delete
 - Test admin application status update
-- Test candidate status update email
+- Test candidate status update in-app notification
 - Test CSV export
 
 ---

@@ -1,6 +1,4 @@
 import { prisma } from "../config/prisma.js";
-import { sendEmail } from "../services/emailService.js";
-import { applicationStatusEmailTemplate } from "../services/emailTemplates/applicationStatus.js";
 import { createSignedDownloadUrl } from "../services/storageService.js";
 import { consumeJobCredit, getOrCreateSubscription } from "../services/employerBillingService.js";
 import { expireOverdueJobs } from "../services/jobExpiryService.js";
@@ -300,14 +298,13 @@ export async function updateApplicationStatus(req, res) {
     include: applicationInclude,
   }).catch(() => null);
   if (!application) throw new ApiError(404, "Application not found");
-  const template = applicationStatusEmailTemplate({
-    name: application.user.name,
-    jobTitle: application.job.title,
-    status: application.status,
+  await notify({
+    userId: application.userId,
+    type: "APPLICATION_STATUS_UPDATED",
+    title: "Your application status has been updated",
+    message: `Your application for "${application.job.title}" is now ${application.status.replaceAll("_", " ")}.`,
+    link: "/dashboard/applications",
   });
-  sendEmail({ to: application.user.email, ...template }).catch((error) =>
-    console.error("Status email failed:", error.message),
-  );
   return sendSuccess(res, { message: "Application status updated", data: application });
 }
 

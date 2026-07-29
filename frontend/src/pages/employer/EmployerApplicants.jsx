@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronDown, ChevronUp, Download, Loader2, SlidersHorizontal } from "lucide-react";
 import { employerApi } from "../../api/employer.js";
@@ -12,8 +12,11 @@ import { formatDate } from "../../utils/formatDate.js";
 const EMP = "var(--accent)";
 const EMP_SUBTLE = "var(--accent-subtle)";
 
-const STATUS_OPTIONS = ["APPLIED", "SHORTLISTED", "ON_HOLD", "SELECTED", "REJECTED"];
+const STATUS_OPTIONS = ["APPLIED", "SELECTED", "REJECTED"];
 
+// SHORTLISTED/ON_HOLD are kept here only so a pre-existing application still
+// gets a readable badge label instead of a raw enum string — the employer
+// can no longer set either status; there's no button for them anymore.
 const STATUS_META = {
   APPLIED:      { label: "New",         tone: "blue"  },
   SHORTLISTED:  { label: "Shortlisted", tone: "green" },
@@ -37,6 +40,7 @@ export function EmployerApplicants() {
   const [search, setSearch]         = useState("");
   const [statusFilter, setStatus]   = useState("");
   const [busyId, setBusyId]         = useState(null);
+  const [busyAction, setBusyAction] = useState(null);
   const [downloadingId, setDlId]    = useState(null);
   const [expandedId, setExpandedId]       = useState(null);
   const [profileCache, setProfileCache]   = useState({});
@@ -63,11 +67,22 @@ export function EmployerApplicants() {
 
   async function handleStatus(appId, status) {
     setBusyId(appId);
+    setBusyAction(status);
     try {
-      await employerApi.updateAppStatus(appId, { status });
-      await load();
+      const { data } = await employerApi.updateAppStatus(appId, { status });
+      const updatedStatus = data.data.status;
+      if (statusFilter && statusFilter !== updatedStatus) {
+        // No longer matches the active status filter — drop it from view instead
+        // of reloading the whole table (which would blow away scroll position,
+        // the expanded profile panel, and flash a full-page spinner).
+        setApps((prev) => prev.filter((a) => a.id !== appId));
+        setTotal((t) => Math.max(0, t - 1));
+      } else {
+        setApps((prev) => prev.map((a) => (a.id === appId ? { ...a, status: updatedStatus } : a)));
+      }
     } finally {
       setBusyId(null);
+      setBusyAction(null);
     }
   }
 
@@ -143,21 +158,7 @@ export function EmployerApplicants() {
         </form>
       )}
 
-      {initialLoading ? (
-        <div className="space-y-4">
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="rounded-2xl p-5" style={{ border: "1px solid var(--border-default)", background: "var(--bg-white)" }}>
-              <div className="flex items-center gap-3">
-                <div className="h-11 w-11 shrink-0 animate-pulse rounded-2xl" style={{ background: "var(--bg-elev)" }} />
-                <div className="flex-1">
-                  <div className="h-4 w-32 animate-pulse rounded" style={{ background: "var(--bg-elev)" }} />
-                  <div className="mt-2 h-3 w-24 animate-pulse rounded" style={{ background: "var(--bg-elev)" }} />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : loading ? (
+      {initialLoading || loading ? (
         <div className="grid min-h-64 place-items-center"><Spinner label="Loading applicants" /></div>
       ) : !applications.length ? (
         <div className="rounded-2xl p-8 text-center" style={{ border: "1px solid var(--border-default)", background: "var(--bg-white)" }}>
@@ -165,85 +166,95 @@ export function EmployerApplicants() {
         </div>
       ) : (
         <>
-          <div className="space-y-4">
-            {applications.map((app) => {
-              const skills = (app.user.profile?.skills ?? "").split(",").map((s) => s.trim()).filter(Boolean).slice(0, 6);
-              return (
-                <div key={app.id} className="rounded-2xl p-5" style={{ border: "1px solid var(--border-default)", background: "var(--bg-white)" }}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-sm font-extrabold" style={{ background: EMP_SUBTLE, color: EMP }}>
-                        {initialsOf(app.user.name)}
-                      </span>
-                      <div>
-                        <h4 className="font-bold" style={{ color: "var(--text-primary)" }}>{app.user.name}</h4>
-                        <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>
-                          {[app.user.profile?.designation, app.user.profile?.experience, [app.user.profile?.city, app.user.profile?.country].filter(Boolean).join(", ")].filter(Boolean).join(" · ")}
-                        </p>
-                      </div>
-                    </div>
-                    <Badge tone={STATUS_META[app.status]?.tone ?? "blue"}>{STATUS_META[app.status]?.label ?? app.status}</Badge>
-                  </div>
-
-                  <Link
-                    to={`/employer/jobs/${app.job.id}/applications`}
-                    className="mt-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold hover:underline"
-                    style={{ background: "var(--bg-elev)", color: "var(--text-secondary)" }}
-                  >
-                    Applied to: {app.job.title}
-                  </Link>
-
-                  {skills.length > 0 && (
-                    <div className="mt-3.5 flex flex-wrap gap-1.5">
-                      {skills.map((skill) => (
-                        <span key={skill} className="rounded-full px-2.5 py-1 text-xs font-semibold" style={{ background: "var(--bg-elev)", color: "var(--text-secondary)" }}>
-                          {skill}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  <p className="mt-3 text-xs" style={{ color: "var(--text-tertiary)" }}>
-                    Applied {formatDate(app.appliedAt)}{app.user.email ? ` · ${app.user.email}` : ""}
-                  </p>
-
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <Button size="sm" variant="secondary" onClick={() => toggleProfile(app)}>
-                      {loadingProfileId === app.id
-                        ? <Loader2 size={13} className="animate-spin shrink-0" />
-                        : expandedId === app.id ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-                      {expandedId === app.id ? "Hide profile" : "View profile"}
-                    </Button>
-                    {app.user.profile?.resumePath && (
-                      <Button size="sm" variant="secondary" disabled={!!busyId || downloadingId === app.id} onClick={() => handleDownload(app)}>
-                        {downloadingId === app.id ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
-                        Resume
-                      </Button>
+          <div className="overflow-x-auto rounded-2xl" style={{ border: "1px solid var(--border-default)" }}>
+            <table className="w-full text-left text-sm">
+              <thead style={{ background: "var(--bg-elev)" }}>
+                <tr>
+                  {["Candidate", "Applied to", "Status", "Applied", "Actions"].map((h) => (
+                    <th
+                      key={h}
+                      className={`px-4 py-3 text-xs font-bold uppercase tracking-wider ${h === "Actions" ? "text-right pr-5" : ""}`}
+                      style={{ color: "var(--text-tertiary)" }}
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {applications.map((app, i) => (
+                  <Fragment key={app.id}>
+                    <tr style={{ borderTop: i ? "1px solid var(--border-default)" : "none", background: "var(--bg-white)" }}>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-xs font-extrabold" style={{ background: EMP_SUBTLE, color: EMP }}>
+                            {initialsOf(app.user.name)}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="font-semibold" style={{ color: "var(--text-primary)" }}>{app.user.name}</p>
+                            <p className="truncate text-xs" style={{ color: "var(--text-tertiary)" }}>
+                              {[app.user.profile?.designation, app.user.profile?.experience, [app.user.profile?.city, app.user.profile?.country].filter(Boolean).join(", ")].filter(Boolean).join(" · ") || app.user.email}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Link
+                          to={`/employer/jobs/${app.job.id}/applications`}
+                          className="text-xs font-semibold hover:underline"
+                          style={{ color: EMP }}
+                        >
+                          {app.job.title}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge tone={STATUS_META[app.status]?.tone ?? "blue"}>{STATUS_META[app.status]?.label ?? app.status}</Badge>
+                      </td>
+                      <td className="px-4 py-3 font-mono text-xs" style={{ color: "var(--text-tertiary)" }}>{formatDate(app.appliedAt)}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap items-center justify-end gap-1.5">
+                          <Button size="sm" variant="secondary" onClick={() => toggleProfile(app)}>
+                            {loadingProfileId === app.id
+                              ? <Loader2 size={13} className="animate-spin shrink-0" />
+                              : expandedId === app.id ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                            {expandedId === app.id ? "Hide profile" : "View profile"}
+                          </Button>
+                          {app.user.profile?.resumePath && (
+                            <Button size="sm" variant="secondary" disabled={!!busyId || downloadingId === app.id} onClick={() => handleDownload(app)}>
+                              {downloadingId === app.id ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
+                              Resume
+                            </Button>
+                          )}
+                          {STATUS_OPTIONS.filter((s) => s !== app.status).map((s) => (
+                            <Button
+                              key={s}
+                              size="sm"
+                              variant={s === "REJECTED" ? "ghost" : "primary"}
+                              disabled={!!busyId}
+                              onClick={() => handleStatus(app.id, s)}
+                              style={s === "REJECTED" ? { color: "var(--text-tertiary)" } : { background: EMP, borderColor: EMP }}
+                            >
+                              {busyId === app.id && busyAction === s ? <Loader2 size={13} className="animate-spin" /> : null}
+                              {STATUS_META[s]?.label}
+                            </Button>
+                          ))}
+                        </div>
+                      </td>
+                    </tr>
+                    {expandedId === app.id && (
+                      <tr style={{ background: "var(--bg-white)" }}>
+                        <td colSpan={5} className="px-4 pb-4">
+                          <CandidateProfilePanel
+                            loading={loadingProfileId === app.id && !profileCache[app.id]}
+                            profile={profileCache[app.id]?.user?.profile}
+                          />
+                        </td>
+                      </tr>
                     )}
-                    {STATUS_OPTIONS.filter((s) => s !== app.status).map((s) => (
-                      <Button
-                        key={s}
-                        size="sm"
-                        variant={s === "REJECTED" ? "ghost" : "primary"}
-                        disabled={!!busyId}
-                        onClick={() => handleStatus(app.id, s)}
-                        style={s === "REJECTED" ? { color: "var(--text-tertiary)" } : { background: EMP, borderColor: EMP }}
-                      >
-                        {busyId === app.id ? <Loader2 size={13} className="animate-spin" /> : null}
-                        {STATUS_META[s]?.label}
-                      </Button>
-                    ))}
-                  </div>
-
-                  {expandedId === app.id && (
-                    <CandidateProfilePanel
-                      loading={loadingProfileId === app.id && !profileCache[app.id]}
-                      profile={profileCache[app.id]?.user?.profile}
-                    />
-                  )}
-                </div>
-              );
-            })}
+                  </Fragment>
+                ))}
+              </tbody>
+            </table>
           </div>
           {totalPages > 1 && (
             <div className="mt-6">
@@ -259,20 +270,20 @@ export function EmployerApplicants() {
 function CandidateProfilePanel({ loading, profile }) {
   if (loading) {
     return (
-      <div className="mt-4 grid place-items-center rounded-xl p-6" style={{ background: "var(--bg-elev)" }}>
+      <div className="grid place-items-center rounded-xl p-6" style={{ background: "var(--bg-elev)" }}>
         <Spinner label="Loading profile" />
       </div>
     );
   }
   if (!profile) {
     return (
-      <div className="mt-4 rounded-xl p-4 text-sm" style={{ background: "var(--bg-elev)", color: "var(--text-tertiary)" }}>
+      <div className="rounded-xl p-4 text-sm" style={{ background: "var(--bg-elev)", color: "var(--text-tertiary)" }}>
         No profile details available.
       </div>
     );
   }
   return (
-    <div className="mt-4 space-y-3 rounded-xl p-4 text-sm" style={{ background: "var(--bg-elev)" }}>
+    <div className="space-y-3 rounded-xl p-4 text-sm" style={{ background: "var(--bg-elev)" }}>
       {profile.summary && (
         <div>
           <p className="font-mono text-xs uppercase tracking-wide" style={{ color: "var(--text-tertiary)" }}>Summary</p>
