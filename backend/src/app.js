@@ -8,6 +8,7 @@ import { authRouter } from "./routes/authRoutes.js";
 import { adminRouter } from "./routes/adminRoutes.js";
 import { applicationRouter } from "./routes/applicationRoutes.js";
 import { jobRouter } from "./routes/jobRoutes.js";
+import { companyRouter } from "./routes/companyRoutes.js";
 import { profileRouter } from "./routes/profileRoutes.js";
 import { savedJobsRouter } from "./routes/savedJobsRoutes.js";
 import { employerRouter } from "./routes/employerRoutes.js";
@@ -59,6 +60,7 @@ app.get("/api/health", (_req, res) =>
 app.use("/api/auth", authRouter);
 app.use("/api/profile", profileRouter);
 app.use("/api/jobs", jobRouter);
+app.use("/api/companies", companyRouter);
 app.use("/api/applications", applicationRouter);
 app.use("/api/saved-jobs", savedJobsRouter);
 app.use("/api/candidate", candidateRouter);

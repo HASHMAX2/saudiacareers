@@ -100,7 +100,7 @@ export default function App() {
           <Route index element={<PortalHome />} />
           <Route path="jobs" element={<Jobs />} />
           <Route path="jobs/:id" element={<JobDetail />} />
-          <Route path="company/:jobId" element={<CompanyProfile />} />
+          <Route path="companies/:type/:id" element={<CompanyProfile />} />
           <Route path="contact" element={<Contact />} />
           <Route path="terms" element={<Terms />} />
           <Route path="privacy" element={<Privacy />} />

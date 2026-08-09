@@ -58,11 +58,16 @@ export async function getSavedJobs(req, res) {
 
   const data = saved.map(({ savedAt, job }) => {
     const { creator, companyProfileId, ...rest } = job;
+    const employerProfileId = creator?.employerProfile?.id;
     return {
       ...rest,
       savedAt,
       isClosed: Boolean(job.applicationDeadline && job.applicationDeadline < now),
-      hasCompanyProfile: Boolean(creator?.employerProfile || companyProfileId),
+      companyProfileLink: employerProfileId
+        ? { type: "employer", id: employerProfileId }
+        : companyProfileId
+        ? { type: "lead", id: companyProfileId }
+        : null,
     };
   });
 

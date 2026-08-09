@@ -228,17 +228,22 @@ model Job {
 // EmployerProfile/User account. Deliberately not tied to auth in any way —
 // this is display metadata only, never a login-capable tenant.
 model CompanyProfile {
-  id          Int      @id @default(autoincrement())
-  name        String
-  industry    String?
-  location    String?
-  website     String?
-  description String?
-  logoPath    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             Int      @id @default(autoincrement())
+  name           String
+  industry       String?
+  location       String?
+  website        String?
+  description    String?
+  logoPath       String?
+  coverImagePath String?
+  companySize    String?
+  foundedYear    Int?
+  visionRelevant Boolean  @default(false)
+  perks          String[] @default([])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  jobs        Job[]
+  jobs           Job[]
 
   @@index([name])
 }
@@ -349,7 +354,11 @@ model EmployerProfile {
   phone                 String?
   description           String?
   logoPath              String?
+  coverImagePath        String?
   companySize           String?
+  foundedYear           Int?
+  visionRelevant        Boolean            @default(false)
+  perks                 String[]           @default([])
   contactDesignation    String?
   verificationStatus    VerificationStatus @default(PENDING)
   verificationNote      String?

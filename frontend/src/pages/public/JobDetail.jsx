@@ -153,12 +153,10 @@ export function JobDetail() {
                 <Badge>{job.industry}</Badge>
               </div>
               <h1 className="page-title text-3xl md:text-4xl">{job.title}</h1>
-              {job.employer ? (
+              {job.companyProfileLink ? (
                 <Link
                   className="mt-2 inline-block text-lg font-medium text-[var(--text-secondary)] hover:text-blue-600 hover:underline"
-                  to={`/company/${job.id}`}
-                  target="_blank"
-                  rel="noreferrer"
+                  to={`/companies/${job.companyProfileLink.type}/${job.companyProfileLink.id}`}
                 >
                   {job.companyName}
                 </Link>

@@ -44,6 +44,9 @@ export const employerProfileSchema = bodyOnly(
       .or(z.literal("")),
     description: z.string().trim().max(2000).optional(),
     taxRegistrationNumber: z.string().trim().max(50).optional(),
+    companySize: z.string().trim().max(50).optional(),
+    foundedYear: z.coerce.number().int().min(1900).max(new Date().getFullYear()).optional(),
+    perks: z.array(z.string().trim().max(50)).max(20).optional(),
   }).strict(),
 );
 

@@ -29,26 +29,57 @@ function normalizeEmployer(employerProfile, companyProfile) {
   return null;
 }
 
+// Both source tables auto-increment their own `id` independently, so a bare
+// numeric id is ambiguous — the link always carries which table it resolves
+// against. `null` means the job has no linkable company (no employer account,
+// no CompanyProfile row) and the frontend should render plain text instead.
+function companyProfileLink(employerProfileId, companyProfileId) {
+  if (employerProfileId) return { type: "employer", id: employerProfileId };
+  if (companyProfileId) return { type: "lead", id: companyProfileId };
+  return null;
+}
+
 // Job detail page — includes the full "About the employer" payload.
 function serializeJobDetail(job) {
-  const { creator, companyProfile, companyProfileId: _companyProfileId, ...rest } = job;
+  const { creator, companyProfile, companyProfileId, ...rest } = job;
   return {
     ...rest,
     isClosed: Boolean(job.applicationDeadline && job.applicationDeadline < new Date()),
     employer: normalizeEmployer(creator?.employerProfile, companyProfile),
+    companyProfileLink: companyProfileLink(creator?.employerProfile?.id, companyProfileId),
   };
 }
 
-// Job listing cards — only a boolean (is there a profile to link to), not the
-// full payload, to keep the paginated list response lean.
-function serializeJobCard(job) {
+// Job listing cards — a lightweight link descriptor (not the full payload)
+// to keep the paginated list response lean.
+export function serializeJobCard(job) {
   const { creator, companyProfileId, ...rest } = job;
   return {
     ...rest,
     isClosed: Boolean(job.applicationDeadline && job.applicationDeadline < new Date()),
-    hasCompanyProfile: Boolean(creator?.employerProfile || companyProfileId),
+    companyProfileLink: companyProfileLink(creator?.employerProfile?.id, companyProfileId),
   };
 }
+
+// Shared select shape for job cards — reused by the company profile page's
+// "Open positions" section so both surfaces render identically.
+export const JOB_CARD_SELECT = {
+  id: true,
+  title: true,
+  companyName: true,
+  location: true,
+  industry: true,
+  employmentType: true,
+  experienceRequired: true,
+  salaryRange: true,
+  requiredSkills: true,
+  gender: true,
+  nationality: true,
+  applicationDeadline: true,
+  createdAt: true,
+  companyProfileId: true,
+  creator: { select: { employerProfile: { select: { id: true } } } },
+};
 
 function parseList(csv) {
   return csv ? csv.split("|").map((v) => v.trim()).filter(Boolean) : [];
@@ -183,23 +214,7 @@ export async function listJobs(req, res) {
       orderBy,
       skip: (page - 1) * limit,
       take: limit,
-      select: {
-        id: true,
-        title: true,
-        companyName: true,
-        location: true,
-        industry: true,
-        employmentType: true,
-        experienceRequired: true,
-        salaryRange: true,
-        requiredSkills: true,
-        gender: true,
-        nationality: true,
-        applicationDeadline: true,
-        createdAt: true,
-        companyProfileId: true,
-        creator: { select: { employerProfile: { select: { id: true } } } },
-      },
+      select: JOB_CARD_SELECT,
     }),
     prisma.job.count({ where }),
   ]);
@@ -224,7 +239,7 @@ export async function getJob(req, res) {
       creator: {
         select: {
           employerProfile: {
-            select: { companyName: true, description: true, website: true, linkedinUrl: true },
+            select: { id: true, companyName: true, description: true, website: true, linkedinUrl: true },
           },
         },
       },
@@ -235,43 +250,4 @@ export async function getJob(req, res) {
   });
   if (!job) throw new ApiError(404, "Job not found");
   return sendSuccess(res, { message: "Job retrieved", data: serializeJobDetail(job) });
-}
-
-// Public, view-only company info for a job — resolves whichever source the
-// job actually has (real employer account or a standalone CompanyProfile),
-// never both. Deliberately job-scoped rather than company-id-scoped so the
-// frontend never needs to know which source it's looking at.
-export async function getJobCompany(req, res) {
-  const job = await prisma.job.findFirst({
-    where: { id: req.validated.params.id, isDeleted: false },
-    include: {
-      creator: {
-        select: {
-          employerProfile: {
-            select: { companyName: true, industry: true, location: true, description: true, website: true, linkedinUrl: true },
-          },
-        },
-      },
-      companyProfile: {
-        select: { name: true, industry: true, location: true, description: true, website: true },
-      },
-    },
-  });
-  if (!job) throw new ApiError(404, "Job not found");
-
-  const source = job.creator?.employerProfile ?? job.companyProfile;
-  if (!source) throw new ApiError(404, "No company profile available for this job");
-
-  const isEmployerAccount = Boolean(job.creator?.employerProfile);
-  return sendSuccess(res, {
-    message: "Company profile retrieved",
-    data: {
-      companyName: isEmployerAccount ? source.companyName : source.name,
-      industry: source.industry ?? null,
-      location: source.location ?? null,
-      description: source.description ?? null,
-      website: source.website ?? null,
-      linkedinUrl: isEmployerAccount ? source.linkedinUrl : null,
-    },
-  });
 }

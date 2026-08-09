@@ -159,12 +159,10 @@ function SavedJobCard({ job, removing, onRemove, dimmed = false }) {
             {job.title}
           </p>
         )}
-        {job.hasCompanyProfile ? (
+        {job.companyProfileLink ? (
           <Link
             className="mt-1 inline-block text-[14px] text-[var(--text-secondary)] hover:text-blue-600 hover:underline"
-            to={`/company/${job.id}`}
-            target="_blank"
-            rel="noreferrer"
+            to={`/companies/${job.companyProfileLink.type}/${job.companyProfileLink.id}`}
           >
             {job.companyName}
           </Link>
